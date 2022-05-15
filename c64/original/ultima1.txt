@@ -1,0 +1,10 @@
+Ultima I - The First Age of Darkness
+(C) 1986 Origin Systems, Inc.
+
+disk image    errors    images      WP      Remaster 
+
+ultima1.d64   Yes       MB,(CL)     No      +
+
+MB = copy from virgin original
+CL = unplayed from original, matches with MB after substitution of original
+     fast loader file "DD".
