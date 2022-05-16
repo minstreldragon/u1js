@@ -1,6 +1,11 @@
 ; architecture specific constants
 
+CHAR_COLUMNS = 40
+
 COL_BLACK = $00
+
+screenRAM = $0400
+
 hello = $8000
 
 SETLFS = $ffba
