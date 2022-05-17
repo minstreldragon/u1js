@@ -923,7 +923,7 @@ lc48e   txa
         sta lc590
         lda lc5ef,x
         sta lc591
-        lda lc5f0,x
+        lda lc5ef+1,x
         sta lc592
         lda #$04
         ldx #<_fnScratch
@@ -1068,7 +1068,7 @@ _fnGm
         .aasc "PR"
 
 lc5b7
-        .aasc "DD"
+        .aasc "DD"              ; Disk Drive type (0: no selection)
         .aasc "RO"
         .aasc "P0"
         .aasc "P1"
@@ -1102,12 +1102,11 @@ lc5e3
         .word $81e2
 
 lc5ef
-        .byt $01
-lc5f0   bcs $c632
-        .asc "0"
-lc5f3   ldy $ac83
-        .byt $83
-        .asc ","
-        .byt $83
-        .asc ","
-        .byt $83,$00
+        .word $b001             ; save address end
+        .word $b040
+        .word $83ac
+        .word $83ac
+        .word $83ac
+        .word $83ac
+
+        .byt $00
