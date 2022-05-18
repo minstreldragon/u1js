@@ -22,6 +22,6 @@ l2d7    lda #COL_BLACK
         jmp $8000
 _fnHello
         .aasc "HELLO"
-l302        
+l302                            ; IMAIN vector (auto start)
         .word _autoStart
         .byt $f1

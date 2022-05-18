@@ -83,6 +83,7 @@ IOBASE = $fff3
         .word $8000
         * = $8000
 
+; hello
 l8000   sei
         lda #$36
         sta $01
@@ -99,20 +100,20 @@ l8000   sei
         sta $0326
         lda #$1f
         sta $0327
-        lda $0319
+        lda NMINV+1
         cmp #$ce
         beq l803d
-l802e   lda #$00
-        sta $0318
+        lda #$00
+        sta NMINV               ; NMI vector
         lda #$ce
-        sta $0319
-        lda #$40
-        sta $ce00
+        sta NMINV+1
+        lda #$40                ; opcode: RTI (exits NMI without acknowledging it)
+        sta $ce00               ; store at new NMI location
 l803d   lda #$00
         sta VicBorderColor
         sta VicBackgroundColor0
         jsr _clearScreen
-l8048   ldx #$00
+        ldx #$00
 l804a   lda #$01
         sta ColorRAM,x
         sta ColorRAM+$0100,x
@@ -129,7 +130,7 @@ l804a   lda #$01
         lda #$05
         sta $ff
         jsr _printText
-l8070   lda #$17
+        lda #$17
         sta VicMemCtrlReg
         lda #$08
         sta VicScreenCtrlReg2
@@ -148,39 +149,40 @@ l8090   lda ($fe),y
         sta ($fc),y
         iny
         bne l8090
-l8097   inc $ff
+        inc $ff
         inc $fd
         dex
         bpl l8090
-l809e   ldx #$10
-        jsr $c480               ; load file "DD"
-l80a3   lda #$83
-        sta $0302
+        ldx #$10
+        jsr loadFile            ; load file "DD" (disk drive type)
+        lda #$83                ; IMAIN = $a483 (default)
+        sta IMAIN               ; Vector: BASIC Warm Start
         lda #$a4
-        sta $0303
-        lda #$48
-        sta $028f
+        sta IMAIN+1
+        lda #$48                ; KEYLOG = $eb48 (default)
+        sta KEYLOG              ; Vector: Keyboard Table Setup
         lda #$eb
-        sta $0290
-        lda #$a5
-        sta $0330
+        sta KEYLOG+1
+        lda #$a5                ; ILOAD = $f4a5 (default)
+        sta ILOAD               ; KERNAL LOAD Routine
         lda #$f4
-        sta $0331
-        jsr SCNKEY
-l80c4   jsr GETIN
-l80c7   cmp #$20
-        beq l80d0
-l80cb   lda $b000
-        bne l80d3
+        sta ILOAD+1
+        jsr SCNKEY              ; read keyboard
+        jsr GETIN
+        cmp #$20                ; user holds down space bar?
+        beq l80d0               ; yes ->
+        lda $b000               ; saved drive selection
+        bne l80d3               ; if not 0, skip ->
+_
 l80d0   jsr _selectDriveType
-l80d3   lda $b000
-        cmp #$02
+l80d3   lda $b000               ; selected drive type
+        cmp #$02                ; no fast loader requested ->
         beq l80e6
-l80da   sei
-        lda #$42
-        sta $0330
-        lda #$c0
-        sta $0331
+        sei
+        lda #<_sizzleLoad       ; ILOAD = $c042 (Sizzle load routine)
+        sta ILOAD               ; KERNAL LOAD Routine
+        lda #>_sizzleLoad
+        sta ILOAD+1
         cli
 l80e6   ldx #<_fnUJ             ; execute: UJ (reset floppy drive)
         ldy #>_fnUJ
@@ -197,16 +199,17 @@ l80fa   lda #$0c
         ldy #$00
 l8102   dex
         bne l8102
-l8105   dey
+        dey
         bne l8102
-l8108   dec $08
+        dec $08
         bpl l8102
-l810c   lda #$0f
-        jsr CLOSE
-l8111   ldx #$0e
-        jsr $c480               ; load file "LO"
-l8116   ldx #$00
-        jsr $c483               ; save file "DD"
+
+        lda #$0f
+        jsr CLOSE               ; close 15
+        ldx #$0e
+        jsr loadFile            ; load file "LO",$0800
+        ldx #$00
+        jsr saveFile            ; save file "DD"
 l811b   jmp $0c00
 
 
@@ -328,8 +331,7 @@ _clearScreenL1
         bne _clearScreenL1
         rts
 
-        .asc "SYSTEM *********"
-        .asc "*"
+        .asc "SYSTEM **********"
         .byt $00,$03,$80,$02,$00,$14,$01,$02,$01,$00,$00,$00,$04
 l83c8   ora ($00,x)
         jsr $0000
@@ -361,38 +363,41 @@ l83fd   jmp $ff59
 
 lc000   clc
         bcc lc01b
-lc003   lda #$a5
-        sta $0330
+lc003   lda #$a5                ; ILOAD = $f4a5 (default)
+        sta ILOAD               ; KERNAL LOAD Routine
         lda #$f4
-        sta $0331
+        sta ILOAD+1
         ldy #$00
-lc00f   lda lc029,y
+lc00f   lda _textSizzleOn,y
         beq lc01a
-lc014   jsr $e716
-lc017   iny
+        jsr SCNPNT              ; print character to screen
+        iny
         bne lc00f
 lc01a   rts
-lc01b   lda #$42
-        sta $0330
-        lda #$c0
-        sta $0331
-        ldy #$0d
+
+lc01b   
+        lda #<_sizzleLoad       ; ILOAD = $c042 (Sizzle load routine)
+        sta ILOAD               ; KERNAL LOAD Routine
+        lda #>_sizzleLoad
+        sta ILOAD+1
+        ldy #(_textSizzleOff-_textSizzleOn)
+;        ldy #$0d
         bne lc00f
-lc029   .byt $0d,$53,$49,$5a,$5a
-lc02e   jmp $2045
-        .asc ""
-        .byt $4f,$46,$46,$0d,$00,$0d,$53,$49,$5a,$5a
-lc03b   jmp $2045
-        .asc ""
-        .byt $4f
-lc03f   lsr !$000d
+
+_textSizzleOn
+        .aasc $0d,"SIZZLE OFF",$0d,$00
+_textSizzleOff
+        .aasc $0d,"SIZZLE ON",$0d,$00
+
+_sizzleLoad
+lc042
         sta $93
         lda $93
         beq lc04d
 lc048   lda $93
         jmp $f4a5
 lc04d   ldy #$00
-        lda ($bb),y
+        lda (FNADR),y
         cmp #$24
         beq lc048
 lc055   lda #$00
@@ -407,7 +412,7 @@ lc064   ldx #$10
 lc068   sta lc46e,x
         dex
         bpl lc068
-lc06e   lda ($bb),y
+lc06e   lda (FNADR),y
         sta lc46e,y
         iny
         cpy $b7
@@ -444,12 +449,12 @@ lc098   rol
         jsr lc155
 lc0b6   jsr lc195
 lc0b9   ldy #$00
-lc0bb   lda lc1a5,y
-        jsr CIOUT
-lc0c1   iny
+lc0bb   lda _textME,y
+        jsr CIOUT               ; output: "M-E",$46,$01
+        iny
         cpy #$05
         bne lc0bb
-lc0c6   jsr UNLSN
+        jsr UNLSN
 lc0c9   jsr lc1aa
 lc0cc   sei
         ldx #$b2
@@ -523,7 +528,7 @@ lc148   clc
         rts
 lc155   jsr lc195
 lc158   ldy #$00
-lc15a   lda lc19f,y
+lc15a   lda _textMW,y
         jsr CIOUT
 lc160   iny
         cpy #$06
@@ -553,19 +558,21 @@ lc18d   jsr UNLSN
 lc190   dec $ff
         bne lc155
 lc194   rts
-lc195   lda $ba
+
+lc195   lda FA                  ; current device number
         jsr LISTEN
-lc19a   lda #$6f
+        lda #$6f
         jmp SECOND
+
+_textMW
 lc19f   lc1a2 = * + 3
         lc1a3 = * + 4
-        .asc ""
-        .byt $4d,$2d,$57,$00,$00
-lc1a4   lc1a5 = * + 1
-        jsr $2d4d
-        .asc ""
-        .byt $45
-lc1a8   lsr $01
+        .aasc "M-W",$00,$00,$20
+
+_textME
+lc1a5
+        .aasc "M-E",$46,$01
+
 lc1aa   ldy #$1f
 lc1ac   lda lc1ba,y
         and #$30
@@ -902,7 +909,9 @@ lc467   lda $1c01
 lc46e   .asc "                "
         .byt $00,$00
 
+; loadFile
 lc480   jmp lc4f9
+; saveFile
 lc483   jmp _saveFile
 lc486   jmp _loadFile
 lc489   ldx lc4f8
@@ -965,9 +974,9 @@ lc4fd   lda $01
         lda #$00
         tay
         sta $60
-        lda #$e0
+        lda #$e0                ; source: $e000
         sta $61
-        lda #$9e
+        lda #$9e                ; destination: $8c9e
         sta $62
         lda #$8c
         sta $63

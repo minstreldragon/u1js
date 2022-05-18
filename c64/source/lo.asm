@@ -296,7 +296,7 @@ _setColorL1
         sta VicMemCtrlReg
         jsr _fadeInOriginLogo
         ldx #$05
-        jsr loadFile            ; load "OU",$e000
+        jsr loadSpecial         ; load "OU",$e000
         ldx #$0c
         jsr $c480               ; load "IN",$6800 (intro?)
         jmp $6800
