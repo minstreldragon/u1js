@@ -922,10 +922,10 @@ _saveFile
 lc48e   txa
         asl
         tax
-        lda lc5b7,x
-        sta lc595
-        lda lc5b7+1,x
-        sta lc596
+        lda _fnTableSave,x
+        sta _filename
+        lda _fnTableSave+1,x
+        sta _filename+1
         lda lc5e3,x
         sta lc58f
         lda lc5e3+1,x
@@ -951,9 +951,9 @@ lc48e   txa
         ldy #$ff
         jsr SETLFS              ; setlfs 2,8,255
         lda #$02
-        ldx #<_fnGm
-        ldy #>_fnGm
-        jsr SETNAM              ; setnam "GM"
+        ldx #<_filename
+        ldy #>_filename
+        jsr SETNAM              ; setnam <filename>
         lda lc58f
         sta $60
         lda lc590
@@ -999,10 +999,10 @@ _loadFile
 lc52c   txa
         asl
         tax
-        lda lc597,x
-        sta lc595
-        lda lc598,x
-        sta lc596
+        lda _fnTableLoad,x
+        sta _filename
+        lda _fnTableLoad+1,x
+        sta _filename+1
         lda lc5c3,x
         sta lc58f
         lda lc5c3+1,x
@@ -1012,8 +1012,8 @@ lc52c   txa
         ldy #$00
         jsr SETLFS              ; setlfs 2,8,0
 lc550   lda #$02
-        ldx #$95
-        ldy #$c5
+        ldx #<_filename
+        ldy #>_filename
         jsr SETNAM
 lc559   lda #$00
         ldx lc58f
@@ -1048,17 +1048,17 @@ lc58c   clc
         lc590 = * + 2
         lc591 = * + 3
         lc592 = * + 4
-        lc595 = * + 7
-        lc596 = * + 8
-        lc597 = * + 9
         lc598 = * + 10
-        .asc ""
         .byt $60,$00,$00,$00,$00
 _fnScratch
         .aasc "S:"
-_fnGm
+
+_filename
+lc595
         .aasc "GM"
 
+_fnTableLoad
+lc597
         .aasc "TC"
         .aasc "MA"
         .aasc "PL"
@@ -1076,6 +1076,7 @@ _fnGm
         .aasc "LO"
         .aasc "PR"
 
+_fnTableSave
 lc5b7
         .aasc "DD"              ; Disk Drive type (0: no selection)
         .aasc "RO"

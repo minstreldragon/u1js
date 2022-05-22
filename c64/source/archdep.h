@@ -19,6 +19,18 @@ COL_LIGHTGREEN = $0d
 COL_LIGHTBLUE = $0e
 COL_LIGHTGREY = $0f
 
+KEY_NORTH = $40                 ; '@' (North)
+KEY_SOUTH = $2f                 ; '/' (South)
+KEY_EAST = $3b                  ; ';' (East)
+KEY_WEST = $3a                  ; ':' (West)
+KEY_ARROW_UP = $91              ; arrow up
+KEY_ARROW_DOWN = $11            ; arrow down
+KEY_ARROW_LEFT = $9d            ; arrow left
+KEY_ARROW_RIGHT = $1d           ; arrow right
+
+LF = $7c
+CR = $7f
+
 FA = $ba
 FNADR = $bb
 
@@ -30,9 +42,19 @@ ILOAD = $0330
 screenRAM = $0400
 charset = $0800
 tileset = $0c00
+bmpLinePtrLb = $1200
+bmpLinePtrHb = $12c0
+bmpColOffLb = $15b0
+bmpColOffHb = $15d8
 bitmapRAM = $2000
 bitmap2RAM = $4000
 hello = $8000
+roster = $b000
+
+race = $824b
+
+printAtPos = $848a
+print = $848e
 
 loadFile = $c480
 saveFile = $c483

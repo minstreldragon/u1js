@@ -153,10 +153,11 @@ IOBASE = $fff3
         * = $6800
 
 l6800   jmp l6823
+
 l6803   jsr _disableSprites
-l6806   lda #$40
+l6806   lda #>bitmap2RAM
         sta $61
-        lda #$00
+        lda #<bitmap2RAM
         sta $60
         tay
         ldx #$24
@@ -167,7 +168,7 @@ l6816   inc $61
         dex
         bne l6811
 l681b   ldx #$0d
-        jsr $c480               ; load "MI",$7400
+        jsr loadFile            ; load "MI",$7400
 l6820   jmp $7400
 
 
@@ -229,38 +230,39 @@ l687f   inc l6879
 l6882   rts
 
 
-l6883   lda #$00
-        sta $1200
-        lda #$20
-        sta $12c0
+l6883   lda #<bitmapRAM         ; set up screen pointer table
+        sta bmpLinePtrLb
+        lda #>bitmapRAM
+        sta bmpLinePtrHb
         ldx #$00
-l688f   lda $1200,x
+l688f   lda bmpLinePtrLb,x
         clc
         adc #$01
         inx
-        sta $1200,x
+        sta bmpLinePtrLb,x
         and #$07
         bne l68bb
 l689d   dex
-        lda $12c0,x
+        lda bmpLinePtrHb,x
         clc
-        adc #$01
+        adc #>320
         inx
-        sta $12c0,x
-        lda $1200,x
+        sta bmpLinePtrHb,x
+        lda bmpLinePtrLb,x
         and #$f0
         clc
-        adc #$40
-        sta $1200,x
+        adc #<320
+        sta bmpLinePtrLb,x
         bcc l68c3
-l68b5   inc $12c0,x
+l68b5   inc bmpLinePtrHb,x
         jmp l68c3
 l68bb   dex
-        lda $12c0,x
+        lda bmpLinePtrHb,x
         inx
-        sta $12c0,x
-l68c3   cpx #$bf
-        bne l688f
+        sta bmpLinePtrHb,x
+l68c3   cpx #191                ; last visible line on screen?
+        bne l688f               ; no ->
+
 l68c7   lda #$38
         sta $5e
         lda #$01
@@ -469,11 +471,11 @@ l6a57   lda #<_bmpOriginLogo
         ldx #$38
 _drawOriginLogoL1
         ldy #$13
-        lda $1200,x
+        lda bmpLinePtrLb,x
         clc
         adc $15b0,y
         sta $60
-        lda $12c0,x
+        lda bmpLinePtrHb,x
         adc $15d8,y
         adc #$20
         sta $61
@@ -501,11 +503,11 @@ _drawOriginLogoJ1
 _drawUltimaLogo
 l6a96   ldx #$30
         ldy #$0b
-        lda $1200,x
+        lda bmpLinePtrLb,x
         clc
         adc $15b0,y
         sta $62
-        lda $12c0,x
+        lda bmpLinePtrHb,x
         adc $15d8,y
         adc #$20
         sta $63
@@ -1058,11 +1060,11 @@ l6f17   sta $5e
         asl
         tax
         ldy $32
-        lda $1200,x
+        lda bmpLinePtrLb,x
         clc
         adc $15b0,y
         sta l6f51
-        lda $12c0,x
+        lda bmpLinePtrHb,x
         adc $15d8,y
         adc #$20
         sta l6f52
@@ -1097,11 +1099,11 @@ l6f57   lda #$06
         asl
         tax
         ldy #$0b
-        lda $1200,x
+        lda bmpLinePtrLb,x
         clc
 l6f63   adc $15b0,y
         sta $60
-        lda $12c0,x
+        lda bmpLinePtrHb,x
         adc $15d8,y
         adc #$20
         sta $61
