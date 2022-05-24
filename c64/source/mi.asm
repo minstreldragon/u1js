@@ -347,6 +347,8 @@ _strTableRace
         .aasc "l swor",$e4
         .aasc "phazo",$f2
         .aasc "blaste",$f2
+_strTableAttributes
+l7842
         .aasc "Hit point",$f3
         .aasc "Strengt",$e8
         .aasc "Agilit",$f9
@@ -1272,7 +1274,7 @@ l83cd   and #$0f
         bcc l83d7
 l83d5   adc #$06
 l83d7   jsr $1667
-l83da   inc $32
+l83da   inc zpCursorCol
 l83dc   rts
 l83dd   and #$7f
         cmp #$7c
@@ -1282,17 +1284,17 @@ l83e5   cmp #$7e
         beq l83f3
 l83e9   cmp #$7d
         bne l83dc
-l83ed   lda $32
+l83ed   lda zpCursorCol
         cmp #$02
         bcc l83f6
 l83f3   jsr l83fe
 l83f6   lda #$01
-        sta $32
+        sta zpCursorCol
         rts
 
 l83fb   jsr $164f
-l83fe   inc $33
-        lda $33
+l83fe   inc zpCursorRow
+        lda zpCursorRow
         cmp $31
         bcc l8411
 l8406   tya
@@ -1305,7 +1307,7 @@ l840d   pla
         pla
         tay
 l8411   lda #$00
-        sta $32
+        sta zpCursorCol
         rts
 
 l8416   inc $30
@@ -1314,8 +1316,9 @@ l8416   inc $30
         dec $2f
         dec $2f
         lda $30
-        sta $33
+        sta zpCursorRow
         bne l8411
+
 l8426   sec
         ror l81ad
         bit !$00a2
@@ -1366,11 +1369,13 @@ l847b   lsr l81ad
 
 l847f   jsr l83b8
 l8482   clc
-        adc $32
-        sta $32
+        adc zpCursorCol
+        sta zpCursorCol
         jmp l8455
-l848a   stx $32
-        sty $33
+
+_printAtPos
+l848a   stx zpCursorCol
+        sty zpCursorRow
 
 _print
 l848e   pla
@@ -1385,8 +1390,8 @@ l849f   jsr l83dd
 l84a2   jmp l8496
 l84a5   jsr l83ac
 l84a8   clc
-        adc $32
-        sta $32
+        adc zpCursorCol
+        sta zpCursorCol
         jmp l8496
 l84b0   lda l83b6
         pha
@@ -1408,20 +1413,20 @@ l84ce   ldx #$26
         jsr l84b9
 l84d5   lda #$12
         jsr $1667
-l84da   inc $33
+l84da   inc zpCursorRow
         jsr l8411
 l84df   lda #$0a
         jsr $1667
 l84e4   lda #$27
-        sta $32
+        sta zpCursorCol
         lda #$08
         jsr $1667
 l84ed   jsr $1673
-l84f0   lda $33
+l84f0   lda zpCursorRow
         eor #$12
         bne l84da
-l84f6   sta $32
-        inc $33
+l84f6   sta zpCursorCol
+        inc zpCursorRow
         lda #$04
         jsr l83d7
 l84ff   ldx #$26
@@ -1430,13 +1435,13 @@ l84ff   ldx #$26
 l8506   lda #$04
         jsr $1667
 l850b   lda #$1e
-        sta $32
+        sta zpCursorCol
         lda #$02
         jsr $1667
 l8514   lda #$0c
-l8516   inc $33
+l8516   inc zpCursorRow
         jsr $1667
-l851b   ldx $33
+l851b   ldx zpCursorRow
         cpx #$17
         bcc l8516
 l8521   rts
@@ -1688,21 +1693,21 @@ l8717   ldx l81ee
         .word _strTableSpell
         rts
 
-l8720   lda $33
+l8720   lda zpCursorRow
         asl
         asl
         asl
         tax
-l8726   ldy $32
+l8726   ldy zpCursorCol
         beq l874d
 l872a   dey
-        lda $1200,x
+        lda bmpLinePtrLb,x
         clc
-        adc $15b0,y
+        adc bmpColOffLb,y
         sta $36
-        lda $12c0,x
+        lda bmpLinePtrHb,x
         eor $5c
-        adc $15d8,y
+        adc bmpColOffHb,y
         sta $37
         ldy #$07
         lda #$00
@@ -1710,7 +1715,7 @@ l8742   ora ($36),y
         bne l874d
 l8746   dey
         bpl l8742
-l8749   dec $32
+l8749   dec zpCursorCol
         bne l8726
 l874d   rts
 
@@ -1720,6 +1725,7 @@ l874e   jsr _print
 
 l8766   lda #$08
         bne l8774
+
 l876a   jsr l8720
 l876d   lda #$3f
         jsr $1667
@@ -1769,7 +1775,7 @@ l87c9   lda $5c
         rts
 l87d0   pha
         lda #$07
-        sta $32
+        sta zpCursorCol
         pla
         ldx #$03
 l87d8   cmp l87f5,x
@@ -1788,7 +1794,7 @@ l87e0   txa
         .byt $2e
 l87ef   dey
         jsr $164f
-l87f3   inc $32
+l87f3   inc zpCursorCol
 l87f5   rts
         l87f9 = * + 3
         l87fa = * + 4
@@ -1879,21 +1885,21 @@ l88a5   stx $43
         lda #$14
         sbc $43
         lsr
-        sta $33
+        sta zpCursorRow
 l88af   lda #$61
         sta l88bf
         ldy #$00
 l88b6   tya
         pha
         lda #$0d
-        sta $32
+        sta zpCursorCol
         jsr _print
 l88bf; Instruction opcode accessed.
         adc ($29,x)
         jsr $6800
 l88c4   jsr l8902
 l88c7   tay
-        inc $33
+        inc zpCursorRow
 l88ca   cpy l890b
         bcs l88d9
 l88cf   inc l88bf
@@ -1970,7 +1976,7 @@ l895a   lda $3d
         clc
         adc #$01
         jsr l8582
-l8966   inc $32
+l8966   inc zpCursorCol
         lda l822c               ; gender
         beq l8973
         jsr _print
@@ -1980,14 +1986,14 @@ l8973   jsr _print
 l897c   ldx l824b               ; race
         jsr _printTableString
         .word _strTableRace
-l8984   inc $32
+l8984   inc zpCursorCol
 
         ldx l824d               ; class
         jsr _printTableString
         .word _strTableClass
 
         jsr l8b10
-l8991   dec $33
+l8991   dec zpCursorRow
         ldx #$00
         stx l81c4
 l8998   stx $46
@@ -2133,8 +2139,8 @@ l8ad3   jsr l8b56
 l8ad6   jsr l84c6
 l8ad9   jmp l8701
 l8adc   ldx #$00
-        stx $32
-        ldy $33
+        stx zpCursorCol
+        ldy zpCursorRow
         iny
         cpy #$12
         bcc l8af5
@@ -2145,7 +2151,7 @@ l8ae7   ldy $30
         cmp #$26
         bcs l8af8
 l8af3   sta $2e
-l8af5   sty $33
+l8af5   sty zpCursorRow
 l8af7   rts
 l8af8   ldx #$0d
         ldy #$12
@@ -2155,7 +2161,7 @@ l8aff   adc $726f
         jsr l8b56
 l8b07   lda #$00
         sta $5d
-        inc $32
+        inc zpCursorCol
         jsr l870c
 l8b10   lda #$05
         sta $30
@@ -2173,7 +2179,7 @@ l8b25   pha
         pha
         jsr l8adc
 l8b2b   lda #$03
-        sta $32
+        sta zpCursorCol
         ldx #$09
         lda #$2e
         sta l85be
@@ -2221,9 +2227,9 @@ l8b8c   cmp #$1b
 l8b90   cmp #$20
         bne l8b85
 l8b94   jsr $164c
-l8b97   inc $32
+l8b97   inc zpCursorCol
 l8b99; Instruction opcode accessed.
-        dec $33
+        dec zpCursorRow
         jsr l8777
 l8b9e   jmp l870c
 l8ba1   ldx #$00
@@ -2315,25 +2321,26 @@ l8c50   lda l81c3
         jsr $1664
 l8c58   jmp l8777
 l8c5b   jsr l8bce
+
 l8c5e   lda #$01
 
 l8c60   ldx #$ff
-        txs
+        txs                     ; reset stack
         cmp #$07
-        bcs l8c6a
+        bcs l8c6a               ; first time: load and start Character Generator
 l8c67   tax
         bne l8c74
 l8c6a   ldx #$04
-        jsr loadFile
-l8c6f   bcs l8c6a
-l8c71   jmp l8c9e
+        jsr loadFile            ; load "GE",$8c9e
+        bcs l8c6a
+        jmp l8c9e               ; jump into "GE"
 
-l8c74   clc
-        adc #$04
+l8c74   clc                     ; second time: start game
+        adc #$04                ; 1+4 = 5
         sta l8c97
 l8c7a   jsr l8777
 l8c7d   ldx l8c97
-        jsr loadFile
+        jsr loadFile            ; copy $e000 to $8c9e (file OU)
 l8c83   jsr l8175
 l8c86   bcs l8c7a
 l8c88   jsr l818f
@@ -2347,14 +2354,14 @@ l8c98   jsr $163d
         .byt $4c,$9b,$8c
 
 l8c9e   sei
-        ldx #$ff
+        ldx #$ff                ; reset stack
         txs
         ldx #$0b
-        jsr loadFile
-l8ca7   ldx #$0f
-        jsr loadFile
-l8cac   jsr $1655
-l8caf   jsr $163a
+        jsr loadFile            ; load "ST",$0c00
+        ldx #$0f
+        jsr loadFile            ; load "PR",$12c0
+        jsr $1655
+        jsr $163a
 l8cb2   lda #$60
         sta $5c
         sta $5d

@@ -1,164 +1,7 @@
-KEY_NORTH = $40                 ; '@' (North)
-KEY_SOUTH = $2f                 ; '/' (South)
-KEY_EAST = $3b                  ; ';' (East)
-KEY_WEST = $3a                  ; ':' (West)
+#include "archdep.h"
 
+playerSlot = $c4f8
 
-bmpLinePtrLb = $1200
-bmpLinePtrHb = $12c0
-printAtPos = $848a
-print = $848e
-loadFile = $c480
-saveFile = $c483
-loadSpecial = $c486
-VicSprite0XPos = $d000
-VicSprite0YPos = $d001
-VicSprite1XPos = $d002
-VicSprite1YPos = $d003
-VicSprite2XPos = $d004
-VicSprite2YPos = $d005
-VicSprite3XPos = $d006
-VicSprite3YPos = $d007
-VicSprite4XPos = $d008
-VicSprite4YPos = $d009
-VicSprite5XPos = $d00a
-VicSprite5YPos = $d00b
-VicSprite6XPos = $d00c
-VicSprite6YPos = $d00d
-VicSprite7XPos = $d00e
-VicSprite7YPos = $d00f
-VicSpritesXPosMsb = $d010
-VicScreenCtrlReg1 = $d011
-VicRasterValue = $d012
-VicLightPenLatchX = $d013
-VicLightPenLatchY = $d014
-VicSpriteEnable = $d015
-VicScreenCtrlReg2 = $d016
-VicSpriteExpandY = $d017
-VicMemCtrlReg = $d018
-VicIrqStatusReg = $d019
-VicIrqCtrlReg = $d01a
-VicSpritePriority = $d01b
-VicSpriteMulticolor = $d01c
-VicSpriteExpandX = $d01d
-VicSpriteToSpriteCol = $d01e
-VicSpriteToBckgndCol = $d01f
-VicBorderColor = $d020
-VicBackgroundColor0 = $d021
-VicBackgroundColor1 = $d022
-VicBackgroundColor2 = $d023
-VicBackgroundColor3 = $d024
-VicSpriteMultiColor0 = $d025
-VicSpriteMultiColor1 = $d026
-VicSprite0Color = $d027
-VicSprite1Color = $d028
-VicSprite2Color = $d029
-VicSprite3Color = $d02a
-VicSprite4Color = $d02b
-VicSprite5Color = $d02c
-VicSprite6Color = $d02d
-VicSprite7Color = $d02e
-SidVoice1FreqLb = $d400
-SidVoice1FreqHb = $d401
-SidVoice1PulseWidthLb = $d402
-SidVoice1PulseWidthHb = $d403
-SidVoice1CtrlReg = $d404
-SidVoice1AttackDecay = $d405
-SidVoice1SustainRelease = $d406
-SidVoice2FreqLb = $d407
-SidVoice2FreqHb = $d408
-SidVoice2PulseWidthLb = $d409
-SidVoice2PulseWidthHb = $d40a
-SidVoice2CtrlReg = $d40b
-SidVoice2AttackDecay = $d40c
-SidVoice2SustainRelease = $d40d
-SidVoice3FreqLb = $d40e
-SidVoice3FreqHb = $d40f
-SidVoice3PulseWidthLb = $d410
-SidVoice3PulseWidthHb = $d411
-SidVoice3CtrlReg = $d412
-SidVoice3AttackDecay = $d413
-SidVoice3SustainRelease = $d414
-SidFilterCutoffLb = $d415
-SidFilterCutoffHb = $d416
-SidFilterCtrlReg = $d417
-SidFilterModeVolume = $d418
-SidAdPaddle1 = $d419
-SidAdPaddle2 = $d41a
-SidVoice3Output = $d41b
-SidVoice3AdsrOutput = $d41c
-ColorRAM = $d800
-Cia1PortA = $dc00
-Cia1PortB = $dc01
-Cia1PortADataDir = $dc02
-Cia1PortBDataDir = $dc03
-Cia1TimerALb = $dc04
-Cia1TimerAHb = $dc05
-Cia1TimerBLb = $dc06
-Cia1TimerBHb = $dc07
-Cia1TimeOfDayDseconds = $dc08
-Cia1TimeOfDaySeconds = $dc09
-Cia1TimeOfDayMinutes = $dc0a
-Cia1TimeOfDayHours = $dc0b
-Cia1SerialShiftReg = $dc0c
-Cia1IrqCtrlReg = $dc0d
-Cia1TimerACtrlReg = $dc0e
-Cia1TimerBCtrlReg = $dc0f
-Cia2PortA = $dd00
-Cia2PortB = $dd01
-Cia2PortADataDir = $dd02
-Cia2PortBDataDir = $dd03
-Cia2TimerALb = $dd04
-Cia2TimerAHb = $dd05
-Cia2TimerBLb = $dd06
-Cia2TimerBHb = $dd07
-Cia2TimeOfDayDseconds = $dd08
-Cia2TimeOfDaySeconds = $dd09
-Cia2TimeOfDayMinutes = $dd0a
-Cia2TimeOfDayHours = $dd0b
-Cia2SerialShiftReg = $dd0c
-Cia2IrqCtrlReg = $dd0d
-Cia2TimerACtrlReg = $dd0e
-Cia2TimerBCtrlReg = $dd0f
-CINT = $ff81
-IOINIT = $ff84
-RAMTAS = $ff87
-RESTOR = $ff8a
-VECTOR = $ff8d
-SETMSG = $ff90
-SECOND = $ff93
-TKSA = $ff96
-MEMTOP = $ff99
-MEMBOT = $ff9c
-SCNKEY = $ff9f
-SETTMO = $ffa2
-ACPTR = $ffa5
-CIOUT = $ffa8
-UNTLK = $ffab
-UNLSN = $ffae
-LISTEN = $ffb1
-TALK = $ffb4
-READST = $ffb7
-SETLFS = $ffba
-SETNAM = $ffbd
-OPEN = $ffc0
-CLOSE = $ffc3
-CHKIN = $ffc6
-CHKOUT = $ffc9
-CLRCHN = $ffcc
-CHRIN = $ffcf
-CHROUT = $ffd2
-LOAD = $ffd5
-SAVE = $ffd8
-SETTIM = $ffdb
-RDTIM = $ffde
-STOP = $ffe1
-GETIN = $ffe4
-CLALL = $ffe7
-UDTIM = $ffea
-SCREEN = $ffed
-PLOT = $fff0
-IOBASE = $fff3
         .word $8c9e
         * = $8c9e
 
@@ -179,7 +22,7 @@ l8ca3   jsr $1655               ; home?
         .aasc $0e,"from darkest",LF,CR
         .aasc $0e,"dungeons, to",LF,CR
         .aasc $0d,"deepest space!",LF,LF,LF,CR
-        .aasc $07,"a) Generate new character,"LF,CR
+        .aasc $07,"a) Generate new character",LF,CR
         .aasc $07,"b) Continue previous game",LF,$7c,CR
         .aasc $0d,"Thy choice: ",$00
 
@@ -195,29 +38,29 @@ _mainMenuL2
 _mainMenuJ1
         cmp #$42                ; 'B'
         bne _mainMenuL2
-l8d5a   lda #$62
+l8d5a   lda #$62                ; continue previous game
         jsr $1667
 l8d5f   lda roster
         ora roster+$10
         ora roster+$20
         ora roster+$30
         beq l8da9
-l8d6d   jsr l9520
-l8d70   lda $c4f8
+        jsr _selectPlayer
+        lda playerSlot
         clc
         adc #$12
         tax
-        jsr loadFile
+        jsr loadFile            ; load "P0" / "P1" / "P2" / "P3"
 l8d7a   bcs l8d8a
 l8d7c   lda $81e2
-        cmp #$ca
+        cmp #$ca                ; copy protection?
         bne l8d8a
 l8d83   lda $81e3
         cmp #$01
         beq l8ddd
 l8d8a   jsr $870c
-l8d8d   ldx #$02
-        ldy #$14
+l8d8d   ldx #2
+        ldy #20
         jsr printAtPos
         .aasc "Disk error.",$00
 
@@ -241,7 +84,7 @@ l8de5   l8de7 = * + 2
         lda l95f7,y
         l8dea = * + 2
 ; Instruction parameter accessed.
-        sta VicSprite0XPos,y
+        sta VicSprite0XPos,y    ; copy to $d000-dcff
         iny
         bne l8de5
 l8dee   inc l8de7
@@ -290,19 +133,20 @@ l8e31   inx                     ; inc character slot
         .aasc " space bar to return to main menu.",LF,LF,CR
         .aasc $0d,"Thy choice: ",$00
 
+l8ebb
         jsr $1676               ; get key
         cmp #$20                ; space bar?
         bne l8ec5
         jmp _mainMenuL1
 
-l8ec5   cmp #$31
+l8ec5   cmp #$31                ; '1'
         bcc l8ebb
-l8ec9   cmp #$35
+l8ec9   cmp #$35                ; '5'
         bcs l8ebb
 l8ecd   sec
-        sbc #$31
+        sbc #$31                ; make 0-based index
         tax
-        stx $c4f8
+        stx playerSlot
         asl
         asl
         asl
@@ -312,8 +156,8 @@ l8ecd   sec
         sta roster,x
         ldx #$01
         jsr saveFile            ; "RO"
-l8ee3   ldx $c4f8
-l8ee6   stx $c4f8
+l8ee3   ldx playerSlot
+l8ee6   stx playerSlot
         jsr $1655
 l8eec   l8eed = * + 1
         jsr l94d7
@@ -323,7 +167,6 @@ l8eef   ldy #0
         .aasc $0e," Character Generation ",$18,$7e,$00
 
         jsr l94c0
-        cpy #$94
         lda #$e4
         sta l8f2b
         lda #$81
@@ -439,57 +282,57 @@ l9085   ldy #$12
 
 _selectRaceL1
 l90ce
-        jsr l1676
+        jsr $1676               ; get key
         cmp #$41                ; 'A'?
         bcc _selectRaceL1
         cmp #$45                ; 'E'?
         bcs _selectRaceL1
         sec
         sbc #$40                ; convert to 0-based index
-        sta _race
+        sta statsRace
 
         ldy #12
         ldx #13
         jsr printAtPos
         .aasc "Race  ",$00
 
-        ldx _race
+        ldx statsRace
         jsr $8426               ; print from string table (?)
         .word $7763             ; _strTableRace
         jsr l94c0
-        lda _race
+        lda statsRace
         cmp #$01                ; human?
         bne _selectRaceJ1
-        lda $8247
+        lda statsIntelligence
         clc
         adc #$05                ; add bonus
-        sta $8247
+        sta statsIntelligence
         bne l913a
 _selectRaceJ1
         cmp #$02                ; elf?
         bne _selectRaceJ2
-        lda $823f
+        lda statsAgility
         clc
         adc #$05                ; add bonus
-        sta $823f
+        sta statsAgility
         bne l913a
 _selectRaceJ2
 l9119   cmp #$03                ; dwarf?
         bne _selectRaceJ3
-        lda $823d
+        lda statsStrength
         clc
         adc #$05                ; add bonus
-        sta $823d
+        sta statsStrength
         bne l913a
 _selectRaceJ3
-        lda $8245               ; bobbit
+        lda statsWisdom         ; bobbit
         clc
         adc #$0a
-        sta $8245
-        lda $823d
+        sta statsWisdom
+        lda statsStrength
         sec
         sbc #$05                ; add bonus
-        sta $823d
+        sta statsStrength
 
 l913a   jsr l9359
 l913d   ldy #18
@@ -503,109 +346,89 @@ l913d   ldy #18
         jsr printAtPos
         .aasc "Select thy sex: ",$00
 
-        jsr l1676
-        cmp #$41
-        bcc l9170
-l9177   cmp #$43
-        bcs l9170
-l917b   sec
-        sbc #$41
-        sta $822c
-        ldy #$0d
-        ldx #$0e
+_selectSexL1
+        jsr $1676               ; get key
+        cmp #$41                ; 'A'
+        bcc _selectSexL1
+        cmp #$43                ; 'C'
+        bcs _selectSexL1
+        sec
+        sbc #$41                ; make 0-based value
+        sta statsGender
+        ldy #13
+        ldx #14
         jsr printAtPos
-        .asc ""
-        .byt $53
-l9189   adc $78
-        jsr $0020
-l918e   ldx $822c
-        jsr $8426
-        .asc "k"
-        .byt $93
-l9196   jsr l94c0
-l9199   ldy #$12
-        ldx #$0b
+        .aasc "Sex  ",$00
+        ldx statsGender
+        jsr $8426               ; print from string table (?)
+        .word _strTableGender
+
+        jsr l94c0
+        ldy #18
+        ldx #11
         jsr printAtPos
-l91a0   adc ($29,x)
-        jsr $6946
-        .asc ""
-        .byt $67,$68,$74,$65,$72,$7c,$7f,$0b,$62,$29
-l91af   jsr $6c43
-        .asc ""
-        .byt $65,$72,$69,$63,$7c,$7f,$0b,$63,$29
-l91bb   jsr $6957
-        .asc ""
-        .byt $7a,$61,$72,$64,$7c,$7f,$0b,$64,$29
-l91c7   jsr $6854
-l91ca   adc #$65
-        ror $00
-        ldy #$10
-        ldx #$02
+        .aasc "a) Fighter",LF,CR
+        .aasc $0b,"b) Cleric",LF,CR
+        .aasc $0b,"c) Wizard",LF,CR
+        .aasc $0b,"d) Thief",$00
+
+        ldy #16
+        ldx #2
         jsr printAtPos
-        .asc ""
-        .byt $53,$65
-l91d7   jmp ($6365)
-        .asc ""
-        .byt $74
-l91db   jsr $6874
-l91de   adc $6320,y
-        jmp ($7361)
-        .asc ""
-        .byt $73,$3a
-l91e6   l91e8 = * + 2
-; Instruction parameter jumped to.
-        jsr $2000
-l91e9   ror $16,x
-        cmp #$41
-        bcc l91e8
-l91ef   cmp #$45
-        bcs l91e8
-l91f3   sec
-        sbc #$40
-        sta $824d
-        ldy #$0e
-        ldx #$0c
+        .aasc "Select thy class: ",$00
+
+_selectClassL1
+l91e8   jsr $1676               ; get key
+        cmp #$41                ; 'A'
+        bcc _selectClassL1
+        cmp #$45                ; 'E'
+        bcs _selectClassL1
+        sec
+        sbc #$40                ; make 0-based value
+        sta statsClass
+        ldy #14
+        ldx #12
         jsr printAtPos
-        .asc ""
-        .byt $43
-l9201   jmp ($7361)
-        .asc ""
-        .byt $73
-l9205   jsr $0020
-l9208   ldx $824d
-        jsr $8426
-l920e   ora ($79),y
-        lda $824d
-        cmp #$01
-        bne l922b
-l9217   lda $823d
+        .aasc "Class  ",$00
+
+l9208   ldx statsClass
+        jsr $8426               ; print from string table (?)
+        .word strTableClass
+        lda statsClass
+        cmp #$01                ; Fighter?
+        bne _selectClassJ1
+        lda statsStrength
+        clc
+        adc #10                 ; add class bonus
+        sta statsStrength
+        lda statsAgility
         clc
         adc #$0a
-        sta $823d
-        lda $823f
+        sta statsAgility
+        bne _selectClassJ4
+_selectClassJ1
+        cmp #$02                ; Cleric?
+        bne _selectClassJ2
+        lda statsWisdom
         clc
-        adc #$0a
-        sta $823f
-        bne l9252
-l922b   cmp #$02
-        bne l923a
-l922f   lda $8245
+        adc #10                 ; add class bonus
+        sta statsWisdom
+        bne _selectClassJ4
+_selectClassJ2
+        cmp #$03                ; Wizard?
+        bne _selectClassJ3
+        lda statsIntelligence
         clc
-        adc #$0a
-        sta $8245
-        bne l9252
-l923a   cmp #$03
-        bne l9249
-l923e   lda $8247
+        adc #10                 ; add class bonus
+        sta statsIntelligence
+        bne _selectClassJ4
+_selectClassJ3
+        lda statsAgility        ; Thief
         clc
-        adc #$0a
-        sta $8247
-        bne l9252
-l9249   lda $823f
-        clc
-        adc #$0a
-        sta $823f
-l9252   jsr l9359
+        adc #10                 ; add class bonus
+        sta statsAgility
+_selectClassJ4
+        jsr l9359
 l9255   jsr $1670
 l9258   sta $8264
         jsr $1670
@@ -613,124 +436,119 @@ l925e   sta $8265
         ldy #$10
         ldx #$02
         jsr printAtPos
-        .asc ""
-        .byt $45,$6e,$74
-l926b   adc $72
-        jsr $6874
-l9270   adc $6e20,y
-        adc ($6d,x)
-        adc $3a
-        jsr $2000
-l927a   cpy #$94
+        .aasc "Enter thy name: ",$00
+
+        jsr $94c0
         lda #$00
-        sta l93ea
+        sta l93ea               ; index name character
+_enterNameL1
 l9281   jsr $1676               ; get key
-l9284   ldx l93ea
-        cmp #$0d
-        bne l92a1
-l928b   txa
-        beq l9281
-l928e   dec $33
+        ldx l93ea
+        cmp #KEY_RETURN         ; return key?
+        bne _enterNameJ1
+        txa                     ; index name character
+        beq _enterNameL1        ; name empty ->
+l928e   dec zpCursorRow
         jsr l94c0
-l9293   lda #$0b
-        sta $32
-        lda #$03
-        sta $33
+        lda #11
+        sta zpCursorCol
+        lda #3
+        sta zpCursorRow
         jsr $8ba1
-l929e   jmp l92f4
-l92a1   cmp #$3a
-        beq l92a9
-l92a5   cmp #$14
-        bne l92b9
-l92a9   dex
-        bmi l9281
-l92ac   stx l93ea
+        jmp l92f4
+_enterNameJ1
+l92a1   cmp #KEY_WEST           ; cursor left (backspace)
+        beq _enterNameBs
+        cmp #KEY_BACKSPACE
+        bne _enterNameJ2
+_enterNameBs
+        dex
+        bmi _enterNameL1
+        stx l93ea
         lda #$00
-        sta $822d,x
-        dec $32
-        jmp l9281
-l92b9   cpx #$00
-        bne l92d1
-l92bd   cmp #$41
-        bcc l9281
-l92c1   cmp #$5b
-        bcs l9281
-l92c5   sta $822d,x
+        sta statsName,x
+        dec zpCursorCol
+        jmp _enterNameL1
+_enterNameJ2
+        cpx #$00
+        bne _enterNameJ4
+        cmp #$41                ; 'A'
+        bcc _enterNameL1
+        cmp #$5b                ; 'Z'+1
+        bcs _enterNameL1
+_enterNameJ3
+l92c5   sta statsName,x         ; store character in name
         inc l93ea
         jsr $83d7
-l92ce   jmp l9281
+        jmp _enterNameL1
+
+_enterNameJ4
 l92d1   cpx #$0d
-        bcs l9281
-l92d5   cmp #$20
-        bcc l9281
-l92d9   cmp #$40
-        beq l9281
-l92dd   cmp #$2f
-        beq l9281
-l92e1   cmp #$41
-        bcc l92c5
-l92e5   cmp #$5b
-        bcs l92c5
-l92e9   ldy $822c,x
+        bcs _enterNameL1
+        cmp #$20
+        bcc _enterNameL1
+        cmp #$40
+        beq _enterNameL1
+        cmp #$2f
+        beq _enterNameL1
+        cmp #$41                ; 'A'
+        bcc _enterNameJ3
+        cmp #$5b                ; 'Z'+1
+        bcs _enterNameJ3
+        ldy statsGender,x
         cpy #$20
-        beq l92c5
-l92f0   ora #$20
-        bne l92c5
+        beq _enterNameJ3
+        ora #$20
+        bne _enterNameJ3
+
 l92f4   jsr l947f
-        .asc ""
-        .byt $7e
-l92f8   jsr $6153
-l92fb   ror $65,x
-        jsr $6874
-l9300   adc #$73
-        jsr $6863
-        .asc ""
-        .byt $61,$72,$61,$63,$74,$65,$72,$3f
-l930d   jsr $5928
-l9310   and $294e
-        jsr $2000
-l9316   cpy #$94
+        .aasc $7e," Save this character? (Y-N) ",$00
+        jsr l94c0
         jsr $1676               ; get key
-l931b   jsr $1667
-l931e   cmp #$59
-        beq l9329
-l9322   cmp #$4e
+        jsr $1667
+        cmp #$59                ; 'Y'
+        beq _saveCharacter
+        cmp #$4e                ; 'N'
         bne l92f4
-l9326   jmp _generateCharacter
-l9329   lda $c4f8
+        jmp _generateCharacter
+
+_saveCharacter
+l9329   lda playerSlot
         asl
         asl
         asl
         asl
         tax
         lda #$ff
-        sta roster,x
+        sta roster,x            ; mark roster entry as used
         ldy #$00
         inx
         inx
         inx
-l933b   lda $822d,y
-        sta roster,x
+_saveCharacterL1
+        lda statsName,y         ; copy player name
+        sta roster,x            ; to roster
         inx
         iny
         cpy #$0d
-        bcc l933b
-l9347   ldx #$01
-        jsr saveFile            ; "RO"
-l934c   lda $c4f8
+        bcc _saveCharacterL1
+        ldx #$01
+        jsr saveFile            ; save "RO"
+
+        lda playerSlot
         clc
         adc #$02
-        tax
-        jsr saveFile
-l9356   jmp _mainMenuL1
+        tax                     ; filename P0/P1/P2/P3
+        jsr saveFile            ; save "P<x>"
+        jmp _mainMenuL1
 
 l9359   lda #$00
         sta $85be
         sta $81c4
         ldx #$05
-        stx $32
+        stx zpCursorCol
         ldy #$03
-        sty $33
+        sty zpCursorRow
         lda _attributeId
         beq l9393
         jsr print
@@ -742,24 +560,22 @@ l9393   dec $2f
 l9398   inc $2f
         jsr $83f3
 l939d   inc $81c4
-        inc $33
-        ldx #$0a
-        stx $32
+        inc zpCursorRow
+        ldx #10
+        stx zpCursorCol
         lda #$20
         ldx $81c4
         cpx _attributeId
         bne l93b2
 l93b0   lda #$0e
 l93b2   jsr $83d7
-l93b5   jsr $8426
-        .asc ""
-        .byt $42
-l93b9   sei
-        lda #$2e
+        jsr $8426               ; print from string table (?)
+        .word strTableAttributes
+        lda #$2e                ; '.'
         sta $85be
 l93bf   jsr $83d7
-l93c2   ldx $32
-        cpx #$1a
+        ldx zpCursorCol
+        cpx #26
         bcc l93bf
 l93c8   lda $81c4
         asl
@@ -785,11 +601,13 @@ l93e9
         .byt $00
 l93ea
         .byt $00
-        .byt $6d,$61
-l93ed   jmp ($66e5)
-        .asc ""
-        .byt $65,$6d,$61
-l93f3   jmp ($cae5)
+
+_strTableGender
+l93eb
+        .aasc "mal",$e5
+        .aasc "femal",$e5
+
+        .byt $ca
         .byt $01,$00,$00,$ff,$ff,$27,$21,$00,$00,$00,$00,$00,$01,$01,$00,$01
         .byt $01,$00,$00,$00,$00,$01,$02,$00,$00,$00,$00,$00,$00,$00,$00,$00
         .byt $00,$00,$00,$00,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
@@ -807,12 +625,14 @@ l93f3   jmp ($cae5)
         .byt $ff
         .asc "o>"
         .byt $00,$00,$00,$00,$00,$00
+
 l947f   ldx #$02
-        stx $32
+        stx zpCursorCol
         ldy #$14
-        sty $33
+        sty zpCursorRow
         jsr l94c0
 l948a   jmp print
+
 l948d   ldx #$02
         ldy #$15
         jsr printAtPos
@@ -831,7 +651,7 @@ l94aa   adc $3a
 l94af   ror $16,x
         jsr $83f6
 l94b4   lda #$14
-        sta $33
+        sta zpCursorRow
         bne l94c0
 l94ba   jsr $1655
 l94bd   jsr l9519
@@ -840,8 +660,8 @@ l94c0   jsr $870c
 l94c3   dec $2f
 l94c5   jsr $164f
 l94c8   jsr $83f6
-l94cb   inc $33
-        ldy $33
+l94cb   inc zpCursorRow
+        ldy zpCursorRow
         iny
         cpy $31
         bcc l94c5
@@ -853,20 +673,20 @@ l94dc   ldx #$26
         jsr $84b9
 l94e3   lda #$12
         jsr $1667
-l94e8   inc $33
+l94e8   inc zpCursorRow
         jsr $8411
 l94ed   lda #$0a
         jsr $1667
 l94f2   lda #$27
-        sta $32
+        sta zpCursorCol
         lda #$08
         jsr $1667
 l94fb   jsr $1673
-l94fe   lda $33
+l94fe   lda zpCursorRow
         eor #$16
         bne l94e8
-l9504   sta $32
-        inc $33
+l9504   sta zpCursorCol
+        inc zpCursorRow
 l9508   lda #$14
         jsr $83d7
 l950d   ldx #$26
@@ -875,88 +695,62 @@ l950d   ldx #$26
 l9514   lda #$16
         jsr $1667
 l9519   ldx #$01
-        stx $32
-        stx $33
+        stx zpCursorCol
+        stx zpCursorRow
         rts
+
+
+_selectPlayer
 l9520   jsr l9598
-l9523   ldx #$05
-        ldy #$0e
+        ldx #5
+        ldy #14
         jsr printAtPos
-        .asc ""
-        .byt $53,$65
-l952c   jmp ($6365)
-        .asc ""
-        .byt $74
-l9530   jsr $2061
-        .asc ""
-        .byt $63,$68,$61,$72,$61,$63,$74
-l953a   adc $72
-        jsr $3128
-l953f   and $2934
-        jsr $726f
-        .asc ""
-        .byt $7e,$7f,$04,$73
-l9549   bvs l95ac
-        .asc ""
-        .byt $63,$65
-l954d   jsr $6162
-        .asc ""
-        .byt $72
-l9551   jsr $6f74
-l9554   jsr $6572
-        .asc ""
-        .byt $74,$75,$72,$6e
-l955b   jsr $6f74
-l955e   jsr $656d
-        .asc ""
-        .byt $6e,$75,$2e,$7c,$7c,$7f,$0d,$54,$68,$79
-l956b   jsr $6863
-        .asc ""
-        .byt $6f
-l956f   adc #$63
-        adc $3a
-        l9575 = * + 2
-; Instruction parameter jumped to.
-        jsr $2000
-l9576   ror $16,x
-        cmp #$20
-        bne l957f
-l957c   jmp _mainMenuL1
-l957f   cmp #$31
-        bcc l9575
-l9583   cmp #$35
-        bcs l9575
-l9587   sec
-        sbc #$31
-        sta $c4f8
+        .aasc "Select a character (1-4) or",$7e,CR
+        .aasc $04,"space bar to return to menu.",LF,LF,CR
+        .aasc $0d,"Thy choice: ",$00
+
+_selectPlayerL1
+        jsr $1676               ; get key
+        cmp #$20                ; space bar?
+        bne _selectPlayerJ1
+        jmp _mainMenuL1
+_selectPlayerJ1
+        cmp #$31                ; '1'
+        bcc _selectPlayerL1
+        cmp #$35                ; '5'
+        bcs _selectPlayerL1
+        sec
+        sbc #$31                ; make 0-based index
+        sta playerSlot
         asl
         asl
         asl
         asl
         tax
         lda roster,x
-        beq l9575
-l9597   rts
+        beq _selectPlayerL1
+        rts
+
 l9598   jsr $1661
 l959b   lda #$00
         sta l95f5
 l95a0   lda #$0d
-        sta $32
+        sta zpCursorCol
         lda l95f5
         clc
         adc #$08
-        sta $33
+        sta zpCursorRow
 l95ac   lda l95f5
         clc
         adc #$31
         jsr $1667
-l95b5   inc $32
+l95b5   inc zpCursorCol
         lda #$2e
         jsr $1667
-l95bc   inc $32
+l95bc   inc zpCursorCol
         lda #$20
         jsr $1667
-l95c3   inc $32
+l95c3   inc zpCursorCol
         lda #$0c
         sta l95f6
         lda l95f5
@@ -973,7 +767,7 @@ l95d7   inx
 l95da   lda roster,x
         beq l95ea
 l95df   jsr $1667
-l95e2   inc $32
+l95e2   inc zpCursorCol
         inx
         dec l95f6
         bpl l95da
