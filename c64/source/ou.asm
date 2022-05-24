@@ -129,6 +129,7 @@ l8dd7   dex
         bne l8dd2
 l8dda   tax
         rts
+
 l8ddc   ldy #$05
         lda #$50
         jmp $863a
@@ -229,35 +230,30 @@ l8e94   txa
         bne l8e67
 l8e97   sec
         rts
+
+_attack
 l8e99   jsr print
-        .asc ""
-        .byt $77
-l8e9d   adc #$74
-        pla
-        jsr $ae00
-        .asc "o"
-        .byt $81
-l8ea5   jsr $842d
-        .asc "l"
-        .byt $77
-l8eaa   ldx $81ef
+       .aasc "with ",$00
+        ldx $81ef
+        jsr $842d
+        .word strTableWeapons
+        ldx $81ef
         lda la131,x
         bne l8eb5
-l8eb2   jmp $876a
+        jmp $876a
 l8eb5   sta la145
         jsr l8df6
 l8ebb   bcc l8ec9
 l8ebd   rts
+
 l8ebe   jsr print
-        .asc ""
-        .byt $7e,$4d,$69,$73,$73
-l8ec6   and ($00,x)
+        .aasc $7e,"Miss!",$00
         rts
 l8ec9   lda #$06
         jsr $1685
-l8ece   jsr l8e3f
-l8ed1   bcs l8ebe
-l8ed3   lda #$5e
+        jsr l8e3f
+        bcs l8ebe
+        lda #$5e
         sta ($4c),y
         jsr $166a
 l8eda   jsr l9c77
@@ -271,8 +267,7 @@ l8edd   lda $830c,x
 l8eed   cmp $43
         bcc l8eff
 l8ef1   jsr print
-        .asc ""
-        .byt $7e,$4d,$69,$73,$73,$65,$64,$00
+        .aasc $7e,"Missed",$00
 l8efc   jmp l8fe7
 l8eff   lda $81ef
         asl
@@ -294,8 +289,7 @@ l8f0f   sta $81c1
 l8f22   bcc l8f51
 l8f24   sta $bd00,x
         jsr print
-        .asc ""
-        .byt $7e,$48,$69,$74,$00
+        .aasc $7e,"Hit",$00
 l8f2f   jsr l8fe7
 l8f32   lda zpCursorCol
         cmp #$15
@@ -647,6 +641,7 @@ l9291   lda #$36
         sta $01
         pla
         jmp $8c60
+
 l9299   jsr $8717
 l929c   ldx $81ee
         bne l92a4
@@ -831,6 +826,8 @@ l9438   inc la143
 l943c   lda #$ff
         rts
 l943f   jmp $876a
+
+_enter
 l9442   ldx $20
         ldy $21
         stx $81e8
@@ -841,11 +838,8 @@ l944f   cmp #$04
 l9453   cmp #$08
         bcs l943f
 l9457   jsr print
-        .asc ""
-        .byt $69
-l945b   ror $2e67
-        rol !$002e
-        jsr l9d82
+        .aasc "ing...",$00
+        jsr _informAndSearch
 l9464   lda la142
         cmp #$05
         bne l9479
@@ -1068,6 +1062,8 @@ l9661   bcs l965b
 l9663   jsr print
         .aasc " saved.",$00
 l966e   jmp $164f
+
+_ready
 l9671   jsr l8dd0
 l9674   jmp $87d0
 
@@ -1099,15 +1095,19 @@ l96d0   ldx $20
         ldy $21
         clc
         rts
+
 l96d6   jsr l96d0
 l96d9   dey
         bcc l96ec
+
 l96dc   jsr l96d0
 l96df   iny
         bcc l96ec
+
 l96e2   jsr l96d0
 l96e5   inx
         bcc l96ec
+
 l96e8   jsr l96d0
 l96eb   dex
 l96ec   jsr $83f6
@@ -1890,6 +1890,8 @@ l9d77   ldx $20
         jsr l9d50
 l9d7e   sta la142
         rts
+
+_informAndSearch
 l9d82   jsr $83ed
 l9d85   jsr l9d77
 l9d88   cmp #$03
@@ -1915,16 +1917,15 @@ l9daf   sta la142
         bcs l9dcb
 l9db6   tax
         jsr $842d
-        .asc ""
-        .byt $5b,$9e
+        .word _textTableSearch
 l9dbc   ldx la142
         dex
         bne l9dca
 l9dc2   ldx $81e4
         jsr $842d
-        .asc "Z"
-        .byt $7b
+        .word $7bda
 l9dca   rts
+
 l9dcb   cmp #$06
         bne l9ddf
 l9dcf   l9dd1 = * + 2
@@ -1970,19 +1971,33 @@ l9e22   ora #$08
         rts
 _commandTable
 l9e29   l9e2a = * + 1
-  .word l96d6,l96dc,l96e2,l96e8,l8ddc
-l9e33   sta $538e,y
-        bcc l9dd1
-        .byt $92,$6a,$87
-  .word l9442,l95ce
-        .asc ""
-        .byt $6a,$87,$6a,$87,$82,$9d,$6a,$87
-        .asc "9"
-        .byt $8b,$6a,$87
-  .word l964e,l9671
-        .asc ""
-        .byt $6a,$87,$6a,$87,$6a,$87,$6a,$87,$77,$96,$0c,$89
+        .word l96d6             ; north
+        .word l96dc             ; south
+        .word l96e2             ; east
+        .word l96e8             ; west
+        .word l8ddc             ; pass
+        .word $8e99             ; attack
+        .word $9053             ; board
+        .word $9299             ; cast
+        .word $876a             ; drop
+        .word $9442             ; enter
+        .word $95ce             ; fire
+        .word $876a             ; get
+        .word $876a             ; hyper jump
+        .word $9d82             ; inform & search
+        .word $876a             ; klimb
+        .word $8bb9             ; noise
+        .word $876a             ; open
+        .word $964e             ; quit (and save to disk)
+        .word $9671             ; ready
+        .word $876a             ; steal
+        .word $876a             ; transact
+        .word $876a             ; unlock
+        .word $876a             ; view change
+        .word $9677             ; x-it
+        .word $890c             ; ztats
 
+_textTableSearch
 l9e5b
         .aasc "You are at se",$e1
         .aasc "You are in the lands",$7e,"of",$a0
