@@ -1,4 +1,5 @@
 #include "archdep.h"
+#include "constants.h"
 
         .word $8c9e
         * = $8c9e
@@ -9,13 +10,13 @@ l8c9e   lda #$30
         lda #$00
         sta $60
         sta $62
-        lda #$d0
+        lda #$d0                ; source: $d000
         sta $61
-        lda #$b0
+        lda #>mapData           ; dest: $b000
         sta $63
         ldy #$00
-l8cb4   lda ($60),y
-        sta ($62),y
+l8cb4   lda ($60),y             ; copy $d000-$dcff
+        sta ($62),y             ; to   $b000-$bcff (packed map data?)
         iny
         bne l8cb4
 l8cbb   inc $61
@@ -28,10 +29,10 @@ l8cc2   lda #$36
         sta $1632
         lda #$02
         sta $1637
-        lda $81e8
-        sta $20
-        lda $81e9
-        sta $21
+        lda statsLongitude
+        sta zpLongitude
+        lda statsLatitude
+        sta zpLatitude
         lda #$60
         sta $5d
         sta $5c
@@ -48,7 +49,6 @@ l8cf3   lda $823b
 l8cfb   ldx #$ff
         txs
         jsr print
-        .asc ""
         .byt $7c,$0e,$00
 l8d04   jsr l9e0b
 l8d07   jsr $86c6
@@ -68,30 +68,31 @@ l8d29   lda zpCursorCol
         cmp #$02
         bcc l8d07
 l8d2f   bcs l8cfb
-l8d31   jsr $85fd
-l8d34   bcs l8d45
-l8d36   lda l9e29,x             ; command table
+l8d31   jsr checkCommandKey     ; check and print command
+        bcs l8d45               ; invalid command key? ->
+        lda _commandTable,x     ; command table
         sta l8d43
-        lda l9e2a,x
+        lda _commandTable+1,x
         sta l8d44
         l8d43 = * + 1
         l8d44 = * + 2
-        jsr $8787
+        jsr $8787               ; execute command
 l8d45   jsr l9a2f
 l8d48   jmp l8cfb
+
 l8d4b   jsr $8bce
 l8d4e   ldx #$0a
 l8d50   jsr $16a0
 l8d53   dex
         bpl l8d50
 l8d56   jsr l97e0
-l8d59   stx $20
-        sty $21
+l8d59   stx zpLongitude
+        sty zpLatitude
         jsr l9a10
 l8d60   lda #$00
-        ldx $81f1
+        ldx statsTransport
         beq l8d72
-l8d67   sta $81f1
+l8d67   sta statsTransport
         ldy $8213,x
         beq l8d72
 l8d6f   dec $8213,x
@@ -100,7 +101,7 @@ l8d74   sta $81f8,x
         dex
         bne l8d74
 l8d7a   sta $81f0
-        sta $81ef
+        sta statsWeapon
         sta $81ee
         jsr print
         .aasc $7e,"Attempting resurrection!",$00
@@ -130,18 +131,19 @@ l8dd7   dex
 l8dda   tax
         rts
 
+pass
 l8ddc   ldy #$05
         lda #$50
         jmp $863a
 l8de3   lda #$00
-        sta $4c
+        sta zpMapPtr
         lda $23
         lsr
-        ror $4c
+        ror zpMapPtr
         lsr
-        ror $4c
-        adc #$64
-        sta $4d
+        ror zpMapPtr
+        adc #>mapBuffer
+        sta zpMapPtr+1
         ldy $22
         rts
 l8df6   jsr print
@@ -153,10 +155,10 @@ l8e01   l8e02 = * + 1
         cmp $81c9,x
         bne l8e35
 l8e06   stx $24
-        jsr $842d
+        jsr printTableString
         .byt $7f
 l8e0c   adc $20a6,y
-        ldy $21
+        ldy zpLatitude
         stx $22
         sty $23
         ldx #$00
@@ -193,7 +195,7 @@ l8e3f   lda $22
         adc $25
         sta $23
         tay
-        jsr l9d50
+        jsr getMapTile
 l8e52   cmp #$03
         beq l8e61
 l8e56   jsr l8e62
@@ -223,7 +225,7 @@ l8e83   lsr
         sta $8267
         stx $44
         stx $8268
-        jsr l9c79
+        jsr _getObjectMapPtr
 l8e92   clc
         rts
 l8e94   txa
@@ -231,13 +233,13 @@ l8e94   txa
 l8e97   sec
         rts
 
-_attack
+attack
 l8e99   jsr print
        .aasc "with ",$00
-        ldx $81ef
-        jsr $842d
+        ldx statsWeapon
+        jsr printTableString
         .word strTableWeapons
-        ldx $81ef
+        ldx statsWeapon
         lda la131,x
         bne l8eb5
         jmp $876a
@@ -254,11 +256,11 @@ l8ec9   lda #$06
         jsr l8e3f
         bcs l8ebe
         lda #$5e
-        sta ($4c),y
+        sta (zpMapPtr),y
         jsr $166a
 l8eda   jsr l9c77
 l8edd   lda $830c,x
-        sta ($4c),y
+        sta (zpMapPtr),y
         lda statsAgility
         clc
         adc #$80
@@ -269,7 +271,8 @@ l8eed   cmp $43
 l8ef1   jsr print
         .aasc $7e,"Missed",$00
 l8efc   jmp l8fe7
-l8eff   lda $81ef
+
+l8eff   lda statsWeapon
         asl
         asl
         asl
@@ -298,16 +301,11 @@ l8f38   jsr $83f3
 l8f3b   lda $81c1
         jsr $8582
 l8f41   jsr print
-l8f44   jsr $6164
-l8f47   adc $6761
-        adc $00
+        .aasc " damage",$00
 l8f4c   lda #$02
         jmp $1682
 l8f51   jsr print
-l8f54   ror $694b,x
-        jmp ($656c)
-        .asc ""
-        .byt $64,$00
+        .aasc $7e,"Killed",$00
 l8f5c   jsr l8fe7
 l8f5f   jsr l8f4c
 l8f62   ldx $8267
@@ -388,7 +386,7 @@ l8fea   jsr $6874
 l8fee   jsr $ae00
         .asc ""
         .byt $67,$82
-l8ff3   jsr $842d
+l8ff3   jsr printTableString
         .byt $7f,$7a
 l8ff8   jsr print
         .asc ""
@@ -434,11 +432,11 @@ l9046   lda #$0f
         sta $824a
 l9050   jmp $86c6
 
-_board
-l9053   lda $81f1
-        beq l9077
-l9058   jsr $83f6
-l905b   jsr print
+board
+l9053   lda statsTransport
+        beq l9077               ; on foot? ->
+        jsr $83f6               ; set cursor column = 1
+        jsr print
         .aasc "X-it thy craft first!",$00
         jmp $8772
 l9077   jsr l9d77
@@ -454,7 +452,7 @@ l909d   and #$07
         cmp #$07
         bcc l90a5
 l90a3   lda #$0a
-l90a5   sta $81f1
+l90a5   sta statsTransport
         pha
         jsr l9cd8
 l90ac   jsr l9e0b
@@ -466,7 +464,7 @@ l90b7   jsr $83f6
 l90ba   jsr print
         .aasc "Mount ",$00
 l90c4   jsr $9e02
-l90c7   lda $81f1
+l90c7   lda statsTransport
         cmp #$06
         beq l90d1
 l90ce   bcs l90db
@@ -503,41 +501,10 @@ l9166   lda $81ea
         ora $81ed
         bne l91cb
 l9174   jsr print
-        .byt $7f,$02,$54,$68,$6f,$75
-l917d   jsr $6163
-l9180   ror $7473
-        jsr $6f6e
-        .asc ""
-        .byt $74
-l9187   jsr $6564
-        .asc ""
-        .byt $74,$65,$72,$6d,$69,$6e,$65
-l9191   jsr $6f68
-        .asc ""
-        .byt $77
-l9195   jsr $6f74
-        .asc ""
-        .byt $7c,$7f,$02,$6f
-l919c   bvs l9203
-        .asc ""
-        .byt $72,$61,$74,$65
-l91a2   jsr $6874
-        .asc ""
-        .byt $65
-l91a6   jsr $7263
-        .asc ""
-        .byt $61
-l91aa   ror $74
-        jsr $7461
-l91af   jsr $6874
-l91b2   adc #$73
-        jsr $6974
-        .asc ""
-        .byt $6d,$65
-l91b9   l91bb = * + 2
-; Instruction parameter jumped to.
-        rol $a900
-l91bc   rts
+        .aasc $7f,$02,"Thou canst not determine how to",LF,$7f
+        .aasc $02,"operate the craft at this time.",$00
+
+l91bb   lda #$60
 l91bd   sta $5d
         jsr $1664
 l91c2   jsr $8701
@@ -613,10 +580,11 @@ l9255   ldx $46
         inc $27
         ldy $27
         jmp $1691
-l9262   ldx $20
-        ldy $21
-        stx $81e8
-        sty $81e9
+
+l9262   ldx zpLongitude
+        ldy zpLatitude
+        stx statsLongitude
+        sty statsLatitude
         pha
         lda #$30
         sta $01
@@ -637,6 +605,7 @@ l928a   inc $61
         inc $63
         dex
         bne l9283
+
 l9291   lda #$36
         sta $01
         pla
@@ -696,7 +665,7 @@ l9306   ldx $81ee
         ldx #$00
         bcc l9313
 l9312   inx
-l9313   jsr $842d
+l9313   jsr printTableString
 l9316   sty $93,x
         ldx #$03
         stx la145
@@ -739,7 +708,7 @@ l936f   lda $8247
         jsr $85c9
 l9375   inc $43
         lda $43
-        ldx $81ef
+        ldx statsWeapon
         cpx #$08
         bcc l9391
 l9380   cpx #$0c
@@ -818,7 +787,7 @@ l9427   jmp $874e
 l942a   lda la143
         cmp #$35
         bcs l943c
-l9431   jsr l9d50
+l9431   jsr getMapTile
 l9434   cmp #$03
         bcs l943c
 l9438   inc la143
@@ -827,11 +796,11 @@ l943c   lda #$ff
         rts
 l943f   jmp $876a
 
-_enter
-l9442   ldx $20
-        ldy $21
-        stx $81e8
-        sty $81e9
+enter
+l9442   ldx zpLongitude
+        ldy zpLatitude
+        stx statsLongitude
+        sty statsLatitude
         jsr l9d77
 l944f   cmp #$04
         bcc l943f
@@ -850,6 +819,7 @@ l9470   cmp la119,x
 l9475   dex
         bpl l9470
 l9478   rts
+
 l9479   cmp #$04
         bne l9486
 l947d   lda #$01
@@ -859,8 +829,8 @@ l947d   lda #$01
 l9486   cmp #$06
         bne l94b9
 l948a   jsr l9916
-l948d   ldx $20
-        ldy $21
+l948d   ldx zpLongitude
+        ldy zpLatitude
         dey
         jsr l942a
 l9495   sta $8226
@@ -882,10 +852,11 @@ l94ad   sta $8229
         bne l94bb
 l94b9   lda #$02
 l94bb   jmp l9262
+
 l94be   stx la141
         jsr $8788
 l94c4   ldx la141
-        jsr $842d
+        jsr printTableString
 l94ca   cpx $209e
         ora ($87,x)
         jsr $8777
@@ -898,17 +869,7 @@ l94df   bmi l9503
 l94e1   lda #$ff
         sta $821e,y
         jsr print
-        .asc ""
-        .byt $7d,$41
-l94eb   jsr $7551
-        .asc ""
-        .byt $65,$73,$74
-l94f1   jsr $7369
-l94f4   jsr $6f63
-l94f7   adc $6c70
-        adc $74
-        adc $64
-        and ($00,x)
+        .aasc $7d,"A Quest is completed!",$00
         jsr l95b9
 l9503   ldx la141
         lda la121,x
@@ -943,7 +904,7 @@ l9546   lda #$6e
         jsr $83d7
 l954b   inc zpCursorCol
         ldx $46
-        jsr $842d
+        jsr printTableString
         .asc ""
         .byt $7c,$77
 l9554   lda #$21
@@ -987,11 +948,12 @@ l95a5   adc #$6e
 l95aa   jsr $83cd
 l95ad   inc zpCursorCol
         ldx $46
-        jsr $842d
+        jsr printTableString
         .asc ""
         .byt $42
 l95b5   sei
         jmp l9559
+
 l95b9   lda #$10
         jsr $87a1
 l95be   lda #$0a
@@ -1000,32 +962,30 @@ l95c3   jsr l95c9
 l95c6   jsr $879f
 l95c9   lda #$e6
         jmp $16a0
-l95ce   ldx $81f1
-        cpx #$04
-        bne l95e3
-l95d5   jsr print
-        .asc ""
-        .byt $63,$61
-l95da   ror $6f6e
-        ror !$0073
-        jmp l95fc
-l95e3   cpx #$05
-        beq l95f2
-l95e7   jsr print
-        .asc ""
-        .byt $77,$68,$61,$74,$00
-l95ef   jmp $876a
-l95f2   jsr print
-l95f5   jmp ($7361)
-        .asc ""
-        .byt $65,$72,$73,$00
-l95fc   jsr l8df6
-l95ff   bcc l960d
-l9601   rts
+
+fire
+l95ce   ldx statsTransport
+        cpx #TRANSPORT_FRIGATE
+        bne _fireJ1
+        jsr print
+        .aasc "cannons",$00
+        jmp _fireJ3
+_fireJ1
+        cpx #TRANSPORT_AIRCAR
+        beq _fireJ2
+        jsr print
+        .aasc "what",$00
+        jmp $876a
+_fireJ2
+        jsr print
+        .aasc "lasers",$00
+
+_fireJ3
+        jsr l8df6
+        bcc l960d
+        rts
 l9602   jsr print
-        .asc ""
-        .byt $7e,$4d,$69,$73,$73
-l960a   and ($00,x)
+        .aasc $7e,"Miss!",$00
         rts
 l960d   lda #$0c
         jsr $1685
@@ -1043,86 +1003,97 @@ l9626   lda $830c,x
 l962e   cmp #$33
         bcs l9640
 l9632   jsr print
-        .asc ""
-        .byt $7e,$4d,$69,$73,$73,$65,$64,$00
+        .aasc $7e,"Missed",$00
 l963d   jmp l8fe7
-l9640   ldx $81f1
+l9640   ldx statsTransport
         lda l9a05,x
         jsr $85c9
 l9649   adc #$1e
         jmp l8f0f
-l964e   ldx $20
-        ldy $21
-        stx $81e8
-        sty $81e9
+
+quit
+l964e   ldx zpLongitude
+        ldy zpLatitude
+        stx statsLongitude
+        sty statsLatitude
         jsr $870c
-l965b   jsr $c489
+_quitL1
+l965b   jsr savePlayer
 l965e   jsr $8175
-l9661   bcs l965b
-l9663   jsr print
+        bcs _quitL1
+        jsr print
         .aasc " saved.",$00
-l966e   jmp $164f
+        jmp $164f
 
 _ready
 l9671   jsr l8dd0
 l9674   jmp $87d0
 
-l9677   lda $81f1
-        bne l9688
-l967c   jsr print
+_xit
+l9677   lda statsTransport      ; on foot?
+        bne _xitJ1              ; no ->
+        jsr print
         .aasc " what",$00
-l9685   jmp $876a
-l9688   jsr l9d77
+        jmp $876a
+_xitJ1
+        jsr l9d77
 l968b   cmp #$03
         bcc l96b6
 l968f   jsr $83f6
-l9692   jsr print
+        jsr print
         .aasc "Thou canst not leave it here!",$00
         jmp $8772
-l96b6   ldx $20
-        ldy $21
-        lda $81f1
-        cmp #$07
+l96b6   ldx zpLongitude
+        ldy zpLatitude
+        lda statsTransport
+        cmp #TRANSPORT_PHANTOM
         bcc l96c3
-l96c1   lda #$07
-l96c3   ora #$08
+        lda #$07                ; time capsule - 8
+l96c3   ora #TILE_PLAYER
         jsr l9ca6
 l96c8   bcs l968f
-l96ca   lda #$00
-        sta $81f1
+        lda #TRANSPORT_FOOT
+        sta statsTransport
         rts
-l96d0   ldx $20
-        ldy $21
+
+_getPosition
+l96d0   ldx zpLongitude
+        ldy zpLatitude
         clc
         rts
 
-l96d6   jsr l96d0
-l96d9   dey
+north
+l96d6   jsr _getPosition
+        dey
         bcc l96ec
 
-l96dc   jsr l96d0
-l96df   iny
+south
+l96dc   jsr _getPosition
+        iny
         bcc l96ec
 
-l96e2   jsr l96d0
-l96e5   inx
+east
+l96e2   jsr _getPosition
+        inx
         bcc l96ec
 
-l96e8   jsr l96d0
-l96eb   dex
-l96ec   jsr $83f6
+west
+l96e8   jsr _getPosition
+        dex
+
+l96ec   jsr $83f6               ; set cursor column = 1
 l96ef   stx $2c
         sty $2d
-        lda $81f1
-        cmp #$06
-        bcc l9716
-l96fa   jsr print
+        lda statsTransport
+        cmp #TRANSPORT_SHUTTLE  ; transport < Shuttle?
+        bcc l9716               ; yes ->
+        jsr print
         .aasc "Can't travel on land!",$00
         jmp l9752
-l9716   jsr l9d50
+l9716   jsr getMapTile
 l9719   tax
-        bne l9725
-l971c   lda $81f1
+        bne l9725               ; water? no ->
+l971c   lda statsTransport
         cmp #$03
         bcs l9795
 l9723   bcc l974d
@@ -1134,21 +1105,22 @@ l972b   cmp #$10
 l972f   inx
         cmp #$02
         bne l973b
-l9734   lda $81f1
-        cmp #$05
+l9734   lda statsTransport
+        cmp #TRANSPORT_AIRCAR
         beq l974d
-l973b   ldx $81f1
-        cpx #$03
+l973b   ldx statsTransport
+        cpx #TRANSPORT_RAFT
         beq l9746
-l9742   cpx #$04
+        cpx #TRANSPORT_FRIGATE
         bne l9795
 l9746   jsr $8426
 l9749   bmi l97c4
 l974b   ldx #$03
-l974d   jsr $842d
+l974d   jsr printTableString
 l9750   sta $9e,x
 l9752   lda #$0e
         jmp $8774
+
 l9757   pha
         jsr print
         .aasc "Blocked by a",$00
@@ -1169,28 +1141,30 @@ l977f   inc zpCursorCol
         cpx #$14
         bne l9788
 l9785   jsr $83f3
-l9788   jsr $842d
+l9788   jsr printTableString
         .byt $7f,$7a
 l978d   lda #$21
         jsr $83d7
 l9792   jmp l9752
 l9795   ldx $2c
         ldy $2d
-        stx $20
-        sty $21
-        jsr l97f6
-l97a0   ldx $81f1
+        stx zpLongitude
+        sty zpLatitude
+        jsr _checkLeaveContinent
+l97a0   ldx statsTransport
         bne l97aa
 l97a5   jsr $8678
 l97a8   ldx #$00
 l97aa   ldy l97bd,x
         lda l97c7,x
-        ldx $81f1
+        ldx statsTransport
         cpx #$03
         bcs l97ba
 l97b7   jmp $863c
 l97ba   jmp $863a
-l97bd   bvc l9802
+
+
+l97bd   bvc $9802
 l97bf   rol $29,x
         and ($14,x)
         l97c4 = * + 1
@@ -1214,76 +1188,94 @@ l97ed   cmp #$03
 l97f1   dec $3f
         bne l97e4
 l97f5   rts
-l97f6   lda $20
-        bmi l9800
-l97fa   cmp #$4a
-        bcc l9806
-l97fe   bcs l9815
-l9800   cmp #$f6
-l9802   bcs l9806
-l9804   bcc l981e
-l9806   lda $21
-        bmi l9810
-l980a   cmp #$4a
+
+_checkLeaveContinent
+l97f6   lda zpLongitude
+        bmi _checkLCWest
+        cmp #$4a
+        bcc _checkLCLatitude
+        bcs _leaveContinentEast
+_checkLCWest
+        cmp #$f6
+        bcs _checkLCLatitude
+        bcc _leaveContinentWest
+_checkLCLatitude
+        lda zpLatitude
+        bmi _checkLCNorth
+        cmp #$4a
         bcc l9814
-l980e   bcs l9827
-l9810   cmp #$f6
-        bcc l9833
-l9814   rts
-l9815   inc $81e4
+        bcs _leaveContinentSouth
+_checkLCNorth
+        cmp #$f6
+        bcc _leaveContinentNorth
+l9814   rts                     ; stay on current map
+
+_leaveContinentEast
+        inc statsContinent
         lda #$f6
-        sta $20
+        sta zpLongitude
         bne l983d
-l981e   dec $81e4
+_leaveContinentWest
+        dec statsContinent
         lda #$48
-        sta $20
+        sta zpLongitude
         bne l983d
-l9827   dec $81e4
-        dec $81e4
+_leaveContinentSouth
+        dec statsContinent
+        dec statsContinent
         lda #$fb
-        sta $21
+        sta zpLatitude
         bne l983d
-l9833   inc $81e4
-        inc $81e4
+_leaveContinentNorth
+        inc statsContinent
+        inc statsContinent
         lda #$43
-        sta $21
+        sta zpLatitude
+
 l983d   jsr l9a10
-l9840   lda $81e4
-        and #$03
-        sta $81e4
-        asl
+
+_unpackMap
+l9840   lda statsContinent
+        and #$03                ; keep continent in range 0..3
+        sta statsContinent
+        asl                     ; as 16 bit index
         tax
-        lda $b000,x
-        adc #$00
+
+        lda mapData,x           ; map data offset for continent x, lb
+        adc #<mapData
         sta $36
-        lda $b001,x
-        adc #$b0
-        sta $37
-        lda #$00
+        lda mapData+1,x         ; map data offset for continent x, hb
+        adc #>mapData
+        sta $37                 ; map data source pointer for continent X
+        lda #<mapBuffer
         sta $38
-        lda #$64
+        lda #>mapBuffer
         sta $39
         ldy #$00
-l9862   lda ($36),y
-        beq l9882
-l9866   lsr
+_unpackMapL1
+        lda ($36),y             ; read source byte (RLE packed)
+        beq l9882               ; byte is zero ->
         lsr
+        lsr                     ; get upper five bits
         lsr
-        tax
+        tax                     ; # of repeated bytes
         lda ($36),y
-        and #$07
-        asl
-l986f   sta ($38),y
-        inc $38
-        bne l9877
-l9875   inc $39
-l9877   dex
-        bne l986f
-l987a   inc $36
-        bne l9862
-l987e   inc $37
-        bne l9862
-l9882   lda $81e4
+        and #$07                ; get lower three bits = tile
+        asl                     ; tile = value * 2
+_unpackMapL2
+        sta ($38),y             ; store in mapBuffer
+        inc $38                 ; inc map pointer
+        bne _unpackMapJ1
+        inc $39
+_unpackMapJ1
+        dex
+        bne _unpackMapL2
+        inc $36                 ; inc source pointer
+        bne _unpackMapL1
+        inc $37
+        bne _unpackMapL1
+
+l9882   lda statsContinent
         lsr
         ror
         ror
@@ -1295,31 +1287,31 @@ l9890   dex
         and #$c0
         cmp $81e5
         bne l98a8
-l989b   jsr l9c79
-l989e   lda ($4c),y
+l989b   jsr _getObjectMapPtr
+l989e   lda (zpMapPtr),y
         sta $835c,x
         lda $830c,x
-        sta ($4c),y
+        sta (zpMapPtr),y
 l98a8   txa
         bne l9890
 l98ab   stx $3f
-        ldx $20
-        ldy $21
+        ldx zpLongitude
+        ldy zpLatitude
         dey
         lda $8226
         jsr l9c90
-l98b8   ldx $20
-        ldy $21
+l98b8   ldx zpLongitude
+        ldy zpLatitude
         dex
         lda $8227
         jsr l9c90
-l98c3   ldx $20
-        ldy $21
+l98c3   ldx zpLongitude
+        ldy zpLatitude
         inx
         lda $8228
         jsr l9c90
-l98ce   ldx $20
-        ldy $21
+l98ce   ldx zpLongitude
+        ldy zpLatitude
         iny
         lda $8229
         jsr l9c90
@@ -1342,7 +1334,7 @@ l98f5   and #$07
 l98fc   and #$07
         tax
         inx
-        jsr l9d50
+        jsr getMapTile
 l9903   cmp #$02
         beq l990b
 l9907   dec $3f
@@ -1358,7 +1350,7 @@ l991a   sta $8213,x
         dex
         bne l991a
 l9920   sta la143
-        ldx $81f1
+        ldx statsTransport
         beq l992e
 l9928   inc $8213,x
         inc la143
@@ -1419,20 +1411,20 @@ l9996   sty $23
         asl
         adc #$10
         sta $22
-        lda $20
+        lda zpLongitude
         sbc #$09
         bpl l99a9
 l99a7   lda #$00
 l99a9   sta $26
-        lda $20
+        lda zpLongitude
         adc #$09
         sta $28
-        lda $21
+        lda zpLatitude
         sbc #$04
         bpl l99b9
 l99b7   lda #$00
 l99b9   sta $27
-        lda $21
+        lda zpLatitude
         adc #$04
         sta $29
 l99c1   jsr l9d44
@@ -1509,7 +1501,7 @@ l9a52   cpy #$e6
         inc $e6
         inc $e6
 l9a58   jsr $1670
-l9a5b   ldx $81f1
+l9a5b   ldx statsTransport
         cmp l9a4d,x
         bcc l9a4c
 l9a63   ldx $44
@@ -1530,7 +1522,7 @@ l9a7a   sty la144
         sta $25
         lda $826c,x
         sta $22
-        lda $20
+        lda zpLongitude
         bmi l9a96
 l9a8c   cmp $22
         bcc l9a96
@@ -1541,7 +1533,7 @@ l9a96   dec $24
 l9a98   lda $82bc,x
         and #$3f
         sta $23
-        lda $21
+        lda zpLatitude
         bmi l9aad
 l9aa3   cmp $23
         bcc l9aad
@@ -1570,7 +1562,7 @@ l9ace   lda $835c,x
         lda $2d
         ora $81e5
         sta $82bc,x
-        jsr l9c79
+        jsr _getObjectMapPtr
 l9ae3   lda ($4c),y
         sta $835c,x
         lda $830c,x
@@ -1585,11 +1577,11 @@ l9af6   cpx #$40
         bcs l9b23
 l9afa   cpy #$40
         bcs l9b23
-l9afe   cpx $20
+l9afe   cpx zpLongitude
         bne l9b06
-l9b02   cpy $21
+l9b02   cpy zpLatitude
         beq l9b23
-l9b06   jsr l9d50
+l9b06   jsr getMapTile
 l9b09   cmp #$08
         bcs l9b13
 l9b0d   cmp #$04
@@ -1624,7 +1616,7 @@ l9b3e   ldx $44
         lda $826c,x
         sta $22
         sec
-        sbc $20
+        sbc zpLongitude
         jsr l9b2b
 l9b4b   sty $48
         sta $24
@@ -1632,7 +1624,7 @@ l9b4b   sty $48
         and #$3f
         sta $23
         sec
-        sbc $21
+        sbc zpLatitude
         jsr l9b2b
 l9b5c   sty $49
         sta $25
@@ -1673,7 +1665,7 @@ l9b93   sec
         tay
         stx $22
         sty $23
-        jsr l9d50
+        jsr getMapTile
 l9ba6   cmp #$03
         beq l9b8b
 l9baa   dec la145
@@ -1720,10 +1712,7 @@ l9c00   lda zpCursorCol
         bcc l9c09
 l9c06   jsr $83f3
 l9c09   jsr print
-        .asc ""
-        .byt $4d,$69,$73,$73
-l9c10   adc $64
-        and ($00,x)
+        .aasc "Missed!",$00
         jmp l9c71
 l9c17   lda zpCursorCol
         cmp #$1a
@@ -1761,18 +1750,21 @@ l9c6c   lda #$02
 l9c71   jsr l9e0b
 l9c74   jmp $166a
 l9c77   ldx $44
+
+_getObjectMapPtr
 l9c79   lda #$00
-        sta $4c
+        sta zpMapPtr
         lda $82bc,x
         and #$3f
         lsr
-        ror $4c
+        ror zpMapPtr
         lsr
-        ror $4c
-        adc #$64
-        sta $4d
+        ror zpMapPtr
+        adc #>mapBuffer
+        sta zpMapPtr+1
         ldy $826c,x
         rts
+
 l9c90   cmp #$08
         bcc l9cd7
 l9c94   cmp #$10
@@ -1785,6 +1777,8 @@ l9c9d   pla
 l9ca1   pha
         jsr l97e0
 l9ca5   pla
+
+
 l9ca6   cpx #$40
         bcs l9cd7
 l9caa   cpy #$40
@@ -1793,24 +1787,25 @@ l9cae   stx $46
         ldx $826b
         cpx #$50
         bcs l9cd7
-l9cb7   asl
+l9cb7   asl                     ; object * 2
         sta $830c,x
         pha
-        tya
-        ora $81e5
+        tya                     ; latitude
+        ora $81e5               ; location?
         sta $82bc,x
-        lda $46
+        lda $46                 ; longitude
         sta $826c,x
-        jsr l9c79
-l9ccb   lda ($4c),y
-        sta $835c,x
-        pla
-        sta ($4c),y
+        jsr _getObjectMapPtr    ; tile pointer?
+l9ccb   lda (zpMapPtr),y        ; get map tile (background)
+        sta $835c,x             ; store in object table
+        pla                     ; object to drop
+        sta (zpMapPtr),y        ; update tile in map
         inc $826b
         clc
 l9cd7   rts
-l9cd8   ldx $20
-        ldy $21
+
+l9cd8   ldx zpLongitude
+        ldy zpLatitude
         cpx #$40
         bcs l9cd7
 l9ce0   cpy #$40
@@ -1830,9 +1825,9 @@ l9cfc   lda $82bc,x
         and #$c0
         cmp $81e5
         bne l9d0e
-l9d06   jsr l9c79
+l9d06   jsr _getObjectMapPtr
 l9d09   lda $835c,x
-        sta ($4c),y
+        sta (zpMapPtr),y
 l9d0e   lda $830c,x
         sta $3a
         stx $46
@@ -1861,33 +1856,36 @@ l9d47   and #$3f
         jsr $1670
 l9d4d   and #$3f
         tax
+
+getMapTile
 l9d50   lda #$00
         cpy #$40
         bcs l9d75
 l9d56   cpx #$40
         bcs l9d75
-l9d5a   tya
-        sta l9d74
+        tya
+        sta l9d74               ; store y register
         lsr
-        sta $4d
+        sta zpMapPtr+1
         lda #$00
         ror
-        lsr $4d
+        lsr zpMapPtr+1
         ror
-        sta $4c
-        lda $4d
-        adc #$64
-        sta $4d
-        txa
+        sta zpMapPtr
+        lda zpMapPtr+1
+        adc #>mapBuffer         ; map buffer at $6400
+        sta zpMapPtr+1
+        txa                     ; latitude as offset
         tay
-        lda ($4c),y
+        lda (zpMapPtr),y             ; read byte from map
         l9d74 = * + 1
-        ldy #$00
+        ldy #$00                ; restore y register
 l9d75   lsr
         rts
-l9d77   ldx $20
-        ldy $21
-        jsr l9d50
+
+l9d77   ldx zpLongitude
+        ldy zpLatitude
+        jsr getMapTile
 l9d7e   sta la142
         rts
 
@@ -1898,15 +1896,15 @@ l9d88   cmp #$03
         beq l9dad
 l9d8c   cmp #$08
         bcc l9daf
-l9d90   lda $21
+l9d90   lda zpLatitude
         ora $81e5
         ldx $826b
-l9d98   cmp $82bb,x
+l9d98   cmp $82bb,x             ; object coordinates (?)
         bne l9daa
-l9d9d   ldy $826b,x
-        cpy $20
+l9d9d   ldy $826b,x             ; object coordinates (?)
+        cpy zpLongitude
         bne l9daa
-l9da4   lda $835b,x
+l9da4   lda $835b,x             ; location id (?)
         lsr
         bpl l9daf
 l9daa   dex
@@ -1916,13 +1914,13 @@ l9daf   sta la142
         cmp #$04
         bcs l9dcb
 l9db6   tax
-        jsr $842d
+        jsr printTableString
         .word _textTableSearch
 l9dbc   ldx la142
         dex
         bne l9dca
-l9dc2   ldx $81e4
-        jsr $842d
+l9dc2   ldx statsContinent
+        jsr printTableString
         .word $7bda
 l9dca   rts
 
@@ -1935,12 +1933,12 @@ l9dcf   l9dd1 = * + 2
 
 l9ddf
         lda $81e5
-        ora $21
+        ora zpLatitude
         ldx #$53
 l9de6   cmp $7c18,x
         bne l9df2
 l9deb   ldy $7c6c,x
-        cpy $20
+        cpy zpLongitude
         beq l9df9
 l9df2   dex
         bpl l9de6
@@ -1948,53 +1946,56 @@ l9df5   stx $8262
         rts
 
 l9df9   stx $8262
-        jsr $842d
+        jsr printTableString
 l9dff   cpy #$7c
         rts
-l9e02   ldx $81f1
-        jsr $842d
-l9e08   bmi $9e83
-l9e0a   rts
-l9e0b   lda $81f1
+l9e02   ldx statsTransport
+        jsr printTableString
+        .word strTableTransport
+
+        rts
+
+l9e0b   lda statsTransport
         cmp #$0b
         bcc l9e17
 l9e12   lda #$00
-        sta $81f1
+        sta statsTransport
 l9e17   cmp #$07
         bcc l9e22
 l9e1b   lda #$0a
-        sta $81f1
+        sta statsTransport
         lda #$07
 l9e22   ora #$08
         asl
         sta $1639
         rts
+
 _commandTable
 l9e29   l9e2a = * + 1
-        .word l96d6             ; north
-        .word l96dc             ; south
-        .word l96e2             ; east
-        .word l96e8             ; west
-        .word l8ddc             ; pass
-        .word $8e99             ; attack
-        .word $9053             ; board
+        .word north             ; north
+        .word south             ; south
+        .word east              ; east
+        .word west              ; west
+        .word pass              ; pass
+        .word attack            ; attack
+        .word board             ; board
         .word $9299             ; cast
         .word $876a             ; drop
-        .word $9442             ; enter
-        .word $95ce             ; fire
+        .word enter             ; enter
+        .word fire              ; fire
         .word $876a             ; get
         .word $876a             ; hyper jump
-        .word $9d82             ; inform & search
+        .word _informAndSearch  ; inform & search
         .word $876a             ; klimb
         .word $8bb9             ; noise
         .word $876a             ; open
-        .word $964e             ; quit (and save to disk)
+        .word quit              ; quit (and save to disk)
         .word $9671             ; ready
         .word $876a             ; steal
         .word $876a             ; transact
         .word $876a             ; unlock
         .word $876a             ; view change
-        .word $9677             ; x-it
+        .word _xit              ; x-it
         .word $890c             ; ztats
 
 _textTableSearch

@@ -1,7 +1,5 @@
 #include "archdep.h"
 
-playerSlot = $c4f8
-
         .word $8c9e
         * = $8c9e
 
@@ -80,11 +78,9 @@ l8ddd   ldy #$00
         sta $01
         ldx #$0d
 l8de5   l8de7 = * + 2
-; Instruction parameter accessed.
-        lda l95f7,y
+        lda l95f7,y             ; copy $95f7-
         l8dea = * + 2
-; Instruction parameter accessed.
-        sta VicSprite0XPos,y    ; copy to $d000-dcff
+        sta $d000,y             ; to $d000-dcff
         iny
         bne l8de5
 l8dee   inc l8de7
@@ -167,22 +163,22 @@ l8eef   ldy #0
         .aasc $0e," Character Generation ",$18,$7e,$00
 
         jsr l94c0
-        lda #$e4
+        lda #$e4                ; destination: $81e4
         sta l8f2b
         lda #$81
         sta l8f2c
-        lda #$f7
+        lda #$f7                ; source: $93f7
         sta l8f28
         lda #$93
         sta l8f29
 l8f27   l8f28 = * + 1
 ; Instruction parameter accessed.
         l8f29 = * + 2
-        lda $ffff
+        lda $ffff               ; copy initial stats from source
         l8f2b = * + 1
 ; Instruction parameter accessed.
         l8f2c = * + 2
-        sta $ffff
+        sta $ffff               ; to destination (?)
         inc l8f28
         bne l8f35
 l8f32   inc l8f29

@@ -331,6 +331,8 @@ _strTableRace
         .aasc "light swor",$e4
         .aasc "phazo",$f2
         .aasc "blaste",$f2
+strTableWeapons
+l77ec
         .aasc "hand",$f3
         .aasc "dagge",$f2
         .aasc "mac",$e5
@@ -384,6 +386,7 @@ _strTableClass
         .aasc "cleri",$e3
         .aasc "wizar",$e4
         .aasc "thie",$e6
+_strTableTransport
         .aasc "foo",$f4
         .aasc "hors",$e5
         .aasc "car",$f4
@@ -396,6 +399,8 @@ _strTableClass
         .aasc "battle bas",$e5
         .aasc "time machin",$e5
 _strTableDirection
+_strTableCommands
+l797f
         .aasc "Nort",$e8
         .aasc "Sout",$e8
         .aasc "Eas",$f4
@@ -1157,22 +1162,28 @@ l81b0   and ($2e),y
         bvc l8200
         l81c3 = * + 15
         .asc ""
+
         .byt $41,$59,$45,$52,$2f,$55,$31,$2e,$56,$41,$52,$53,$00,$00,$00,$00
 l81c4   l81c5 = * + 1
         .byt $00,$05
 l81c6   l81c7 = * + 1
 ; Instruction opcode accessed.
         bvc l81c8
-l81c8   l81c9 = * + 1
-        .byt $00,$40,$2f,$3b,$3a
-l81cd   jsr $4241
-        .asc ""
-        .byt $43,$44,$45,$46,$47,$48,$49,$4b,$4e,$4f,$51,$52,$53,$54,$55,$56
-        l81e7 = * + 7
-        .asc ""
-        .byt $58,$5a
+l81c8
+        .byt $00
+
+_commandKeys
+l81c9
+        ; allowed commands
+        .aasc "@/;: ABCDEFGHIKNOQRSTUVXZ"
+
+; stats
+l81e2
         .asc "J"
-        .byt $01,$00,$00,$ff,$ff
+        .byt $01,$00,$00,$ff
+
+l81e7
+        .byt $ff
 l81e8   l81ea = * + 2
         jsr $0020
         l81ee = * + 3
@@ -1288,6 +1299,7 @@ l83ed   lda zpCursorCol
         cmp #$02
         bcc l83f6
 l83f3   jsr l83fe
+
 l83f6   lda #$01
         sta zpCursorCol
         rts
@@ -1554,20 +1566,24 @@ l85f6   dec l85fc
 l85fb   rts
 l85fc   .asc ""
         .byt $40
-l85fd   ldx #$18
-l85ff   cmp l81c9,x
-        beq l8614
-l8604   dex
-        bpl l85ff
 
-l8607   jsr _print
+
+checkCommandKey
+l85fd   ldx #24                 ; iterate over command keys
+_checkCmdKeyL1
+        cmp _commandKeys,x      ; valid command?
+        beq _checkCmdKeyJ1      ; yes ->
+        dex
+        bpl _checkCmdKeyL1
+
+        jsr _print              ; illegal command key...
         .aasc "Huh?",$00
         jsr l8772
         sec
         rts
-
-l8614   txa
-        pha
+_checkCmdKeyJ1
+        txa                     ; command index
+        pha                     ; store
         cmp #$04
         bcs l8630
 l861a   lda l81c8
@@ -1577,13 +1593,13 @@ l861f   sta l862c
         sta l862b
         jsr _printTableString
 l862b   l862c = * + 1
-        .byt $7f,$79
+        .word _strTableCommands
 l862d   jmp l8635
 
-l8630   jsr _printTableString
-        .word _strTableDirection
-        pla
-        asl
+l8630   jsr _printTableString   ; print the command
+        .word _strTableCommands
+        pla                     ; restore command id
+        asl                     ; as 16 bit index
         tax
         clc
         rts
@@ -1729,6 +1745,7 @@ l8766   lda #$08
 l876a   jsr l8720
 l876d   lda #$3f
         jsr $1667
+
 l8772   lda #$10
 l8774   jsr $1682
 l8777   nop
@@ -2241,16 +2258,18 @@ l8bab   inx
 l8bae   rts
         .asc ""
         .byt $60
+
 l8bb0   jsr _print
-        .aasc " off",$00
+        .aasc " off",$00        ; noise off
         rts
+_noise
 l8bb9   lda $1638
         eor #$ff
         sta $1638
         sta l81e7
         beq l8bb0
-l8bc6   jsr _print
-        .aasc " on",$00
+        jsr _print
+        .aasc " on",$00         ; noise on
         rts
 
 l8bce   jsr l83ed

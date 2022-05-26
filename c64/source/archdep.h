@@ -33,8 +33,11 @@ KEY_BACKSPACE = $14             ; insert/delete key
 LF = $7c
 CR = $7f
 
+zpLongitude = $20
+zpLatitude = $21
 zpCursorCol = $32
 zpCursorRow = $33
+zpMapPtr = $4c
 FA = $ba
 FNADR = $bb
 
@@ -44,6 +47,7 @@ NMINV = $0318
 ILOAD = $0330
 
 screenRAM = $0400
+mapBuffer = $6400
 charset = $0800
 tileset = $0c00
 bmpLinePtrLb = $1200
@@ -55,11 +59,19 @@ bitmapRAM = $2000
 bitmap2RAM = $4000
 hello = $8000
 roster = $b000
+mapData = $b000
 
+strTableWeapons = $77ec
 strTableAttributes = $7842
 strTableClass = $7911
+strTableTransport = $7930
 
 stats = $81e2
+statsContinent = stats + $02
+statsLongitude = stats + $06
+statsLatitude = stats + $07
+statsWeapon = stats + $0d
+statsTransport = stats + $0f
 statsGender = stats + $4a
 statsName = stats + $4b
 statsStrength = stats + $5b
@@ -71,12 +83,16 @@ statsIntelligence = stats + $65
 statsRace = stats + $69
 statsClass = stats + $6b
 
+printTableString = $842d
 printAtPos = $848a
 print = $848e
+checkCommandKey = $85fd
 
 loadFile = $c480
 saveFile = $c483
 loadSpecial = $c486
+savePlayer = $c489
+playerSlot = $c4f8
 
 SCNPNT = $e716
 

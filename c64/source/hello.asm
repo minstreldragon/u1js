@@ -834,8 +834,11 @@ lc480   jmp lc4f9
 ; saveFile
 lc483   jmp _saveFile
 lc486   jmp _loadFile
-lc489   ldx lc4f8
-        inx
+
+
+; savePlayer
+lc489   ldx playerSlot          ; player character id?
+        inx                     ; save file index = player slot + 2
         inx
 
 _saveFile
