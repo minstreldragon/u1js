@@ -606,26 +606,80 @@ l93eb
 
 _statsInitValues
 l93f5
-        .byt $ca
-        .byt $01
+        .word $01ca             ; stats file length (fixed)
 l93f7
-        .byt $00,$00,$ff,$ff,$27,$21,$00,$00,$00,$00,$00,$01,$01,$00,$01
-        .byt $01,$00,$00,$00,$00,$01,$02,$00,$00,$00,$00,$00,$00,$00,$00,$00
-        .byt $00,$00,$00,$00,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-        .byt $01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-        .byt $00,$00,$00,$ff,$ff,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$96,$00,$0a,$00,$0a,$00,$0a,$00
-        .byt $0a,$00,$0a,$00,$0a,$00,$64,$00,$01,$00,$01,$00,$00,$00,$00,$00
-        .byt $00,$00,$00,$00,$00,$00,$95
-        .asc "H"
-        .byt $00,$00,$00
-        .asc "h"
-        .byt $03
-        .asc "h"
-        .byt $03,$00
+        .byt $00                ; continent (0-3)
+        .byt $00                ; continent << 6
         .byt $ff
-        .asc "o>"
-        .byt $00,$00,$00,$00,$00,$00
+        .byt $ff
+        .byt $27                ; longitude
+        .byt $21                ; latitude
+        .byt $00,$00,$00,$00
+        .byt $00                ; spell
+        .byt $01                ; weapon
+        .byt $01                ; armour
+        .byt $00                ; transport (TRANSPORT_FOOT)
+                                ; offset: $10
+        .byt $01
+        .byt $01                ; leather armour ($11)
+        .byt $00                ; chain mail ($12)
+        .byt $00                ; plate mail ($13)
+        .byt $00                ; vacuum suit ($14)
+        .byt $00                ; reflect suit ($15)
+                                ; -- inventory: weapons --
+        .byt $01                ; hands ($16)
+        .byt $02                ; dagger ($17)
+        .byt $00                ; mace ($18)
+        .byt $00                ; axe ($19)
+        .byt $00                ; rope & spikes ($1a)
+        .byt $00                ; sword ($1b)
+        .byt $00                ; great sword ($1c)
+        .byt $00                ; bow and arrows ($1d)
+        .byt $00                ; amulet ($1e)
+        .byt $00                ; wand ($1f)
+        .byt $00                ; staff ($20)
+        .byt $00                ; triangle ($21)
+        .byt $00                ; pistol ($22)
+        .byt $00                ; light sword ($23)
+        .byt $00                ; phazor ($24)
+        .byt $00                ; blaster ($25)
+                                ; -- inventory: spells --
+        .byt $01                ; prayer ($26)
+        .byt $00                ; open ($27)
+        .byt $00                ; unlock ($28)
+        .byt $00                ; magic missile ($29)
+        .byt $00                ; steal ($2a)
+        .byt $00                ; ladder down ($2b)
+        .byt $00                ; ladder up ($2c)
+        .byt $00                ; blink ($2d)
+        .byt $00                ; create ($2e)
+        .byt $00                ; destroy ($2f)
+        .byt $00                ; kill ($2f)
+
+        .byt $01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+                                ; offset: $40
+        .byt $00,$00,$00,$00,$ff,$ff,$ff,$ff,$00,$00
+        .byt $00                ; gender ($4a)
+                                ; name ($4b)
+        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+        .word $0096             ; hit points ($59)
+        .word $000a             ; strength ($5b)
+        .word $000a             ; agility ($5d)
+        .word $000a             ; stamina ($5f)
+        .word $000a             ; charisma ($61)
+        .word $000a             ; wisdom ($63)
+        .word $000a             ; intelligence ($65)
+        .word $0064             ; coin ($67)
+        .byt $01                ; race ($69)
+        .byt $00
+        .byt $01                ; class ($6b)
+        .byt $00,$00,$00,$00
+                                ; offset: $70
+        .byt $00,$00,$00,$00,$00,$00,$00,$95
+        .word $00c8             ; food ($78)
+        .word $0000             ; experience ($7a)
+        .byt $e8,$03,$e8,$03,$00,$ff,$ef,$be,$00,$00,$00,$00,$00,$00
+
 
 l947f   ldx #$02
         stx zpCursorCol
