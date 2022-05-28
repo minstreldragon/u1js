@@ -61,19 +61,19 @@ hello = $8000
 roster = $b000
 mapData = $b000
 
-strTableWeapons = $77ec
-strTableAttributes = $7842
-strTableClass = $7911
-strTableTransport = $7930
-
 stats = $81e2
+statsFileLen = stats + $00
 statsContinent = stats + $02
+statsContinentMsb = stats + $03
 statsLongitude = stats + $06
 statsLatitude = stats + $07
+statsSpell = stats + $0c
 statsWeapon = stats + $0d
+statsArmour = stats + $0e
 statsTransport = stats + $0f
 statsGender = stats + $4a
 statsName = stats + $4b
+statsHp = stats + $59
 statsStrength = stats + $5b
 statsAgility = stats + $5d
 statsStamina = stats + $5f
@@ -82,11 +82,21 @@ statsWisdom = stats + $63
 statsIntelligence = stats + $65
 statsRace = stats + $69
 statsClass = stats + $6b
+statsFood = stats + $78
+
+#ifndef _MI_
+strTableRace = $7763
+strTableWeapons = $77ec
+strTableAttributes = $7842
+strTableClass = $7911
+strTableTransport = $7930
+strTableLands = $7bda
 
 printTableString = $842d
 printAtPos = $848a
 print = $848e
 checkCommandKey = $85fd
+#endif
 
 loadFile = $c480
 saveFile = $c483

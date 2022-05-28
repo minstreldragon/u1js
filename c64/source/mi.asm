@@ -1,320 +1,76 @@
-; MI
+#define _MI_
+#include "archdep.h"
 
-loadFile = $c480
-saveFile = $c483
-loadSpecial = $c486
-VicSprite0XPos = $d000
-VicSprite0YPos = $d001
-VicSprite1XPos = $d002
-VicSprite1YPos = $d003
-VicSprite2XPos = $d004
-VicSprite2YPos = $d005
-VicSprite3XPos = $d006
-VicSprite3YPos = $d007
-VicSprite4XPos = $d008
-VicSprite4YPos = $d009
-VicSprite5XPos = $d00a
-VicSprite5YPos = $d00b
-VicSprite6XPos = $d00c
-VicSprite6YPos = $d00d
-VicSprite7XPos = $d00e
-VicSprite7YPos = $d00f
-VicSpritesXPosMsb = $d010
-VicScreenCtrlReg1 = $d011
-VicRasterValue = $d012
-VicLightPenLatchX = $d013
-VicLightPenLatchY = $d014
-VicSpriteEnable = $d015
-VicScreenCtrlReg2 = $d016
-VicSpriteExpandY = $d017
-VicMemCtrlReg = $d018
-VicIrqStatusReg = $d019
-VicIrqCtrlReg = $d01a
-VicSpritePriority = $d01b
-VicSpriteMulticolor = $d01c
-VicSpriteExpandX = $d01d
-VicSpriteToSpriteCol = $d01e
-VicSpriteToBckgndCol = $d01f
-VicBorderColor = $d020
-VicBackgroundColor0 = $d021
-VicBackgroundColor1 = $d022
-VicBackgroundColor2 = $d023
-VicBackgroundColor3 = $d024
-VicSpriteMultiColor0 = $d025
-VicSpriteMultiColor1 = $d026
-VicSprite0Color = $d027
-VicSprite1Color = $d028
-VicSprite2Color = $d029
-VicSprite3Color = $d02a
-VicSprite4Color = $d02b
-VicSprite5Color = $d02c
-VicSprite6Color = $d02d
-VicSprite7Color = $d02e
-SidVoice1FreqLb = $d400
-SidVoice1FreqHb = $d401
-SidVoice1PulseWidthLb = $d402
-SidVoice1PulseWidthHb = $d403
-SidVoice1CtrlReg = $d404
-SidVoice1AttackDecay = $d405
-SidVoice1SustainRelease = $d406
-SidVoice2FreqLb = $d407
-SidVoice2FreqHb = $d408
-SidVoice2PulseWidthLb = $d409
-SidVoice2PulseWidthHb = $d40a
-SidVoice2CtrlReg = $d40b
-SidVoice2AttackDecay = $d40c
-SidVoice2SustainRelease = $d40d
-SidVoice3FreqLb = $d40e
-SidVoice3FreqHb = $d40f
-SidVoice3PulseWidthLb = $d410
-SidVoice3PulseWidthHb = $d411
-SidVoice3CtrlReg = $d412
-SidVoice3AttackDecay = $d413
-SidVoice3SustainRelease = $d414
-SidFilterCutoffLb = $d415
-SidFilterCutoffHb = $d416
-SidFilterCtrlReg = $d417
-SidFilterModeVolume = $d418
-SidAdPaddle1 = $d419
-SidAdPaddle2 = $d41a
-SidVoice3Output = $d41b
-SidVoice3AdsrOutput = $d41c
-ColorRAM = $d800
-Cia1PortA = $dc00
-Cia1PortB = $dc01
-Cia1PortADataDir = $dc02
-Cia1PortBDataDir = $dc03
-Cia1TimerALb = $dc04
-Cia1TimerAHb = $dc05
-Cia1TimerBLb = $dc06
-Cia1TimerBHb = $dc07
-Cia1TimeOfDayDseconds = $dc08
-Cia1TimeOfDaySeconds = $dc09
-Cia1TimeOfDayMinutes = $dc0a
-Cia1TimeOfDayHours = $dc0b
-Cia1SerialShiftReg = $dc0c
-Cia1IrqCtrlReg = $dc0d
-Cia1TimerACtrlReg = $dc0e
-Cia1TimerBCtrlReg = $dc0f
-Cia2PortA = $dd00
-Cia2PortB = $dd01
-Cia2PortADataDir = $dd02
-Cia2PortBDataDir = $dd03
-Cia2TimerALb = $dd04
-Cia2TimerAHb = $dd05
-Cia2TimerBLb = $dd06
-Cia2TimerBHb = $dd07
-Cia2TimeOfDayDseconds = $dd08
-Cia2TimeOfDaySeconds = $dd09
-Cia2TimeOfDayMinutes = $dd0a
-Cia2TimeOfDayHours = $dd0b
-Cia2SerialShiftReg = $dd0c
-Cia2IrqCtrlReg = $dd0d
-Cia2TimerACtrlReg = $dd0e
-Cia2TimerBCtrlReg = $dd0f
-CINT = $ff81
-IOINIT = $ff84
-RAMTAS = $ff87
-RESTOR = $ff8a
-VECTOR = $ff8d
-SETMSG = $ff90
-SECOND = $ff93
-TKSA = $ff96
-MEMTOP = $ff99
-MEMBOT = $ff9c
-SCNKEY = $ff9f
-SETTMO = $ffa2
-ACPTR = $ffa5
-CIOUT = $ffa8
-UNTLK = $ffab
-UNLSN = $ffae
-LISTEN = $ffb1
-TALK = $ffb4
-READST = $ffb7
-SETLFS = $ffba
-SETNAM = $ffbd
-OPEN = $ffc0
-CLOSE = $ffc3
-CHKIN = $ffc6
-CHKOUT = $ffc9
-CLRCHN = $ffcc
-CHRIN = $ffcf
-CHROUT = $ffd2
-LOAD = $ffd5
-SAVE = $ffd8
-SETTIM = $ffdb
-RDTIM = $ffde
-STOP = $ffe1
-GETIN = $ffe4
-CLALL = $ffe7
-UDTIM = $ffea
-SCREEN = $ffed
-PLOT = $fff0
-IOBASE = $fff3
+
         .word $7400
         * = $7400
 
 l7400   jmp l8c9e
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$03
-        .byt $00,$00,$00,$07,$1f,$7f,$ff,$ff,$07,$3f,$ff,$ff,$ff,$ff,$ff,$ff
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$80
-        .asc "p|"
-        .byt $ff,$ff,$ff,$ff,$ff
-        .byt $00,$00,$00,$80
-        .asc "@p|"
-        .byt $ff,$00,$00,$00,$00,$00,$00,$00,$00
-        l744d = * + 10
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-        l7461 = * + 14
-        .byt $03,$0f,$0f,$1f,$3f,$7f,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        l7465 = * + 2
-        l7469 = * + 6
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-l7473   .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .byt $80
-        .asc "@"
-l7485   cpx #$f0
-        beq l7485
-        .asc "~~"
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$01,$01,$02,$03,$07,$07
-        .byt $07,$0f,$7f,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .byt $ff,$ff
-        .asc "~"
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$80,$80
-        .asc "@@@"
-        .asc "@@"
-        .byt $0f,$0f,$0f,$0f,$0f,$1f,$1f,$1f,$ff,$ff,$ff,$ff,$ff,$ff
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .byt $ff,$ff
-        .asc "``````@@"
-        .byt $1f,$1f,$1f,$0f,$0f,$0f
-        .byt $0f,$0f,$ff,$ff,$ff,$ff
-l752f   inc $f0f8,x
-        l7533 = * + 1
-        beq l7533
-        .byt $ff
-        .asc "x"
-        .byt $80,$00,$00,$00,$00,$ff,$ff,$7f,$3f,$1f,$17,$0f,$0f,$ff
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .asc "|"
-l754d   beq l752f
-l754f   cpx #$e0
-        cpx #$c0
-        .byt $ff,$7f,$01,$00,$00,$00,$00,$00,$ff,$ff,$ff,$7f,$7f,$1f,$1f,$1f
-        .asc "@@@"
-        .byt $80,$80,$80,$80,$80,$07,$07,$07,$07,$07,$03,$03,$03
-        .asc "p"
-l7574   l7575 = * + 1
-; Instruction parameter jumped to.
-        cpx #$e0
-l7576   l7577 = * + 1
-; Instruction parameter jumped to.
-        cpx #$e0
-l7578   cpx #$f0
-        beq l757c
-l757c   .byt $00,$00,$00,$00,$00,$00,$00,$03,$07,$07,$07,$0f,$1f,$7f,$ff,$ff
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff
-l7593   cpy #$c0
-        cpy #$c0
-        cpy #$e0
-        beq l7593
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$1f,$1f,$1f,$1f,$1f,$1f,$3f,$3f
-        .byt $80,$80,$80
-        .asc "@@@@@"
-        .byt $03,$03,$03,$03,$03,$03,$03,$03
-        .asc "px|~"
-        .byt $ff,$ff,$ff,$ff,$01,$07,$0f,$1f,$ff,$ff,$ff,$ff
-        .byt $ff,$ff,$ff
-        .asc "~~||x7"
-        .byt $83,$03,$01,$01,$00,$00,$00
-        .asc "~"
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$80
-        .asc "`"
-        .byt $ff,$ff,$ff,$ff,$ff
-        .asc ""
-        .byt $3f,$7f,$ff,$ff,$ff,$ff,$ff,$ff
-        .asc "@@@@@@@"
-        .byt $80
-        .byt $03,$03,$01,$01,$01,$00,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$7f,$7f
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .asc "xxppxx"
-        .byt $ff,$ff
-        .byt $00,$00,$00,$00,$00
-        .asc "!"
-        .byt $ff,$ff,$7f,$7f,$7f,$7f,$ff,$ff,$ff,$ff
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .asc "~~|"
-        .byt $78
-        .byt $80,$80,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-        .asc ""
-        .byt $3f,$3f,$1e,$1f,$0f,$0f,$0f,$07,$ff
-        .asc "wOOOGGO"
-        l7665 = * + 10
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .asc "{"
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-        .asc "oaqqsssw"
-        .asc "xpp`````"
-        .byt $00,$00,$00,$00,$00,$00,$00,$00
-        l768c = * + 1
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$07,$07,$07,$07,$07,$03,$03,$03
-        .byt $ff
-        .asc "{k{"
-        .byt $ff
-        .asc "}zzo"
-        .byt $52,$52,$52
-        .asc "b"
-        .byt $7e
-        .asc "g$"
-        .asc ""
-        .byt $79,$79,$11,$11,$11,$17
-        .asc "|"
-        .byt $92,$ff,$35,$01,$05,$15,$7f
-        .asc "M"
-        .byt $4d
-        .byt $ff,$9f
-        .asc "/??"
-        .byt $ff
-        .asc "o"
-        .byt $5f
-        .asc "````@@@@"
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-        .byt $03,$01,$01,$00,$00,$00,$00,$00,$ff,$ff,$ff,$ff,$7f,$7f,$3f,$1f
-        .asc "$l"
-        .byt $ff,$ff,$ff,$ff,$ff,$ff,$96,$96,$97
-        .asc "o"
-        .byt $ff,$ff,$ff,$ff
-        .asc ""
-        .byt $49
-        .asc "KO"
-        .byt $7f,$ff,$ff,$ff,$ff,$7f,$ff,$ff,$ff
-l7707   inc $f8fc,x
-        beq l768c
-        .byt $80,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$0f
-        .byt $07,$03,$00,$00,$00,$00,$00,$ff,$ff,$ff,$ff,$3f,$0f,$00,$00,$ff
-        l7741 = * + 5
-        .byt $ff,$ff,$ff,$ff,$ff,$00,$00,$ff,$ff,$ff
-        .asc "~|"
-l7748   beq l774a
-l774a   l7754 = * + 10
-        .byt $00
-        .asc "`@"
-        .byt $80,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00
+
+_bitmapSkull
+	.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$03
+	.byt $00,$00,$00,$07,$1f,$7f,$ff,$ff,$07,$3f,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$80,$f0,$fc,$ff,$ff,$ff,$ff,$ff
+	.byt $00,$00,$00,$80,$c0,$f0,$fc,$ff,$00,$00,$00,$00,$00,$00,$00,$00
+	.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+	.byt $03,$0f,$0f,$1f,$3f,$7f,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $80,$c0,$e0,$f0,$f0,$fc,$fe,$fe,$00,$00,$00,$00,$00,$00,$00,$00
+	.byt $01,$01,$02,$03,$07,$07,$07,$0f,$7f,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$fe,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $00,$80,$80,$c0,$c0,$c0,$c0,$c0,$0f,$0f,$0f,$0f,$0f,$1f,$1f,$1f
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$e0,$e0,$e0,$e0,$e0,$e0,$c0,$c0
+	.byt $1f,$1f,$1f,$0f,$0f,$0f,$0f,$0f,$ff,$ff,$ff,$ff,$fe,$f8,$f0,$f0
+	.byt $ff,$ff,$f8,$80,$00,$00,$00,$00,$ff,$ff,$7f,$3f,$1f,$17,$0f,$0f
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$fc,$f0,$e0,$e0,$e0,$e0,$c0
+	.byt $ff,$7f,$01,$00,$00,$00,$00,$00,$ff,$ff,$ff,$7f,$7f,$1f,$1f,$1f
+	.byt $c0,$c0,$c0,$80,$80,$80,$80,$80,$07,$07,$07,$07,$07,$03,$03,$03
+	.byt $f0,$e0,$e0,$e0,$e0,$e0,$f0,$f0,$00,$00,$00,$00,$00,$00,$00,$00
+	.byt $03,$07,$07,$07,$0f,$1f,$7f,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $c0,$c0,$c0,$c0,$c0,$e0,$f0,$f8,$00,$00,$00,$00,$00,$00,$00,$00
+	.byt $1f,$1f,$1f,$1f,$1f,$1f,$3f,$3f,$80,$80,$80,$c0,$c0,$c0,$c0,$c0
+	.byt $03,$03,$03,$03,$03,$03,$03,$03,$f0,$f8,$fc,$fe,$ff,$ff,$ff,$ff
+	.byt $01,$07,$0f,$1f,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$fe,$fe,$fc,$fc,$f8
+	.byt $b7,$83,$03,$01,$01,$00,$00,$00,$fe,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $00,$80,$e0,$ff,$ff,$ff,$ff,$ff,$3f,$7f,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $c0,$c0,$c0,$c0,$c0,$c0,$c0,$80,$03,$03,$01,$01,$01,$00,$00,$00
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$7f,$7f,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $f8,$f8,$f0,$f0,$f8,$f8,$ff,$ff,$00,$00,$00,$00,$00,$a1,$ff,$ff
+	.byt $7f,$7f,$7f,$7f,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $ff,$ff,$ff,$ff,$fe,$fe,$fc,$78,$80,$80,$00,$00,$00,$00,$00,$00
+	.byt $00,$00,$00,$00,$00,$00,$00,$00,$3f,$3f,$1e,$1f,$0f,$0f,$0f,$07
+	.byt $ff,$f7,$cf,$cf,$cf,$c7,$c7,$cf,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$fb
+	.byt $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $ef,$e1,$f1,$f1,$f3,$f3,$f3,$f7,$f8,$f0,$f0,$e0,$e0,$e0,$e0,$e0
+	.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+	.byt $07,$07,$07,$07,$07,$03,$03,$03,$ff,$fb,$eb,$fb,$ff,$fd,$fa,$fa
+	.byt $ef,$52,$52,$52,$e2,$7e,$e7,$a4,$79,$79,$11,$11,$11,$17,$fc,$92
+	.byt $ff,$35,$01,$05,$15,$7f,$cd,$4d,$ff,$9f,$af,$bf,$bf,$ff,$ef,$5f
+	.byt $e0,$e0,$e0,$e0,$c0,$c0,$c0,$c0,$00,$00,$00,$00,$00,$00,$00,$00
+	.byt $00,$00,$00,$00,$00,$00,$00,$00,$03,$01,$01,$00,$00,$00,$00,$00
+	.byt $ff,$ff,$ff,$ff,$7f,$7f,$3f,$1f,$a4,$ec,$ff,$ff,$ff,$ff,$ff,$ff
+	.byt $96,$96,$97,$ef,$ff,$ff,$ff,$ff,$49,$cb,$cf,$7f,$ff,$ff,$ff,$ff
+	.byt $7f,$ff,$ff,$ff,$fe,$fc,$f8,$f0,$80,$80,$00,$00,$00,$00,$00,$00
+	.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+	.byt $00,$00,$00,$00,$00,$00,$00,$00,$0f,$07,$03,$00,$00,$00,$00,$00
+	.byt $ff,$ff,$ff,$ff,$3f,$0f,$00,$00,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00
+	.byt $ff,$ff,$ff,$fe,$fc,$f0,$00,$00,$e0,$c0,$80,$00,$00,$00,$00,$00
+	.byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 
 l7763
-_strTableRace
+strTableRace
         .aasc "lizar",$e4
         .aasc "huma",$ee
         .aasc "el",$e6
         .aasc "dwar",$e6
         .aasc "bobbi",$f4
+_strTableReadyWeapon
         .aasc "hand",$f3
         .aasc "dagge",$f2
         .aasc "mac",$e5
@@ -373,6 +129,7 @@ _strTableSpell
         .aasc "Creat",$e5
         .aasc "Destro",$f9
         .aasc "Kil",$ec
+_strTableReadyArmour
         .aasc "ski",$ee
         .aasc "leather armou",$f2
         .aasc "chain mai",$ec
@@ -481,6 +238,8 @@ l7a85
         .aasc "zor",$ee
         .aasc "daemo",$ee
         .aasc "balro",$ee
+; strTableLands
+l7bda
         .aasc "Lord Britis",$e8
         .aasc "the Feudal Lord",$f3
         .aasc "the Dark Unknow",$ee
@@ -500,11 +259,13 @@ l7c41   ror $a1,x
         ldy l8b99
         sty $a3,x
         ldx #$87
-        bcs l7bee
+        bcs $7bee
         .byt $95
         .asc "7"
         .byt $83,$89
-        .asc "_TCBFdVu^DjO"
+        .asc "_TCBFdVu"
+        .byt $de
+        .asc "DjO"
         .asc "}`bvUx[xO"
         .byt $1e,$16,$3b,$1a,$08,$03,$31
         l7c77 = * + 4
@@ -516,633 +277,102 @@ l7c8e   jsr $3622
 l7ca3   jsr $3622
         .byt $15,$38,$1b,$38,$0f,$21,$29,$04,$25,$37,$3c,$0e,$22,$2c,$19,$0b
         .byt $14,$23,$22,$07
-l7cba   bmi l7cd7
+l7cba   bmi $7cd7
 l7cbc   ora $37,x
-        .byt $03,$09,$54,$68,$65
-l7cc3   jsr $6143
-        .asc ""
-        .byt $73,$74
-l7cc8   jmp ($2065)
-        .asc ""
-        .byt $6f
-l7ccc   ror $20
-        jmp $726f
-        .asc ""
-        .byt $64
-l7cd2   jsr $7242
-l7cd5   adc #$74
-l7cd7   adc #$73
-        inx
-        .asc ""
-        .byt $54,$68,$65
-l7cdd   jsr $6143
-        .asc ""
-        .byt $73,$74
-l7ce2   jmp ($2065)
-        .asc ""
-        .byt $6f,$66
-l7ce7   jsr $6874
-l7cea   adc $20
-        jmp $736f
-        .asc ""
-        .byt $74
-l7cf0   jsr $694b
-        .asc ""
-        .byt $6e
-        .asc "g"
-        .byt $54,$68,$65
-l7cf8   jsr $6f54
-        .asc ""
-        .byt $77
-l7cfc   adc $72
-        jsr $666f
-l7d01   jsr $6e4b
-        .asc ""
-        .byt $6f,$77
-l7d06   jmp ($6465)
-        .asc ""
-        .byt $67
-l7d0a   sbc $54
-        pla
-        adc $20
-        bvc l7d7a
-l7d11   jmp ($616c)
-        .asc ""
-        .byt $72,$73
-l7d16   jsr $666f
-l7d19   jsr $7250
-        .asc ""
-        .byt $6f,$74,$65,$63,$74,$69,$6f
-        .asc "n"
-        .byt $54,$68,$65,$20,$44,$75,$6e,$67
-l7d2c   adc $6f
-        ror $6f20
-        ror $20
-        bvc l7d9a
-        .asc ""
-        .byt $72,$69,$6e,$69
-l7d39   sbc ($54,x)
-        pla
-        adc $20
-        jmp $736f
-        .asc ""
-        .byt $74
-l7d42   jsr $6143
-        .asc ""
-        .byt $76
-l7d46   adc $72
-        ror $54f3
-        pla
-        adc $20
-        eor $6e69
-        adc $73
-        jsr $666f
-l7d56   jsr l744d
-        .asc ""
-        .byt $2e
-l7d5a   jsr $7244
-        .asc ""
-        .byt $61,$73
-        .asc "h"
-        .byt $54
-l7d61   pla
-        adc $20
-        eor $6e69
-        adc $73
-        jsr $666f
-        .asc ""
-        .byt $20
-l7d6d   eor $2e74
-        jsr $7244
-l7d73   adc ($73,x)
-        pla
-        jsr $c949
-        l7d7a = * + 1
-        .asc ""
-        .byt $4d,$6f,$6e,$64
-l7d7d   adc ($69,x)
-        ror $7327
-        jsr $6147
-        .asc ""
-        .byt $74,$65
-l7d87   jsr $6f74
-l7d8a   jsr $6548
-l7d8d   jmp ($54ec)
-        .asc ""
-        .byt $68,$65
-l7d92   jsr $6e55
-        .asc ""
-        .byt $68,$6f
-l7d97   jmp ($2079)
-l7d9a   pha
-        .asc ""
-        .byt $6f
-l7d9c   jmp ($54e5)
-        .asc ""
-        .byt $68,$65,$20,$44,$75,$6e,$67,$65,$6f,$6e
-l7da9   jsr $666f
-l7dac   jsr $6f44
-        .asc ""
-        .byt $75,$62
-        .asc "t"
-        .byt $54,$68,$65,$20,$44,$75,$6e,$67,$65,$6f,$6e
-l7dbd   jsr $666f
-l7dc0   jsr $6f4d
-        .asc ""
-        .byt $6e,$74,$6f
-        .asc "r"
-        .byt $44,$65,$61,$74,$68,$27,$73
-l7dce   jsr l7741
-        .asc ""
-        .byt $61,$6b,$65,$6e,$69,$6e
-        .asc "g"
-        .byt $42,$72,$69,$74,$61,$69
-        .asc "n"
-        .byt $4d,$6f
-        .asc ""
-        .byt $6f
-        .asc "n"
-        .byt $46,$61,$77
-        .asc "n"
-l7de7   bvc l7e4a
-        .asc ""
-        .byt $77
-        .asc "s"
-        .byt $4d,$6f,$6e,$74,$6f
-        .asc "r"
-        .byt $59,$65
-        .asc "w"
-        .byt $54,$75,$6e
-        .asc "e"
-        .byt $47
-        .asc ""
-        .byt $72,$65
-        .asc "y"
-        .byt $54,$68,$65
-l7dff   jsr $6143
-        .asc ""
-        .byt $73,$74
-l7e04   jmp ($2065)
-        .asc ""
-        .byt $42,$61,$72,$61,$74,$61,$72,$69
-        .asc "a"
-        .byt $54,$68,$65
-l7e13   jsr $6143
-        .asc ""
-        .byt $73,$74
-l7e18   jmp ($2065)
-        .asc ""
-        .byt $52,$6f,$6e,$64,$6f,$72
-l7e21   jmp ($ee69)
-        .asc ""
-        .byt $54
-l7e25   pla
-        adc $20
-        bvc l7e93
-l7e2a   jmp ($616c)
-        .asc ""
-        .byt $72
-l7e2e   jsr $666f
-l7e31   jsr l7a4f
-        .asc ""
-        .byt $79,$6d,$61,$6e,$64,$69,$61
-        .asc "s"
-        .byt $54
-l7e3d   pla
-        adc $20
-        bvc l7eab
-l7e42   jmp ($616c)
-        .asc ""
-        .byt $72,$73
-l7e47   jsr $666f
-l7e4a   jsr $6874
-        .asc ""
-        .byt $65
-l7e4e   jsr $7241
-        .asc ""
-        .byt $67,$6f,$6e,$61,$75,$74
-        .asc "s"
-        .byt $53,$63,$6f,$72
-l7e5c   bvs l7ec7
-        .asc ""
-        .byt $6f,$6e
-l7e60   jsr $6f48
-l7e63   jmp ($54e5)
-        .asc ""
-        .byt $68,$65
-l7e68   jsr $6153
-        .asc ""
-        .byt $76
-l7e6c   adc ($67,x)
-        adc $20
-        bvc l7ede
-        .asc ""
-        .byt $61,$63
-        .asc "e"
-        .byt $54,$68,$65
-l7e78   jsr $6f48
-        .asc ""
-        .byt $72,$72,$6f,$72
-l7e7f   jsr $666f
-l7e82   jsr $6874
-l7e85   adc $20
-        pha
-        adc ($72,x)
-        bvs l7ef5
-        .asc ""
-        .byt $65
-        .asc "s"
-        .byt $54,$68,$65
-l7e91   l7e93 = * + 2
-        jsr $6f48
-        .asc ""
-        .byt $72,$72,$6f,$72
-l7e98   jsr $666f
-l7e9b   jsr $6874
-l7e9e   adc $20
-        pha
-        adc ($72,x)
-        bvs l7f0e
-l7ea5   adc $73
-        jsr $c949
-        l7eab = * + 1
-        .asc ""
-        .byt $41,$64,$76,$61,$72,$69,$27,$73
-l7eb2   jsr $6f48
-l7eb5   jmp ($54e5)
-l7eb8   pla
-        adc $20
-        jmp $6261
-        .asc ""
-        .byt $79,$72,$69,$6e,$74
-        .asc "h"
-        .byt $54,$68,$65
-l7ec7   jsr $6f47
-        .asc ""
-        .byt $72,$67,$6f
-l7ecd   ror $7327
-        jsr $6f48
-l7ed3   jmp ($57e5)
-        .asc ""
-        .byt $68,$65,$72,$65
-l7eda   jsr $6548
-        l7ede = * + 1
-        .asc ""
-        .byt $72,$63
-l7edf   adc $6c,x
-        adc $73
-        jsr $6944
-        .asc ""
-        .byt $65
-        .asc "d"
-        .byt $54,$68,$65
-l7eeb   jsr $6544
-l7eee   adc ($64,x)
-        jsr $6157
-        .asc ""
-        .byt $72,$72
-l7ef5   adc #$6f
-        .asc ""
-        .byt $72,$27,$73
-l7efa   jsr $6946
-        .asc ""
-        .byt $67,$68
-        .asc "t"
-        .byt $41,$72,$6e,$6f
-l7f04   jmp ($4ce4)
-        .asc ""
-        .byt $69
-l7f08   ror $e164
-        pha
-        adc $6c
-l7f0e   adc $ee
-        .asc ""
-        .byt $4f,$77,$65
-        .asc "n"
-        .byt $4a,$6f,$68
-        .asc "n"
-        .byt $47,$65,$72,$72
-l7f1c   sbc $6f57,y
-        jmp ($54e6)
-        .asc ""
-        .byt $68,$65
-l7f24   jsr $6e53
-        .asc ""
-        .byt $61,$6b
-        .asc "e"
-        .byt $54,$68,$65
-l7f2d   jsr $6143
-        .asc ""
-        .byt $73,$74
-l7f32   jmp ($2065)
-        .asc ""
-        .byt $6f,$66
-l7f37   jsr $6c4f
-        .asc ""
-        .byt $79,$6d
-l7f3c   bvs l7fb3
-        .asc "s"
-        .byt $54,$68,$65
-l7f42   jsr $6c42
-        .asc ""
-        .byt $61,$63,$6b
-l7f48   jsr $7244
-        .asc ""
-        .byt $61,$67,$6f
-l7f4e   ror $7327
-        jsr $6143
-        .asc ""
-        .byt $73,$74
-l7f56   jmp ($54e5)
-        .asc ""
-        .byt $68,$65
-l7f5b   jsr $6953
-        .asc ""
-        .byt $67,$6e
-l7f60   jsr $6f50
-        .asc ""
-        .byt $73
-        .asc "t"
-        .byt $54,$68,$65
-l7f68   jsr $6f53
-        .asc ""
-        .byt $75,$74,$68,$65,$72,$6e
-l7f71   jsr $6953
-        .asc ""
-        .byt $67,$6e
-l7f76   jsr $6f50
-        .asc ""
-        .byt $73
-        .asc "t"
-        .byt $54
-l7f7c   pla
-        adc $20
-        eor l7465
-        adc ($6c,x)
-        jsr l7754
-        .asc ""
-        .byt $69,$73,$74,$65
-        .asc "r"
-        .byt $54,$68,$65
-l7f8f   jsr $7254
-        .asc ""
-        .byt $6f
-l7f93   jmp ($276c)
-        .asc ""
-        .byt $73
-l7f97   jsr $6f48
-l7f9a   jmp ($54e5)
-l7f9d   pla
-        adc $20
-        lsr $69,x
-        bvs l8009
-        .asc ""
-        .byt $72,$27,$73
-l7fa7   jsr $6950
-        .asc "t"
-        .byt $54
-l7fac   pla
-        adc $20
-        lsr $69,x
-        bvs l8018
-l7fb3   .asc ""
-        .byt $72,$27,$73
-l7fb6   jsr $6950
-        .asc ""
-        .byt $74
-l7fba   jsr $c949
-        .asc ""
-        .byt $54,$68,$65,$20,$47
-l7fc2   adc $69,x
-        jmp ($2064)
-        .asc ""
-        .byt $6f,$66
-l7fc9   jsr $6544
-        .asc ""
-        .byt $61,$74
-        .asc "h"
-        .byt $54,$68,$65
-l7fd2   jsr $6e45
-        .asc ""
-        .byt $64,$2e,$2e
-        .asc "."
-        .byt $54,$68,$65
-l7fdc   jsr $7254
-l7fdf   adc ($6d,x)
-        bvs l8003
-        .asc ""
-        .byt $6f,$66
-l7fe5   jsr $6f44
-        .asc ""
-        .byt $6f
-l7fe9   sbc $6854
-        adc $20
-        jmp $6e6f
-        .asc ""
-        .byt $67
-l7ff2   jsr $6544
-        .asc ""
-        .byt $61,$74
-        .asc "h"
-        .byt $54,$68,$65
-l7ffb   jsr $6c53
-        .asc ""
-        .byt $6f,$77
-l8000   jsr $6544
-l8003   adc ($74,x)
-        inx
-        lsr $7361
-l8009   .asc ""
-        .byt $73,$61
-l800b   sbc $43,x
-        jmp ($6165)
-        .asc ""
-        .byt $72
-l8011   jsr $614c
-        l8018 = * + 4
-        .asc ""
-        .byt $67,$6f,$6f
-        .asc "n"
-        .byt $53,$74,$6f,$75
-        .asc "t"
-        .byt $47,$61,$75,$6e,$74
-l8022   jmp ($f465)
-        .asc ""
-        .byt $49,$6d,$61,$67,$69,$6e,$61,$74,$69,$6f
-        .asc "n"
-l8030   bvc l80a1
-        .asc ""
-        .byt $6e,$64,$65
-        .asc "r"
-        .byt $57
-l8037   adc $61
-        jmp ($e874)
-l803c   bvc l80ad
-        .asc ""
-        .byt $6f
-        .asc "r"
-        .byt $54,$68,$65
-l8043   jsr $6857
-        .asc ""
-        .byt $69,$74,$65
-l8049   jsr $7244
-        .asc ""
-        .byt $61,$67,$6f
-l804f   ror $7327
-        jsr $6143
-        .asc ""
-        .byt $73,$74
-l8057   jmp ($54e5)
-        .asc ""
-        .byt $68,$65
-l805c   jsr $6143
-        .asc ""
-        .byt $73,$74
-l8061   jmp ($2065)
-        .asc ""
-        .byt $6f,$66
-l8066   jsr $6853
-        .asc ""
-        .byt $61,$6d,$69,$6e
-        .asc "o"
-        .byt $54,$68,$65
-l8071   jsr $7247
-        .asc ""
-        .byt $61
-l8075   ror $65,x
-        jsr $666f
-l807a   jsr $6874
-l807d   adc $20
-        jmp $736f
-        .asc ""
-        .byt $74
-l8083   jsr $6f53
-        .asc ""
-        .byt $75
-        .asc "l"
-        .byt $45,$61,$73,$74,$65,$72,$6e
-l808f   jsr $6953
-        .asc ""
-        .byt $67,$6e
-l8094   jsr $6f50
-        .asc ""
-        .byt $73
-        .asc "t"
-        .byt $53
-l809a   bvs l8105
-l809c   ror $2065
-        .asc ""
-        .byt $42,$72
-l80a1   adc $61
-        .asc ""
-        .byt $6b
-l80a4   adc $f2
-        lsr $72
-        adc $65
-        jsr $6544
-l80ad   adc ($74,x)
-        pla
-        jsr $6f48
-l80b3   jmp ($54e5)
-        .asc ""
-        .byt $68,$65
-l80b8   jsr $6544
-l80bb   adc ($64,x)
-        jsr $6143
-        .asc ""
-        .byt $74,$27,$73
-l80c3   jsr $694c
-        .asc ""
-        .byt $66
-        .asc "e"
-        .byt $54,$68,$65
-l80cb   jsr $6544
-l80ce   adc ($64,x)
-        jsr $6143
-        .asc ""
-        .byt $74,$27,$73
-l80d6   jsr $694c
-l80d9   ror $65
-        jsr $c949
-        .asc ""
-        .byt $54,$68,$65
-l80e1   jsr $6f4d
-        .asc ""
-        .byt $72,$62
-l80e6   adc #$64
-        jsr $6441
-        .asc ""
-        .byt $76,$65,$6e,$74,$75,$72
-        .asc "e"
-        .byt $54,$68,$65
-l80f5   jsr $6b53
-l80f8   adc $6c,x
-        jmp ($5320)
-        .asc ""
-        .byt $6d,$61,$73,$68,$65
-        .asc "r"
-        .byt $44,$65
-l8105   adc ($64,x)
-        jsr $614d
-l810a   ror $7327
-        jsr $6157
-l8110   jmp ($54eb)
-        .asc ""
-        .byt $68,$65,$20,$44,$75,$6e,$67,$65,$6f,$6e
-l811d   jsr $666f
-l8120   jsr $6f44
-        .asc ""
-        .byt $6f
-l8124   sbc $6f48
-        jmp ($2065)
-        .asc ""
-        .byt $74,$6f
-l812c   jsr $6148
-        .asc ""
-        .byt $64,$65
-        .asc "s"
-        .byt $47,$6f,$72
-l8135   jmp ($e261)
-        .asc ""
-        .byt $44,$65,$78,$74,$72,$6f
-        .asc "n"
-        .byt $4d,$61,$67,$69
-        .asc "c"
-        .byt $57
-l8145   pla
-        adc $65
-        jmp ($f265)
-        .asc ""
-        .byt $42
-l814c   adc $6c,x
-        jmp ($6f64)
-        .asc ""
-        .byt $7a,$65
-        .asc "r"
-        .byt $54,$68,$65
-l8157   jsr $7242
-        .asc ""
-        .byt $6f,$74,$68,$65
-        .asc "r"
-        .byt $54,$68,$65,$20,$54,$75,$72,$74
-l8167   jmp ($4ce5)
-        .asc ""
-        .byt $6f,$73,$74
-l816d   jsr $7246
-l8170   adc #$65
-        ror $f364
+        .byt $03,$09
+
+l7cc0
+        .aasc "The Castle of Lord Britis",$e8
+        .aasc "The Castle of the Lost Kin",$e7
+        .aasc "The Tower of Knowledg",$e5
+        .aasc "The Pillars of Protectio",$ee
+        .aasc "The Dungeon of Perini",$e1
+        .aasc "The Lost Cavern",$f3
+        .aasc "The Mines of Mt. Dras",$e8
+        .aasc "The Mines of Mt. Drash I",$c9
+        .aasc "Mondain's Gate to Hel",$ec
+        .aasc "The Unholy Hol",$e5
+        .aasc "The Dungeon of Doub",$f4
+        .aasc "The Dungeon of Monto",$f2
+        .aasc "Death's Awakenin",$e7
+        .aasc "Britai",$ee
+        .aasc "Moo",$ee
+        .aasc "Faw",$ee
+        .aasc "Paw",$f3
+        .aasc "Monto",$f2
+        .aasc "Ye",$f7
+        .aasc "Tun",$e5
+        .aasc "Gre",$f9
+        .aasc "The Castle Baratari",$e1
+        .aasc "The Castle Rondorli",$ee
+        .aasc "The Pillar of Ozymandia",$f3
+        .aasc "The Pillars of the Argonaut",$f3
+        .aasc "Scorpion Hol",$e5
+        .aasc "The Savage Plac",$e5
+        .aasc "The Horror of the Harpie",$f3
+        .aasc "The Horror of the Harpies I",$c9
+        .aasc "Advari's Hol",$e5
+        .aasc "The Labyrint",$e8
+        .aasc "The Gorgon's Hol",$e5
+        .aasc "Where Hercules Die",$e4
+        .aasc "The Dead Warrior's Figh",$f4
+        .aasc "Arnol",$e4
+        .aasc "Lind",$e1
+        .aasc "Hele",$ee
+        .aasc "Owe",$ee
+        .aasc "Joh",$ee
+        .aasc "Gerr",$f9
+        .aasc "Wol",$e6
+        .aasc "The Snak",$e5
+        .aasc "The Castle of Olympu",$f3
+        .aasc "The Black Dragon's Castl",$e5
+        .aasc "The Sign Pos",$f4
+        .aasc "The Southern Sign Pos",$f4
+        .aasc "The Metal Twiste",$f2
+        .aasc "The Troll's Hol",$e5
+        .aasc "The Viper's Pi",$f4
+        .aasc "The Viper's Pit I",$c9
+        .aasc "The Guild of Deat",$e8
+        .aasc "The End..",$ae
+        .aasc "The Tramp of Doo",$ed
+        .aasc "The Long Deat",$e8
+        .aasc "The Slow Deat",$e8
+        .aasc "Nassa",$f5
+        .aasc "Clear Lagoo",$ee
+        .aasc "Stou",$f4
+        .aasc "Gauntle",$f4
+        .aasc "Imaginatio",$ee
+        .aasc "Ponde",$f2
+        .aasc "Wealt",$e8
+        .aasc "Poo",$f2
+        .aasc "The White Dragon's Castl",$e5
+        .aasc "The Castle of Shamin",$ef
+        .aasc "The Grave of the Lost Sou",$ec
+        .aasc "Eastern Sign Pos",$f4
+        .aasc "Spine Breake",$f2
+        .aasc "Free Death Hol",$e5
+        .aasc "The Dead Cat's Lif",$e5
+        .aasc "The Dead Cat's Life I",$c9
+        .aasc "The Morbid Adventur",$e5
+        .aasc "The Skull Smashe",$f2
+        .aasc "Dead Man's Wal",$eb
+        .aasc "The Dungeon of Doo",$ed
+        .aasc "Hole to Hade",$f3
+        .aasc "Gorla",$e2
+        .aasc "Dextro",$ee
+        .aasc "Magi",$e3
+        .aasc "Wheele",$f2
+        .aasc "Bulldoze",$f2
+        .aasc "The Brothe",$f2
+        .aasc "The Turtl",$e5
+        .aasc "Lost Friend",$f3
+
 l8175   bcc l818e
-l8177   jsr _print
-        .byt $7d
-        .byt $44,$69,$73,$6b
-l817f   jsr $7265
-        .asc ""
-        .byt $72,$6f,$72
-l8185   jsr $2000
-        .asc ""
-        .byt $64,$8b
-l818a   jsr $164f
-l818d   sec
+        jsr print
+        .aasc $7d,"Disk error ",$00
+        jsr l8b64
+        jsr $164f
+        sec
 l818e   rts
 
 l818f   lda $5c
@@ -1208,6 +438,7 @@ l8208   ora ($03,x)
         .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$ff,$ff,$ff,$ff
         l822b = * + 1
         .byt $00,$00
+;statsGender
 l822c   l822d = * + 1
 ; Instruction opcode accessed.
         ora ($47,x)
@@ -1336,7 +567,7 @@ l8426   sec
         bit !$00a2
 
 
-_printTableString
+printTableString
 l842d   pla
         sta l83b5               ; set data pointer to data after RTS call
         pla
@@ -1385,11 +616,11 @@ l8482   clc
         sta zpCursorCol
         jmp l8455
 
-_printAtPos
+printAtPos
 l848a   stx zpCursorCol
         sty zpCursorRow
 
-_print
+print
 l848e   pla
         sta l83b5
         pla
@@ -1457,6 +688,7 @@ l851b   ldx zpCursorRow
         cpx #$17
         bcc l8516
 l8521   rts
+
 l8522   stx $3f
         sta $40
         ldx #$00
@@ -1576,7 +808,7 @@ _checkCmdKeyL1
         dex
         bpl _checkCmdKeyL1
 
-        jsr _print              ; illegal command key...
+        jsr print               ; illegal command key...
         .aasc "Huh?",$00
         jsr l8772
         sec
@@ -1591,13 +823,14 @@ l861a   lda l81c8
 l861f   sta l862c
         lda l81c7
         sta l862b
-        jsr _printTableString
+        jsr printTableString
 l862b   l862c = * + 1
         .word _strTableCommands
 l862d   jmp l8635
 
-l8630   jsr _printTableString   ; print the command
+l8630   jsr printTableString   ; print the command
         .word _strTableCommands
+l8635
         pla                     ; restore command id
         asl                     ; as 16 bit index
         tax
@@ -1645,12 +878,12 @@ l8687   cld
 
 l8689   jsr l870c
 l868c   jsr $1658
-l868f   jsr _print
+l868f   jsr print
         .aasc "Hits ",$7c
         .aasc "Food ",$7c
         .aasc "Exp. ",$7c
         .aasc "Coin ",$00
-        jmp l68c9
+        jmp l86c9
 
 l86ad   cmp #$01
         bcs l86bb
@@ -1704,8 +937,8 @@ l870e   lda $2e,x
         bpl l870e
 l8716   rts
 
-l8717   ldx l81ee
-        jsr _printTableString
+l8717   ldx statsSpell
+        jsr printTableString
         .word _strTableSpell
         rts
 
@@ -1735,7 +968,7 @@ l8749   dec zpCursorCol
         bne l8726
 l874d   rts
 
-l874e   jsr _print
+l874e   jsr print
         .aasc $7d
         .aasc "Hmmmm... no effect?",$00
 
@@ -1790,87 +1023,88 @@ l87c9   lda $5c
         eor $5d
         sta $5c
         rts
+
 l87d0   pha
         lda #$07
         sta zpCursorCol
         pla
         ldx #$03
-l87d8   cmp l87f5,x
+l87d8   cmp l87f5,x             ; "SWA" (Spell, Weapon, Armour)
         beq l87e0
-l87dd   dex
+        dex
         bne l87d8
 l87e0   txa
         asl
         tay
         lda l87fa,y
-        pha
+        pha                     ; -> RTS address
         lda l87f9,y
         pha
-        jsr _printTableString
-        .asc ""
-        .byt $2e
-l87ef   dey
+        jsr printTableString
+        .word _strTableReady    ; "nothing", "spell:", "weapon:", "armour:"
         jsr $164f
-l87f3   inc zpCursorCol
-l87f5   rts
-        l87f9 = * + 3
-        l87fa = * + 4
-        .asc ""
-        .byt $53,$57,$41
-        .asc "t"
-        .byt $87,$00,$88,$0f,$88,$1e
-l8800   dey
-        lda l81ee
-        jsr l8849
-        .byt $0a,$08,$82
-l880a   dey
-        sei
-        sta l81ee
-        rts
-l8810   lda l81ef
-        jsr l8849
-        .byt $0f
-        .asc "x"
-        .byt $81,$7c,$77
-l881b   sta l81ef
-        rts
-l881f   lda l81f0
-        jsr l8849
-l8825   ora $f2
-        sta ($d4,x)
-        sei
-        sta l81f0
-        rts
-        .asc ""
-        .byt $6e,$6f,$74,$68,$69
-l8833   ror $73e7
-        bvs l889d
-l8838   jmp ($ba6c)
-        .asc ""
-        .byt $77
-l883c   adc $61
-        bvs l88af
-        .asc ""
-        .byt $6e
-        .asc ":"
-        .byt $61,$72,$6d,$6f
-l8846   adc $72,x
-        tsx
+        inc zpCursorCol
+_readyNothing
+l87f5   rts                     ; -> rts/jump to specific ready <item> routine
 
+        .aasc "SWA"
+l87f9
+l87fa = * + 1
+        .word _readyNothing-1
+        .word _readySpell-1
+        .word _readyWeapon-1
+        .word _readyArmour-1
+
+_readySpell
+l8801
+        lda statsSpell
+        jsr _readySelectItem
+        .byt 10
+        .word $8208
+        .word _strTableSpell
+        sta statsSpell
+        rts
+
+_readyWeapon
+l8810   lda statsWeapon
+        jsr _readySelectItem
+        .byt 15                 ; # of choices: 15
+        .word $81f8
+        .word _strTableReadyWeapon
+        sta statsWeapon
+        rts
+
+_readyArmour
+l881f   lda statsArmour
+        jsr _readySelectItem
+        .byt 5
+        .word $81f2
+        .word _strTableReadyArmour
+        sta statsArmour
+        rts
+
+_strTableReady
+l882e
+        .aasc "nothin",$e7
+        .aasc "spell",$ba
+        .aasc "weapon",$ba
+        .aasc "armour",$ba
+
+_readySelectItem
 l8849   sta $46
         pla
         sta l83b5
         pla
         sta l83b6
-        jsr l83ac
-l8856   sta l890b
-        jsr l83ac
-l885c   sta $41
-        jsr l83ac
+        jsr l83ac               ; fetch parameter byte
+l8856   sta l890b               ; number of selections
+        jsr l83ac               ; fetch parameter byte
+l885c   sta $41                 ; inventory pointer
+        jsr l83ac               ; fetch parameter byte
 l8861   sta $42
-        jsr l83ac
-l8866   sta l8907
-        jsr l83ac
+        jsr l83ac               ; fetch parameter byte
+l8866   sta l8907               ; string table pointer
+        jsr l83ac               ; fetch parameter byte
 l886c   sta l8908
         lda l83b6
         pha
@@ -1883,12 +1117,8 @@ l887d   ldx #$0e
         lda $5d
         sta l81c3
         sty $5d
-        jsr l848a
-        .byt $0e
-l888c   jsr $6552
-        .asc ""
-        .byt $61,$64,$79
-l8892   jsr $0018
+        jsr printAtPos
+        .aasc $0e," Ready ",$18,$00
 l8895   jsr $1652
 l8898   ldy l890b
         ldx #$01
@@ -1903,27 +1133,28 @@ l88a5   stx $43
         sbc $43
         lsr
         sta zpCursorRow
-l88af   lda #$61
-        sta l88bf
+l88af   lda #$61                ; 'a'
+        sta _itemChar           ; character used for item selection
         ldy #$00
 l88b6   tya
-        pha
-        lda #$0d
+        pha                     ; store item type index
+        lda #13
         sta zpCursorCol
-        jsr _print
-l88bf; Instruction opcode accessed.
-        adc ($29,x)
-        jsr $6800
-l88c4   jsr l8902
-l88c7   tay
+        jsr print
+_itemChar
+        .aasc "a) ",$00
+        pla                     ; restore item type index
+        jsr l8902
+        tay
         inc zpCursorRow
 l88ca   cpy l890b
         bcs l88d9
-l88cf   inc l88bf
+        inc _itemChar
         iny
-        lda ($41),y
-        bne l88b6
-l88d7   beq l88ca
+        lda ($41),y             ; item in inventory?
+        bne l88b6               ; yes ->
+        beq l88ca               ; no ->
+
 l88d9   jsr l8701
 l88dc   lda l81c3
         sta $5d
@@ -1933,17 +1164,18 @@ l88e7   pha
         jsr l8ad6
 l88eb   sec
         pla
-        sbc #$41
+        sbc #$41                ; 'A'; make 0-based index
         beq l8902
 l88f1   bmi l88ff
-l88f3   cmp l890b
-        bcc l88fa
-l88f8   bne l88ff
+l88f3   cmp l890b               ; valid selection?
+        bcc l88fa               ; yes ->
+        bne l88ff
 l88fa   tay
-        lda ($41),y
-        bne l8901
+        lda ($41),y             ; item in inventory?
+        bne l8901               ; yes ->
 l88ff   ldy $46
 l8901   tya
+
 l8902   tax
         pha
         jsr l8426
@@ -1952,40 +1184,29 @@ l8907   l8908 = * + 1
 l8909   pla
         rts
 l890b   .byt $0a
+
+ztats
 l890c   jsr $1661
-l890f   jsr l870c
-l8912   jsr $165e
-l8915   jsr l8416
-l8918   ldx #$0c
+        jsr l870c
+        jsr $165e
+        jsr l8416
+        ldx #$0c
         ldy #$00
         sty l85be
         lda $5d
         sta l81c3
         sty $5d
-        jsr l848a
-        .byt $0e
-l892a   jsr $6e49
-        .asc ""
-        .byt $76,$65,$6e,$74,$6f,$72,$79,$20,$18,$7c,$7c
-l8938   bvc l89a6
-l893a   adc ($79,x)
-        adc $72
-        .asc ""
-        .byt $3a
-l893f   jsr $2000
-l8942   lda ($8b,x)
-        jsr _print
-        .asc ""
-        .byt $7c
-l8948   eor ($20,x)
-        jmp (l7665)
-l894d   adc $6c
-        jsr $ae00
-        .asc ""
-        .byt $5c,$82
-l8954   lda l825d
+        jsr printAtPos
+        .aasc $0e," Inventory ",$18,LF,LF
+        .aasc "Player: ",$00
+        jsr $8ba1
+        jsr print
+        .aasc LF
+        .aasc "A level ",$00
+        ldx l825c
+        lda l825d
         jsr l8522
-l895a   lda $3d
+        lda $3d
         lsr
         lsr
         lsr
@@ -1993,20 +1214,22 @@ l895a   lda $3d
         clc
         adc #$01
         jsr l8582
-l8966   inc zpCursorCol
-        lda l822c               ; gender
-        beq l8973
-        jsr _print
-        .aasc "fe",$00
-l8973   jsr _print
-        .aasc "male ",$00
-l897c   ldx l824b               ; race
-        jsr _printTableString
-        .word _strTableRace
-l8984   inc zpCursorCol
+        inc zpCursorCol
 
-        ldx l824d               ; class
-        jsr _printTableString
+        lda statsGender         ; gender
+        beq _ztatsJ1            ; male? ->
+        jsr print
+        .aasc "fe",$00
+_ztatsJ1
+        jsr print
+        .aasc "male ",$00
+        ldx statsRace           ; race
+        jsr printTableString
+        .word strTableRace
+        inc zpCursorCol
+
+        ldx statsClass          ; class
+        jsr printTableString
         .word _strTableClass
 
         jsr l8b10
@@ -2038,7 +1261,7 @@ l89be   lda $3c
         and #$0f
         beq l89e0
 l89c4   jsr l8adc
-l89c7   jsr _print
+l89c7   jsr print
         .aasc "Copper pence....",$00
 
         lda $3c
@@ -2051,7 +1274,7 @@ l89e0   lda $3c
         beq l8a04
 l89e8   pha
         jsr l8adc
-l89ec   jsr _print
+l89ec   jsr print
         .aasc "Silver pieces...",$00
 
         pla
@@ -2059,15 +1282,11 @@ l89ec   jsr _print
 l8a04   lda $3d
         beq l8a41
 l8a08   jsr l8adc
-l8a0b   jsr _print
-        .asc ""
-        .byt $47,$6f
-l8a10   jmp ($2064)
-        .asc ""
-        .byt $43,$72,$6f,$77,$6e,$73
-l8a19   rol $2e2e
-        rol $a500
-        and $10c9,x
+l8a0b   jsr print
+        .aasc "Gold Crowns....",$00
+
+        lda $3d
+        cmp #$10
         bcs l8a3e
 l8a24   lda #$2e
         jsr l83d7
@@ -2090,7 +1309,7 @@ l8a46   ldx #$00
         stx $46
         jsr l8b22
 l8a4d   and ($8a),y
-l8a4f   lda l81f0
+l8a4f   lda statsArmour
         sta l81c4
         ldx #$01
 l8a57   stx $46
@@ -2126,7 +1345,7 @@ l8a96   ldx $46
         inx
         cpx #$04
         bcc l8a8a
-l8a9d   lda l81ef
+l8a9d   lda statsWeapon
         sta l81c4
         ldx #$01
 l8aa5   stx $46
@@ -2170,11 +1389,10 @@ l8ae7   ldy $30
 l8af3   sta $2e
 l8af5   sty zpCursorRow
 l8af7   rts
-l8af8   ldx #$0d
-        ldy #$12
-        jsr l848a
-l8aff   adc $726f
-        adc $00
+l8af8   ldx #13
+        ldy #18
+        jsr printAtPos
+        .aasc "more",$00
         jsr l8b56
 l8b07   lda #$00
         sta $5d
@@ -2219,23 +1437,9 @@ l8b56   lda l81c3
         jsr $1664
 l8b5e   jsr $1646
 l8b61   jsr l8701
-l8b64   jsr _print
-        .asc ""
-        .byt $7d
-l8b68   bvc l8bdc
-        .asc ""
-        .byt $65,$73,$73
-l8b6d   jsr $7053
-        .asc ""
-        .byt $61,$63,$65
-l8b73   jsr $6f74
-l8b76   jsr $6f63
-        .asc ""
-        .byt $6e,$74,$69,$6e,$75
-l8b7e   adc $3a
-        jsr $2000
-        .asc ""
-        .byt $77,$87
+l8b64   jsr print
+        .aasc $7d,"Press Space to continue: ",$00
+        jsr l8777
 l8b85   jsr $1676
 l8b88   cmp #$0d
         beq l8b94
@@ -2259,7 +1463,7 @@ l8bae   rts
         .asc ""
         .byt $60
 
-l8bb0   jsr _print
+l8bb0   jsr print
         .aasc " off",$00        ; noise off
         rts
 _noise
@@ -2268,26 +1472,15 @@ l8bb9   lda $1638
         sta $1638
         sta l81e7
         beq l8bb0
-        jsr _print
+        jsr print
         .aasc " on",$00         ; noise on
         rts
 
 l8bce   jsr l83ed
 l8bd1   jsr l8ba1
-l8bd4   jsr _print
-        .asc ""
-        .byt $2c
-l8bd8   jsr $6874
-        .asc ""
-        .byt $6f
-l8bdc   adc $20,x
-        adc ($72,x)
-        .asc ""
-        .byt $74
-l8be1   jsr $6564
-l8be4   adc ($64,x)
-        rol $2000
-        lsr $16
+l8bd4   jsr print
+        .aasc ", thou art dead.",$00
+        jsr $1646
         lda #$00
         sta l8249
         sta l824a
@@ -2300,17 +1493,17 @@ l8be4   adc ($64,x)
         sta $5d
         jsr l86c6
 l8c09   jsr $1661
-l8c0c   lda #$03
-        sta $60
-        lda #$74
+        lda #<_bitmapSkull
+        sta $60                 ; $60/$61 = $7403
+        lda #>_bitmapSkull
         sta $61
         lda #$80
         sta $62
         lda #$25
         eor $5c
         sta $63
-        ldx #$0c
-l8c20   ldy #$47
+        ldx #$0c                ; copy 12*8 raster lines
+l8c20   ldy #$47                ; copy 9*8 pixels per row (72)
 l8c22   lda ($60),y
         sta ($62),y
         dey
