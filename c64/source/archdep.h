@@ -29,14 +29,25 @@ KEY_ARROW_LEFT = $9d            ; arrow left
 KEY_ARROW_RIGHT = $1d           ; arrow right
 KEY_RETURN = $0d                ; return key
 KEY_BACKSPACE = $14             ; insert/delete key
+KEY_SHIFT_AT = $ba              ; <shift>-@
+KEY_SHIFT_SLASH = $3f           ; <shift>-/ (?)
 
 LF = $7c
 CR = $7f
 
+zpInverse = $1f
 zpLongitude = $20
 zpLatitude = $21
+zpWndLeft = $2e
+zpWndWdth = $2f
+zpWndTop = $30
+zpWndBtm = $31
+
 zpCursorCol = $32
 zpCursorRow = $33
+zpValue1e0 = $3c
+zpValue1e2 = $3d
+zpValue1e4 = $3e
 zpMapPtr = $4c
 FA = $ba
 FNADR = $bb
@@ -53,10 +64,15 @@ tileset = $0c00
 bmpLinePtrLb = $1200
 bmpLinePtrHb = $12c0
 tileColors = $1500
+charColors = $1530
 bmpColOffLb = $15b0
 bmpColOffHb = $15d8
+videoMemRowPtrLb = $1600
+videoMemRowPtrHb = $1619
 bitmapRAM = $2000
+bitmapRAM0 = $2000
 bitmap2RAM = $4000
+bitmapRAM1 = $4000
 hello = $8000
 roster = $b000
 mapData = $b000
@@ -67,16 +83,25 @@ statsContinent = stats + $02
 statsContinentMsb = stats + $03
 statsLongitude = stats + $06
 statsLatitude = stats + $07
+statsRedGem = stats + $08
+statsGreenGem = stats + $09
+statsBlueGem = stats + $0a
+statsWhiteGem = stats + $0b
 statsSpell = stats + $0c
 statsWeapon = stats + $0d
 statsArmour = stats + $0e
 statsTransport = stats + $0f
 
+invArmour = stats + $10
+invSkin = stats + $10
 invLeatherArmour = stats + $11
 invChainMail = stats + $12
 invPlateMail = stats + $13
 invVacuumSuit = stats + $14
 invReflectSuit = stats + $15
+
+invWeapons = stats + $16
+invHands = stats + $16
 invDagger = stats + $17
 invMace = stats + $18
 invAxe = stats + $19
@@ -92,6 +117,8 @@ invPistol = stats + $22
 invLightSword = stats + $23
 invPhazor = stats + $24
 invBlaster = stats + $25
+
+invSpells = stats + $26
 invPrayer = stats + $26
 invOpen = stats + $27
 invUnlock = stats + $28
@@ -106,6 +133,7 @@ invKill = stats + $30
 
 statsGender = stats + $4a
 statsName = stats + $4b
+statsAttributes = stats + $59
 statsHp = stats + $59
 statsStrength = stats + $5b
 statsAgility = stats + $5d
@@ -119,6 +147,14 @@ statsClass = stats + $6b
 statsFood = stats + $78
 statsXp = stats + $7a
 
+#ifndef _ST_
+setTextFull = $1655
+setTextStatus = $1658
+drawChar = $1667
+readKey = $1676
+getKey = $1679
+#endif
+
 #ifndef _MI_
 strTableRace = $7763
 strTableWeapons = $77ec
@@ -127,9 +163,17 @@ strTableClass = $7911
 strTableTransport = $7930
 strTableLands = $7bda
 
+printTwoDigits = $83cd
+printDigit = $83cd
+printChar = $83d7
+printCR = $8411
+printFromTableCap = $8426
+printFromTable = $842d
 printTableString = $842d
 printAtPos = $848a
 print = $848e
+printRepeatChar = $84b9
+convertToBcd16 = $8522
 checkCommandKey = $85fd
 #endif
 

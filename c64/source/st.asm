@@ -1,3 +1,4 @@
+#define _ST_
 #include "archdep.h"
 
         .word $0c00
@@ -215,6 +216,8 @@ l1500
         .byt $60,$50,$50,$f0,$10,$10,$10,$f0,$10,$10,$10,$10,$10,$10,$10,$10
         .byt $10,$10,$50,$50,$10,$10,$10,$10,$10,$10,$10,$10,$50,$50,$10,$10
         .byt $50,$50,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$30,$a0
+; charColors
+l1530
         .byt $60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60
         .byt $60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$10,$10,$10,$10,$10,$b0
         .byt $10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10
@@ -240,50 +243,58 @@ l15d8
         .byt $00,$00,$00,$00,$00,$00,$00,$00
         .byt $01,$01,$01,$01,$01,$01,$01,$01
 
+;videoMemRowPtrLb
 l1600
-        l1602 = * + 2
         .byt $00,$28,$50,$78,$a0,$c8,$f0,$18
         .byt $40,$68,$90,$b8,$e0,$08,$30,$58
         .byt $80,$a8,$d0,$f8,$20,$48,$70,$98
         .byt $c0
 
+;videoMemRowPtrHb
 l1619
-        l161b = * + 2
         .byt $04,$04,$04,$04,$04,$04,$04,$05
         .byt $05,$05,$05,$05,$05,$06,$06,$06
         .byt $06,$06,$06,$06,$07,$07,$07,$07
         .byt $07
 
+_directionToKey
 l1632
-        l1637 = * + 5
-        l1638 = * + 6
-        l1639 = * + 7
         .asc " ;:/@"
-        .byt $02,$ff,$10
+l1637
+        .byt $02
+l1638
+        .byt $ff
+l1639
+        .byt $10
 l163a   jmp l178f
 l163d   jmp l17ec
 l1640   jmp l171f
 l1643   jmp l1722
 l1646   jmp l1723
-l1649   jmp l1910
+scrollTextWindow
+l1649   jmp _scrollTextWindow
 l164c   jmp l199e
 l164f   jmp l19a6
 l1652   jmp l1a48
-l1655   jmp l1a2c
-l1658   jmp l1a15
+setTextFull
+l1655   jmp _setTextFull
+setTextStatus
+l1658   jmp _setTextStatus
 l165b   jmp l1a0d
 l165e   jmp l1a3a
 l1661   jmp l16ad
 l1664   jmp l1700
-l1667   l1668 = * + 1
-; Instruction parameter jumped to.
-        jmp l1a78
+drawChar
+l1667
+        jmp _drawChar
 l166a   jmp l1c8a
 l166d   jmp l1e2c
 l1670   jmp l1e9e
 l1673   jmp l1e08
-l1676   jmp l1e3e
-l1679   jmp l1e44
+readKey
+l1676   jmp _readKey
+getKey
+l1679   jmp _getKey
 l167c   jmp l1e50
 l167f   jmp l1e8c
 l1682   jmp l1b51
@@ -304,7 +315,9 @@ l16a6   pla
         sbc #$01
         bne l16a1
 l16ab   rts
+
 l16ac   rts
+
 l16ad   lda #$21
         eor $5c
         sta $61
@@ -372,7 +385,7 @@ l171f   rts
         .byt $60,$60
 l1722   rts
 
-l1723   lda #$20
+l1723   lda #>bitmapRAM0
         tax
         eor $5c
         sta l1737
@@ -380,9 +393,9 @@ l1723   lda #$20
         sta l1734
         ldy #$00
 l1732   l1734 = * + 2
-        lda $4000,y
+        lda bitmapRAM1,y
         l1737 = * + 2
-        sta $2000,y
+        sta bitmapRAM0,y
         iny
         bne l1732
 l173b   inc l1734
@@ -395,12 +408,12 @@ l1744   lda #$00
         lda l1734
         cmp #$60
         beq l1753
-l1751   lda #$04
+        lda #$04
 l1753   sta $61
         lda l1737
         cmp #$60
         beq l175e
-l175c   lda #$04
+        lda #$04
 l175e   sta $63
         ldx #$04
         ldy #$00
@@ -445,7 +458,7 @@ l178f   lda #$01
         lda #$00
         sta $56
         sta $5b
-        sta $1f
+        sta zpInverse
         sta Cia1TimeOfDayDseconds
         lda #$18
         sta VicMemCtrlReg
@@ -488,9 +501,9 @@ l17ff   sty $5e
         lsr
         lsr
         tay
-        lda l1602,y
+        lda videoMemRowPtrLb+2,y
         sta $60
-        lda l161b,y
+        lda videoMemRowPtrHb+2,y
         ldy $5c
         beq l1815
 l1812   clc
@@ -631,14 +644,15 @@ l190b   dec $3a
         bne l18d5
 l190f   rts
 
-l1910   ldx $31
+_scrollTextWindow
+l1910   ldx zpWndBtm
         dex
         txa
-        sta $33
+        sta zpCursorRow
         sec
-        sbc $30
-l1919   sta $43
-        lda $30
+        sbc zpWndTop
+        sta $43
+        lda zpWndTop
         asl
         asl
         asl
@@ -650,8 +664,9 @@ l1919   sta $43
         sta $6320
         sta $6348
         sta $6370
+_scrollTextWinL1
 l1935   lda bmpLinePtrLb,x
-        ldy $2e
+        ldy zpWndLeft
         clc
         adc bmpColOffLb,y
         sta l197f
@@ -669,7 +684,7 @@ l1935   lda bmpLinePtrLb,x
         sta l197d
         lda #$00
         sta $5f
-        lda $2f
+        lda zpWndWdth
         sec
         sbc #$01
         asl
@@ -681,7 +696,7 @@ l1935   lda bmpLinePtrLb,x
         sta $5e
         lda $5f
         beq l197b
-l1979   ldy #$ff
+        ldy #$ff
 l197b   l197c = * + 1
         l197d = * + 2
         lda $2100,y
@@ -694,32 +709,33 @@ l197b   l197c = * + 1
         dey
         cpy #$ff
         bne l197b
-l1989   ldy $5e
+        ldy $5e                 ; # of bytes in text line, lb
         inc l1980
         inc l1983
-        dec $5f
+        dec $5f                 ; # of bytes in text line, hb
         bpl l197b
-l1995   txa
+        txa
         clc
         adc #$08
         tax
         dec $43
-        bne l1935
-l199e   lda $33
+        bne _scrollTextWinL1
+
+l199e   lda zpCursorRow
 l19a0   ldx #$00
-        stx $32
+        stx zpCursorCol
         beq l19ae
-l19a6   ldx $32
-        cpx $2f
+l19a6   ldx zpCursorCol
+        cpx zpWndWdth
         bcs l1a0a
-l19ac   lda $33
+l19ac   lda zpCursorRow
 l19ae   asl
         asl
         asl
         tax
-        lda $2e
+        lda zpWndLeft
         clc
-        adc $32
+        adc zpCursorCol
         tay
         lda bmpLinePtrLb,x
         clc
@@ -734,9 +750,9 @@ l19ae   asl
         sta l19f8
         lda #$00
         sta $5f
-        lda $2f
+        lda zpWndWdth
         sec
-        sbc $32
+        sbc zpCursorCol
         sec
         sbc #$01
         asl
@@ -749,7 +765,7 @@ l19ae   asl
         lda $5f
         beq l19f1
 l19ef   ldy #$ff
-l19f1   lda $1f
+l19f1   lda zpInverse
 l19f3   l19f4 = * + 1
         l19f5 = * + 2
         sta $2000,y
@@ -766,52 +782,55 @@ l19fe   ldy $5e
         bpl l19f3
 l1a0a   jmp l1e08
 l1a0d   lda #$1e
-        sta $2f
+        sta zpWndWdth
         lda #$00
         beq l1a1b
-l1a15   lda #$0a
-        sta $2f
-        lda #$1f
-l1a1b   sta $2e
-        lda #$18
-        sta $31
-        lda #$14
-l1a23   sta $30
-        sta $33
+
+_setTextStatus
+l1a15   lda #10
+        sta zpWndWdth
+        lda #31
+l1a1b   sta zpWndLeft
+        lda #24
+        sta zpWndBtm
+        lda #20
+l1a23   sta zpWndTop
+        sta zpCursorRow
         lda #$00
-        sta $32
+        sta zpCursorCol
         rts
 
-l1a2c   lda #$28
-        sta $2f
-        lda #$18
-        sta $31
-        lda #$00
-        sta $2e
+_setTextFull
+l1a2c   lda #40
+        sta zpWndWdth
+        lda #24
+        sta zpWndBtm
+        lda #0
+        sta zpWndLeft
         beq l1a23
 
 l1a3a   lda #$26
-        sta $2f
+        sta zpWndWdth
         lda #$13
-        sta $31
+        sta zpWndBtm
         lda #$01
-        sta $2e
+        sta zpWndLeft
         bne l1a23
 
-l1a48   ldy $30
-        sty $33
+l1a48   ldy zpWndTop
+        sty zpCursorRow
 l1a4c   tya
         pha
-        lda l1600,y
+        lda videoMemRowPtrLb,y
         sta $60
-        lda l1619,y
+        lda videoMemRowPtrHb,y
         ldx $5c
         beq l1a5d
 l1a5a   clc
         adc #$5c
 l1a5d   sta $61
-        ldx $2f
-        ldy $2e
+        ldx zpWndWdth
+        ldy zpWndLeft
         lda #$10
 l1a65   sta ($60),y
         iny
@@ -823,29 +842,30 @@ l1a6b   pla
 l1a70   pla
         tay
         iny
-        cpy $31
+        cpy zpWndBtm
         bcc l1a4c
 l1a77   rts
 
-l1a78   pha
-        stx l1b05
-        ldx $32
-        cpx $2f
+_drawChar
+l1a78   pha                     ; store A (character to be drawn)
+        stx _drawCharStoreX     ; store X
+        ldx zpCursorCol
+        cpx zpWndWdth
         bcs l1b00
-l1a82   and #$7f
+        and #$7f
         sta $5e
-        lda $33
-        asl
+        lda zpCursorRow
+        asl                     ; calc raster line for cursor pos
         asl
         asl
         tax
-        lda $2e
+        lda zpWndLeft
         clc
-        adc $32
+        adc zpCursorCol
         tay
-        lda bmpLinePtrLb,x
+        lda bmpLinePtrLb,x      ; get bitmap pointer for raster line
         clc
-        adc bmpColOffLb,y
+        adc bmpColOffLb,y       ; add column offset
         sta l1acc
         sta l1acf
         lda bmpLinePtrHb,x
@@ -869,44 +889,51 @@ l1a82   and #$7f
         adc #$08
         sta l1ac8
         ldx #$07
-l1ac6   l1ac7 = * + 1
+_drawCharL1
+        l1ac7 = * + 1
         l1ac8 = * + 2
-        lda $0800,x
-        eor $1f
+        lda $0800,x             ; read charset byte
+        eor zpInverse           ; invert if applicable
         l1acc = * + 1
         l1acd = * + 2
-        sta $2000,x
+        sta $2000,x             ; store in first bitmap RAM
         l1acf = * + 1
         l1ad0 = * + 2
-        sta $4000,x
+        sta $4000,x             ; store in second bitmap RAM
         dex
-        bpl l1ac6
-l1ad4   ldx $33
-        lda l1600,x
+        bpl _drawCharL1
+
+        ldx zpCursorRow
+        lda videoMemRowPtrLb,x
         sta $60
         sta $62
-        lda l1619,x
+        lda videoMemRowPtrHb,x
         ldx $5c
-        beq l1ae7
-l1ae4   clc
-        adc #$5c
-l1ae7   sta $61
-        ldx $5d
-        beq l1aef
-l1aed   eor #$64
-l1aef   sta $63
-        lda $32
+        beq _drawCharJ1
         clc
-        adc $2e
+        adc #$5c
+_drawCharJ1
+        sta $61                 ; video RAM (color) for first bitmap
+        ldx $5d
+        beq _drawCharJ2
+        eor #$64
+_drawCharJ2
+        sta $63                 ; video RAM (color) for second bitmap
+        lda zpCursorCol
+        clc
+        adc zpWndLeft
         tay
         ldx $5e
-        lda $1530,x
-        sta ($60),y
-        sta ($62),y
-l1b00   ldx l1b05
-        pla
+        lda charColors,x        ; color value for character X
+        sta ($60),y             ; store in first video RAM
+        sta ($62),y             ; store in second video RAM
+l1b00   ldx _drawCharStoreX     ; restore X
+        pla                     ; restore A
         rts
-l1b05   .byt $00
+
+_drawCharStoreX
+        .byt $00
+
 l1b06   jsr l1b13
 l1b09   ldx #$0f
         jsr l1b26
@@ -1199,9 +1226,9 @@ l1d08   ldx $45
         lsr
         lsr
         tay
-        lda l1600,y
+        lda videoMemRowPtrLb,y
         sta $64
-        lda l1619,y
+        lda videoMemRowPtrHb,y
         ldx $5c
         beq l1d3c
 l1d39   clc
@@ -1303,6 +1330,7 @@ l1df0   ldx tileset+$18a
         ldy tileset+$183
         sty tileset+$182
         stx tileset+$183
+
 l1e08   jsr l1ed5
 l1e0b   bpl l1e27
 l1e0d   cmp #$90
@@ -1319,6 +1347,7 @@ l1e1d   ldx $56
 l1e23   sta $4e,x
         inc $56
 l1e27   rts
+
 l1e28   l1e2a = * + 2
         .byt $97,$96,$18,$80
 l1e2c   ldy #$07
@@ -1331,10 +1360,12 @@ l1e3a   dey
         bne l1e2e
 l1e3d   rts
 
-l1e3e   jsr l1e44
-l1e41   beq l1e3e
-l1e43   rts
+_readKey
+l1e3e   jsr _getKey
+        beq _readKey
+        rts
 
+_getKey
 l1e44   jsr l1e83
 l1e47   jsr l1e2c
 l1e4a   lda $56
@@ -1344,8 +1375,8 @@ l1e50   jsr l1e83
 l1e53   jsr l1c8a
 l1e56   lda $56
         beq l1e7a
-l1e5a   lda #$20
-        jsr l1a78
+l1e5a   lda #$20                ; space
+        jsr _drawChar
 l1e5f   lda $4e
         dec $56
         ldx #$01
@@ -1364,18 +1395,20 @@ l1e7a   ldx l1789
         ldy l178a
         and #$7f
         rts
+
 l1e83   stx l1789
         sty l178a
-        jsr l16ac
-l1e8c   ldx l1e9a
+        jsr l16ac               ; (rts)
+l1e8c   ldx _cursorAnimPhase
         dex
-        cpx #$7c
+        cpx #$7c                ; char: min cursor phase
         bcs l1e96
-l1e94   ldx #$7f
-l1e96   stx l1e9a
-        l1e9a = * + 1
-        lda #$7c
-        jsr l1a78
+        ldx #$7f                ; char: max cursor phase
+l1e96   stx _cursorAnimPhase
+_cursorAnimPhase = * + 1
+        lda #$7c                ; cursor animation phase
+        jsr _drawChar           ; draw cursor
+
 l1e9e   clc
         lda l1ed4
         ldx #$0e
@@ -1394,6 +1427,7 @@ l1ebe   dex
         bpl l1eb9
 l1ec1   lda l1ec5
         rts
+
 l1ec5   .asc ""
         .byt $64,$76,$85,$54
         .asc "v"
@@ -1404,23 +1438,24 @@ l1ec5   .asc ""
         .byt $6b,$93
         .asc "D"
 l1ed3   l1ed4 = * + 1
-        l1ed5 = * + 2
-; Instruction parameter jumped to.
-        ror $841b
-l1ed6   l1ed7 = * + 1
-; Instruction parameter jumped to.
-        lsr $ffa9,x
-        sta Cia1PortB
-        lda Cia1PortA
+        .byt $6e,$1b
+
+l1ed5
         sty $5e
-        ldy #$04
-l1ee3   lsr
-        bcs l1eec
-l1ee6   lda l1632,y
-        bne l1f27
+        lda #$ff
+        sta Cia1PortB           ; keyboard row / joystick: set all to high
+        lda Cia1PortA           ; read joystick port 2
+        sty $5e
+        ldy #$04                ; iterate over joystick direction pins
+l1ee3   lsr                     ; direction pin: up/down/left/right/fire
+        bcs l1eec               ; direction not activated ->
+        lda _directionToKey,y   ; get keyboard code corresponding to direction
+        bne l1f27               ; (always true?) ->
 l1eeb   rts
-l1eec   dey
+l1eec
+        dey                     ; try next direction pin
         bpl l1ee3
+
 l1eef   jsr SCNKEY
 l1ef2   jsr GETIN
 l1ef5   cmp #$00
@@ -1428,18 +1463,18 @@ l1ef5   cmp #$00
 l1ef9   sta l1f83
         sta l1f84
         beq l1f7a
-l1f01   cmp #$ba
+l1f01   cmp #KEY_SHIFT_AT       ; <shift>-@
         bne l1f07
-l1f05   lda #$40
+        lda #KEY_NORTH
 l1f07   cmp #KEY_ARROW_UP
         bne l1f0d
         lda #KEY_NORTH
 l1f0d   cmp #KEY_ARROW_DOWN
         bne l1f13
         lda #KEY_SOUTH
-l1f13   cmp #$3f
+l1f13   cmp #KEY_SHIFT_SLASH
         bne l1f19
-l1f17   lda #$2f
+l1f17   lda #KEY_SOUTH
 l1f19   cmp #KEY_ARROW_LEFT
         bne l1f1f
         lda #KEY_WEST
@@ -1449,14 +1484,14 @@ l1f1f   cmp #KEY_ARROW_RIGHT
 l1f25   ora #$80
 l1f27   cmp l1f83
         sta l1f83
-        bne l1f6f
-l1f2f   cmp #$c0
+        bne l1f6f               ; entry came from keyboard ->
+l1f2f   cmp #$c0                ; '@' (joystick up)
         beq l1f46
-l1f33   cmp #$af
+l1f33   cmp #$af                ; '/' (joystick down)
         beq l1f46
-l1f37   cmp #$bb
+l1f37   cmp #$bb                ; ';' (joystick left)
         beq l1f46
-l1f3b   cmp #$ba
+l1f3b   cmp #$ba                ; ':' (joystick right)
         beq l1f46
 l1f3f   lda #$00
         sta l1f84

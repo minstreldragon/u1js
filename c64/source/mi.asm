@@ -71,6 +71,7 @@ strTableRace
         .aasc "dwar",$e6
         .aasc "bobbi",$f4
 _strTableReadyWeapon
+l777c
         .aasc "hand",$f3
         .aasc "dagge",$f2
         .aasc "mac",$e5
@@ -144,6 +145,7 @@ _strTableClass
         .aasc "wizar",$e4
         .aasc "thie",$e6
 _strTableTransport
+l7930
         .aasc "foo",$f4
         .aasc "hors",$e5
         .aasc "car",$f4
@@ -183,6 +185,7 @@ l797f
         .aasc "Vie",$f7
         .aasc "X-i",$f4
         .aasc "Ztat",$f3
+_strTableGems
 l7a30
         .aasc "Red Ge",$ed
         .aasc "Green Ge",$ed
@@ -409,8 +412,11 @@ l81c9
 
 ; stats
 l81e2
-        .asc "J"
-        .byt $01,$00,$00,$ff
+        .word $01ca             ; length of stats file
+l81e4
+        .byt $00                ; continent
+        .byt $00                ; continent << 6
+        .byt $ff
 
 l81e7
         .byt $ff
@@ -421,9 +427,11 @@ l81e8   l81ea = * + 2
         l81f0 = * + 5
         l81f1 = * + 6
         .byt $00,$00,$00,$00,$00,$00,$00
+; invArmour
 l81f2   ora ($01,x)
         ora ($01,x)
         ora ($01,x)
+; invWeapons
 l81f8   ora ($01,x)
         ora ($01,x)
         ora ($01,x)
@@ -432,6 +440,8 @@ l8200   ora ($01,x)
         ora ($01,x)
         ora ($01,x)
         ora ($01,x)
+
+; invSpells
 l8208   ora ($03,x)
         l8213 = * + 9
         .byt $03,$03,$00,$03,$03,$03,$03,$03,$03,$01,$01,$01,$01,$01,$01,$00
@@ -443,23 +453,30 @@ l822c   l822d = * + 1
 ; Instruction opcode accessed.
         ora ($47,x)
         jmp ($6e69)
-        l823b = * + 10
-        l823c = * + 11
-        .asc ""
-        .byt $64,$61,$00,$00,$00,$00,$00,$00,$00,$00,$84,$03,$5a,$00,$5a,$00
-        l8249 = * + 8
-        l824a = * + 9
+        .byt $64,$61,$00,$00,$00,$00,$00,$00,$00,$00
+
+; statsHp
+l823b
+        .word $0384
+        .byt $5a,$00,$5a,$00
         l824b = * + 10
         l824d = * + 12
         l824f = * + 14
         l8250 = * + 15
-        .byt $0f,$00,$0f,$00,$32,$00,$0f,$00,$38,$08,$02,$00,$02,$00,$00,$00
-        l8259 = * + 8
-        l825a = * + 9
-        l825b = * + 10
+        .byt $0f,$00,$0f,$00,$32,$00,$0f,$00
+; statsCoin
+l8249
+        .word $0838
+        .byt $02,$00,$02,$00,$00,$00
         l825c = * + 11
         l825d = * + 12
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$95,$59,$00,$37,$02
+        .byt $00,$00,$00,$00,$00,$00,$00,$00
+l8259
+        .byt $95
+; statsFood
+l825a
+        .word $0059
+        .byt $37,$02
         .asc "h"
         .byt $03
         .asc "h"
@@ -503,29 +520,38 @@ l83b8   l83b9 = * + 1
         bne l83c3
 l83c0   inc l83ba
 l83c3   rts
+
+printTwoDigits
 l83c4   pha
         lsr
         lsr
         lsr
         lsr
-        jsr l83cd
-l83cc   pla
-l83cd   and #$0f
-        ora #$30
-        cmp #$3a
-        bcc l83d7
-l83d5   adc #$06
-l83d7   jsr $1667
-l83da   inc zpCursorCol
-l83dc   rts
+        jsr printDigit          ; print upper nibble digit
+        pla                     ; then print lower nibble digit ...
+
+printDigit
+l83cd   and #$0f                ; mask low nibble
+        ora #$30                ; convert to ASCII digit '0'...
+        cmp #$3a                ; digit '0'..'9'?
+        bcc printChar           ; yes -> print it
+        adc #$06                ; else convert to hex character 'A'...'F'
+
+printChar
+l83d7   jsr drawChar
+        inc zpCursorCol
+_printCharEnd
+        rts
+
+
 l83dd   and #$7f
-        cmp #$7c
-        bcc l83d7
+        cmp #LF
+        bcc printChar
 l83e3   beq l83fe
 l83e5   cmp #$7e
         beq l83f3
 l83e9   cmp #$7d
-        bne l83dc
+        bne _printCharEnd
 l83ed   lda zpCursorCol
         cmp #$02
         bcc l83f6
@@ -538,8 +564,8 @@ l83f6   lda #$01
 l83fb   jsr $164f
 l83fe   inc zpCursorRow
         lda zpCursorRow
-        cmp $31
-        bcc l8411
+        cmp zpWndBtm
+        bcc printCR
 l8406   tya
         pha
         txa
@@ -549,33 +575,35 @@ l840d   pla
         tax
         pla
         tay
+
+printCR
 l8411   lda #$00
-        sta zpCursorCol
+        sta zpCursorCol         ; return cursor to begin of line
         rts
 
-l8416   inc $30
-        dec $31
-        inc $2e
-        dec $2f
-        dec $2f
-        lda $30
+l8416   inc zpWndTop
+        dec zpWndBtm
+        inc zpWndLeft
+        dec zpWndWdth
+        dec zpWndWdth
+        lda zpWndTop
         sta zpCursorRow
-        bne l8411
+        bne printCR
 
+printFromTableCap
 l8426   sec
-        ror l81ad
+        ror l81ad               ; capitalize output string
         bit !$00a2
 
-
-printTableString
+printFromTable
 l842d   pla
         sta l83b5               ; set data pointer to data after RTS call
         pla
         sta l83b6
         jsr l83ac               ; read data byte
-l8438   sta l83b9
+        sta l83b9
         jsr l83ac               ; read data byte
-l843e   sta l83ba
+        sta l83ba
         lda l83b6               ; update return address
         pha
         lda l83b5
@@ -590,19 +618,19 @@ l8452   dex
         bne l844c
 
 l8455   jsr l83b8               ; read character from object table
-l8458   cmp #$7f                ; newline?
+        cmp #$7f                ; newline?
         beq l847f
-l845c   pha
-        bit l81ad
-        bpl l8475
-l8462   and #$7f
+        pha
+        bit l81ad               ; capitalize this character?
+        bpl l8475               ; no ->
+        and #$7f
         cmp #$7c
         bcs l8475
-l8468   cmp #$61
+        cmp #$61                ; 'a'
         bcc l8472
-l846c   cmp #$7b
+        cmp #$7b                ; 'z'+1
         bcs l8472
-l8470   eor #$20
+        eor #$20                ; convert to upper case letter
 l8472   sta l81ad
 l8475   jsr l83dd               ; print character
 l8478   pla
@@ -642,126 +670,140 @@ l84b0   lda l83b6
         pha
         rts
 
-l84b9   jsr l83d7
+printRepeatChar
+l84b9   jsr printChar
 l84bc   dex
-        bne l84b9
+        bne printRepeatChar
 l84bf   rts
-l84c0   jsr $1655
-l84c3   jsr $1652
-l84c6   jsr $1655
-l84c9   lda #$10
-        jsr l83d7
-l84ce   ldx #$26
-        lda #$04
-        jsr l84b9
-l84d5   lda #$12
-        jsr $1667
+
+printBoard
+l84c0   jsr setTextFull         ; set full text window, home
+        jsr $1652
+l84c6   jsr setTextFull         ; set full text window, home
+        lda #$10                ; char: upper left corner of frame
+        jsr printChar
+        ldx #38                 ; # of repeats: 38
+        lda #$04                ; char: upper border
+        jsr printRepeatChar     ; print upper border
+        lda #$12                ; char: upper right corner
+        jsr drawChar
+_printBoardL1
 l84da   inc zpCursorRow
-        jsr l8411
-l84df   lda #$0a
-        jsr $1667
-l84e4   lda #$27
+        jsr printCR
+l84df   lda #$0a                ; char: left border
+        jsr drawChar
+l84e4   lda #39
         sta zpCursorCol
-        lda #$08
-        jsr $1667
-l84ed   jsr $1673
-l84f0   lda zpCursorRow
-        eor #$12
-        bne l84da
-l84f6   sta zpCursorCol
+        lda #$08                ; char: right border
+        jsr drawChar
+        jsr $1673
+        lda zpCursorRow
+        eor #18                 ; repeat 18 times
+        bne _printBoardL1
+        sta zpCursorCol
         inc zpCursorRow
         lda #$04
-        jsr l83d7
-l84ff   ldx #$26
+        jsr printChar
+l84ff   ldx #38
         lda #$06
-        jsr l84b9
+        jsr printRepeatChar
 l8506   lda #$04
-        jsr $1667
-l850b   lda #$1e
+        jsr drawChar
+l850b   lda #30
         sta zpCursorCol
         lda #$02
-        jsr $1667
-l8514   lda #$0c
+        jsr drawChar
+        lda #12
 l8516   inc zpCursorRow
-        jsr $1667
-l851b   ldx zpCursorRow
-        cpx #$17
+        jsr drawChar
+        ldx zpCursorRow
+        cpx #23
         bcc l8516
-l8521   rts
-
-l8522   stx $3f
-        sta $40
-        ldx #$00
-        stx $3c
-        stx $3d
-        stx $3e
-        stx l857b
-        stx l857a
-        inx
-        stx l8579
-        sed
-l8539   lsr $40
-        ror $3f
-        bcc l8555
-l853f   clc
-        lda $3c
-        adc l8579
-        sta $3c
-        lda $3d
-        adc l857a
-        sta $3d
-        lda $3e
-        adc l857b
-        sta $3e
-l8555   clc
-        lda l8579
-        adc l8579
-        sta l8579
-        lda l857a
-        adc l857a
-        sta l857a
-        lda l857b
-        adc l857b
-        sta l857b
-        lda $3f
-        ora $40
-        bne l8539
-l8577   cld
         rts
-l8579   l857a = * + 1
-        l857b = * + 2
-        .byt $01,$00,$00
-l857c   jsr l8522
+
+convertToBcd16
+l8522   stx $3f                 ; value: lb
+        sta $40                 ; value: hb
+        ldx #$00
+        stx zpValue1e0          ; BCD value x 1e0
+        stx zpValue1e2          ; BCD value x 1e2
+        stx zpValue1e4          ; BCD value x 1e4
+        stx _addX1e4
+        stx _addX1e2
+        inx
+        stx _addX1e0
+        sed                     ; use decimal addition!
+_convrtToBcd16L1
+        lsr $40
+        ror $3f
+        bcc _convrtToBcd16J1    ; carry not set? ->
+        clc                     ; else add bcd multiplier
+        lda zpValue1e0
+        adc _addX1e0            ; add decimal multipliers
+        sta zpValue1e0
+        lda zpValue1e2
+        adc _addX1e2
+        sta zpValue1e2
+        lda zpValue1e4
+        adc _addX1e4
+        sta zpValue1e4
+_convrtToBcd16J1
+        clc
+        lda _addX1e0            ; duplicate multipliers
+        adc _addX1e0
+        sta _addX1e0
+        lda _addX1e2
+        adc _addX1e2
+        sta _addX1e2
+        lda _addX1e4
+        adc _addX1e4
+        sta _addX1e4
+        lda $3f                 ; finished converting?
+        ora $40
+        bne _convrtToBcd16L1    ; no ->
+        cld                     ; clear decimal flag
+        rts
+
+_addX1e0
+l8579
+        .byt $01
+_addX1e2
+        .byt $00
+_addX1e4
+        .byt $00
+
+l857c   jsr convertToBcd16
 l857f   inx
         bne l8588
 l8582   tax
         lda #$00
-        jsr l8522
+        jsr convertToBcd16
 l8588   sta l85bd
         jmp l8597
-l858e   lda $3c,x
+l858e   lda zpValue1e0,x        ; get BCD value
+        lsr                     ; isolate upper digit
         lsr
         lsr
         lsr
-        lsr
-        jsr l85a6
+        jsr l85a6               ; print upper digit
 l8597   txa
         bne l859d
 l859a   inc l85bd
-l859d   lda $3c,x
-        jsr l85a6
+l859d   lda zpValue1e0,x        ; get BCD value
+        jsr l85a6               ; print lower digit
 l85a2   dex
         bpl l858e
 l85a5   rts
+
 l85a6   and #$0f
         bne l85b7
 l85aa   cmp l85bd
         bne l85ba
 l85af   lda l85be
         beq l85a5
-l85b4   jmp l83d7
+l85b4   jmp printChar
 l85b7   sta l85bd
-l85ba   jmp l83cd
+l85ba   jmp printDigit
 l85bd   l85be = * + 1
         .byt $00,$00
 l85bf   ldy #$ff
@@ -823,12 +865,12 @@ l861a   lda l81c8
 l861f   sta l862c
         lda l81c7
         sta l862b
-        jsr printTableString
+        jsr printFromTable
 l862b   l862c = * + 1
         .word _strTableCommands
 l862d   jmp l8635
 
-l8630   jsr printTableString   ; print the command
+l8630   jsr printFromTable     ; print the command
         .word _strTableCommands
 l8635
         pla                     ; restore command id
@@ -850,13 +892,13 @@ l864a   sed
         sbc l81c5
         sta l8259
         bcs l866a
-l8657   lda l825a
-        ora l825b
+l8657   lda statsFood
+        ora statsFood+1
         beq l866a
-l865f   lda l825a
+l865f   lda statsFood
         bne l8667
-l8664   dec l825b
-l8667   dec l825a
+l8664   dec statsFood+1
+l8667   dec statsFood
 l866a   clc
         lda l824f
         adc l81c6
@@ -877,68 +919,67 @@ l8687   cld
         rts
 
 l8689   jsr l870c
-l868c   jsr $1658
-l868f   jsr print
+        jsr setTextStatus       ; set text window for status, home
+        jsr print
         .aasc "Hits ",$7c
         .aasc "Food ",$7c
         .aasc "Exp. ",$7c
         .aasc "Coin ",$00
         jmp l86c9
 
-l86ad   cmp #$01
-        bcs l86bb
-l86b1   cpx #$64
-        bcs l86bb
-l86b5   pha
-        lda #$ff
-        sta $1f
-        pla
+l86ad   cmp #1                  ; high byte >= 1?
+        bcs l86bb               ; yes ->
+        cpx #100                ; low byte >= 100
+        bcs l86bb               ; yes ->
+        pha                     ; store hb
+        lda #$ff                ; reverse flag on
+        sta zpInverse
+        pla                     ; restore hb
 l86bb   jsr l857c
-l86be   jsr l83fb
-l86c1   lda #$00
-        sta $1f
+        jsr l83fb
+        lda #$00
+        sta zpInverse           ; reverse flag off
         rts
+
 l86c6   jsr l870c
-l86c9   jsr $1658
+
+l86c9   jsr setTextStatus
 l86cc   sta l85be
-        l86d0 = * + 1
-; Instruction parameter jumped to.
-        lda #$24
-l86d1   l86d2 = * + 1
-; Instruction parameter jumped to.
-        sta $2e
-l86d3   lda #$04
-        sta $2f
-        lda l823c
-        ldx l823b
+        lda #36
+        sta zpWndLeft
+l86d3   lda #4
+        sta zpWndWdth
+        lda statsHp+1           ; hit points
+        ldx statsHp
         jsr l86ad
-l86e0   lda l825b
-        ldx l825a
+l86e0   lda statsFood+1         ; food
+        ldx statsFood
         jsr l86ad
-l86e9   lda l825d
+l86e9   lda l825d               ; exp
         ldx l825c
         jsr l857c
-l86f2   jsr l83fb
-l86f5   lda l824a
-        ldx l8249
-        jsr l857c
+        jsr l83fb
+l86f5   lda statsCoin+1
+        ldx statsCoin
+        jsr l857c               ; print amount: coin
 l86fe   jsr $164f
+
 l8701   ldx #$05
 l8703   lda l81a7,x
-        sta $2e,x
+        sta zpWndLeft,x
         dex
         bpl l8703
 l870b   rts
 
 l870c   ldx #$05
-l870e   lda $2e,x
+l870e   lda zpWndLeft,x
         sta l81a7,x
         dex
         bpl l870e
 l8716   rts
 
 l8717   ldx statsSpell
-        jsr printTableString
+        jsr printFromTable
         .word _strTableSpell
         rts
 
@@ -977,7 +1018,7 @@ l8766   lda #$08
 
 l876a   jsr l8720
 l876d   lda #$3f
-        jsr $1667
+        jsr drawChar
 
 l8772   lda #$10
 l8774   jsr $1682
@@ -993,12 +1034,12 @@ l8781   lda #$00
         rts
 l8788   jsr l870c
 l878b   lda #$04
-        sta $30
-        sta $2e
+        sta zpWndTop
+        sta zpWndLeft
         lda #$10
-        sta $31
+        sta zpWndBtm
         lda #$20
-        sta $2f
+        sta zpWndWdth
         jsr $1652
 l879c   jsr l83f3
 l879f   lda #$60
@@ -1040,7 +1081,7 @@ l87e0   txa
         pha                     ; -> RTS address
         lda l87f9,y
         pha
-        jsr printTableString
+        jsr printFromTable
         .word _strTableReady    ; "nothing", "spell:", "weapon:", "armour:"
         jsr $164f
         inc zpCursorCol
@@ -1060,7 +1101,7 @@ l8801
         lda statsSpell
         jsr _readySelectItem
         .byt 10
-        .word $8208
+        .word invSpells
         .word _strTableSpell
         sta statsSpell
         rts
@@ -1069,7 +1110,7 @@ _readyWeapon
 l8810   lda statsWeapon
         jsr _readySelectItem
         .byt 15                 ; # of choices: 15
-        .word $81f8
+        .word invWeapons
         .word _strTableReadyWeapon
         sta statsWeapon
         rts
@@ -1078,7 +1119,7 @@ _readyArmour
 l881f   lda statsArmour
         jsr _readySelectItem
         .byt 5
-        .word $81f2
+        .word invArmour
         .word _strTableReadyArmour
         sta statsArmour
         rts
@@ -1159,7 +1200,7 @@ l88d9   jsr l8701
 l88dc   lda l81c3
         sta $5d
         jsr $1664
-l88e4   jsr $1676
+l88e4   jsr readKey
 l88e7   pha
         jsr l8ad6
 l88eb   sec
@@ -1178,7 +1219,7 @@ l8901   tya
 
 l8902   tax
         pha
-        jsr l8426
+        jsr printFromTableCap
 l8907   l8908 = * + 1
         .byt $00,$00
 l8909   pla
@@ -1205,8 +1246,8 @@ l890c   jsr $1661
         .aasc "A level ",$00
         ldx l825c
         lda l825d
-        jsr l8522
-        lda $3d
+        jsr convertToBcd16
+        lda zpValue1e2
         lsr
         lsr
         lsr
@@ -1224,12 +1265,12 @@ _ztatsJ1
         jsr print
         .aasc "male ",$00
         ldx statsRace           ; race
-        jsr printTableString
+        jsr printFromTable
         .word strTableRace
         inc zpCursorCol
 
         ldx statsClass          ; class
-        jsr printTableString
+        jsr printFromTable
         .word _strTableClass
 
         jsr l8b10
@@ -1240,8 +1281,8 @@ l8998   stx $46
         txa
         asl
         tay
-        ldx l823b,y
-        lda l823c,y
+        ldx statsHp,y
+        lda statsHp+1,y
         bne l89a9
 l89a5   l89a6 = * + 1
         cpx #$00
@@ -1254,19 +1295,19 @@ l89ae   ldx $46
         inx
         cpx #$07
         bcc l8998
-l89b5   ldx l8249
-        lda l824a
-        jsr l8522
-l89be   lda $3c
+l89b5   ldx statsCoin
+        lda statsCoin+1
+        jsr convertToBcd16
+l89be   lda zpValue1e0
         and #$0f
         beq l89e0
 l89c4   jsr l8adc
 l89c7   jsr print
         .aasc "Copper pence....",$00
 
-        lda $3c
-        jsr l83cd
-l89e0   lda $3c
+        lda zpValue1e0
+        jsr printDigit
+l89e0   lda zpValue1e0
         lsr
         lsr
         lsr
@@ -1274,50 +1315,45 @@ l89e0   lda $3c
         beq l8a04
 l89e8   pha
         jsr l8adc
-l89ec   jsr print
+        jsr print
         .aasc "Silver pieces...",$00
 
         pla
-        jsr l83cd
-l8a04   lda $3d
+        jsr printDigit
+l8a04   lda zpValue1e2
         beq l8a41
 l8a08   jsr l8adc
 l8a0b   jsr print
         .aasc "Gold Crowns....",$00
 
-        lda $3d
+        lda zpValue1e2
         cmp #$10
         bcs l8a3e
 l8a24   lda #$2e
-        jsr l83d7
-l8a29   lda $3d
-        jsr l83cd
+        jsr printChar
+l8a29   lda zpValue1e2
+        jsr printDigit
 l8a2e   jmp l8a41
-        .asc ""
-        .byt $45,$6e,$65,$6d,$79
-l8a36   jsr $6576
-        .asc ""
-        .byt $73,$73,$65
-l8a3c   l8a3e = * + 2
-; Instruction parameter jumped to.
-        jmp ($20f3)
-        .asc "D"
-        .byt $83
+
+l8a31
+        .aasc "Enemy vessel",$f3
+l8a3e
+        jsr printTwoDigits
+
 l8a41   lda l822b
         beq l8a4f
 l8a46   ldx #$00
         stx $46
         jsr l8b22
-l8a4d   and ($8a),y
+        .word $8a31
 l8a4f   lda statsArmour
         sta l81c4
         ldx #$01
 l8a57   stx $46
-        lda l81f2,x
+        lda invArmour,x
         beq l8a63
 l8a5e   jsr l8b22
-        .asc "T"
-l8a62   sei
+        .word _strTableReadyArmour
 l8a63   ldx $46
         inx
         cpx #$06
@@ -1329,7 +1365,7 @@ l8a72   stx $46
         lda l8213,x
         beq l8a7e
 l8a79   jsr l8b22
-l8a7c   bmi l8af7
+        .word _strTableTransport
 l8a7e   ldx $46
         inx
         cpx #$0b
@@ -1340,7 +1376,7 @@ l8a8a   stx $46
         lda l81ea,x
         beq l8a96
 l8a91   jsr l8b22
-l8a94   bmi l8b10
+        .word _strTableGems
 l8a96   ldx $46
         inx
         cpx #$04
@@ -1349,11 +1385,10 @@ l8a9d   lda statsWeapon
         sta l81c4
         ldx #$01
 l8aa5   stx $46
-        lda l81f8,x
+        lda invWeapons,x
         beq l8ab1
-l8aac   jsr l8b22
-        .asc ""
-        .byt $7c,$77
+        jsr l8b22
+        .word _strTableReadyWeapon
 l8ab1   ldx $46
         inx
         cpx #$10
@@ -1362,11 +1397,10 @@ l8ab8   lda l81ee
         sta l81c4
         ldx #$01
 l8ac0   stx $46
-        lda l8208,x
+        lda invPrayer,x
         beq l8acc
-l8ac7   jsr l8b22
-l8aca   dey
-        sei
+        jsr l8b22
+        .word _strTableSpell
 l8acc   ldx $46
         inx
         cpx #$0b
@@ -1380,15 +1414,16 @@ l8adc   ldx #$00
         iny
         cpy #$12
         bcc l8af5
-l8ae7   ldy $30
-        lda #$12
-        sta $2f
-        adc $2e
+l8ae7   ldy zpWndTop
+        lda #18
+        sta zpWndWdth
+        adc zpWndLeft
         cmp #$26
         bcs l8af8
-l8af3   sta $2e
+l8af3   sta zpWndLeft
 l8af5   sty zpCursorRow
 l8af7   rts
+
 l8af8   ldx #13
         ldy #18
         jsr printAtPos
@@ -1399,14 +1434,15 @@ l8b07   lda #$00
         inc zpCursorCol
         jsr l870c
 l8b10   lda #$05
-        sta $30
+        sta zpWndTop
         lsr
-        sta $2e
+        sta zpWndLeft
         lda #$24
-        sta $2f
+        sta zpWndWdth
         lda #$13
-        sta $31
+        sta zpWndBtm
         jmp $1652
+
 l8b22   tax
         lda #$00
 l8b25   pha
@@ -1418,20 +1454,20 @@ l8b2b   lda #$03
         ldx #$09
         lda #$2e
         sta l85be
-        jsr l84b9
+        jsr printRepeatChar
 l8b39   pla
         tax
         pla
         jsr l857c
-l8b3f   jsr l8411
+l8b3f   jsr printCR
 l8b42   ldx $46
         lda l81c4
         beq l8b53
 l8b49   cpx l81c4
         bne l8b53
 l8b4e   lda #$1b
-        jsr l83d7
-l8b53   jmp l8426
+        jsr printChar
+l8b53   jmp printFromTableCap
 l8b56   lda l81c3
         sta $5d
         jsr $1664
@@ -1440,7 +1476,7 @@ l8b61   jsr l8701
 l8b64   jsr print
         .aasc $7d,"Press Space to continue: ",$00
         jsr l8777
-l8b85   jsr $1676
+l8b85   jsr readKey
 l8b88   cmp #$0d
         beq l8b94
 l8b8c   cmp #$1b
@@ -1456,7 +1492,7 @@ l8b9e   jmp l870c
 l8ba1   ldx #$00
 l8ba3   lda l822d,x
         beq l8bae
-l8ba8   jsr l83d7
+l8ba8   jsr printChar
 l8bab   inx
         bne l8ba3
 l8bae   rts
@@ -1482,12 +1518,12 @@ l8bd4   jsr print
         .aasc ", thou art dead.",$00
         jsr $1646
         lda #$00
-        sta l8249
-        sta l824a
-        sta l825a
-        sta l825b
-        sta l823b
-        sta l823c
+        sta statsCoin
+        sta statsCoin+1
+        sta statsFood
+        sta statsFood+1
+        sta statsHp
+        sta statsHp+1
         ldy $5d
         sty l81c3
         sta $5d
@@ -1572,7 +1608,7 @@ l8c9e   sei
         jsr loadFile            ; load "ST",$0c00
         ldx #$0f
         jsr loadFile            ; load "PR",$12c0
-        jsr $1655
+        jsr setTextFull         ; set full text window, home
         jsr $163a
 l8cb2   lda #$60
         sta $5c

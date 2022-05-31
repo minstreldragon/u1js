@@ -7,11 +7,11 @@ mainMenu
 l8c9e   ldx #$11
         jsr loadFile            ; load "RO",
 _mainMenuL1
-l8ca3   jsr $1655               ; home?
+l8ca3   jsr setTextFull         ; set full text window, home
         lda #$00
         sta $5d
         sta $5c
-        jsr l94d7
+        jsr _printFrame
         jsr l94c0
         ldy #6
         ldx #12
@@ -26,7 +26,7 @@ l8ca3   jsr $1655               ; home?
 
         jsr $1664
 _mainMenuL2
-        jsr $1676               ; get key
+        jsr readKey
         pha
         jsr l94c0
         pla
@@ -37,7 +37,7 @@ _mainMenuJ1
         cmp #$42                ; 'B'
         bne _mainMenuL2
         lda #$62                ; continue previous game
-        jsr $1667
+        jsr drawChar
         lda roster              ; check whether a player has been created
         ora roster+$10
         ora roster+$20
@@ -65,9 +65,9 @@ _mainMenuJ2
 
         jsr $8701
         jsr l948d
-l8da6   jmp _mainMenuL1
+        jmp _mainMenuL1
 l8da9   jsr $870c
-l8dac   ldx #$02
+        ldx #$02
         ldy #$15
         jsr printAtPos
         .aasc "Thou must first create a character.",$00
@@ -107,8 +107,8 @@ l8e1e   jmp $8c5e
 
 _generateCharacter
 l8e21   ldx #$00                ; character slot = 0
-_genCharL1
-l8e23   txa                     ; index = char slot * 16
+_genCharL1                      ; find an empty character slot
+        txa                     ; roster index = char slot * 16
         asl
         asl
         asl
@@ -116,9 +116,9 @@ l8e23   txa                     ; index = char slot * 16
         tay
         lda roster,y            ; character in use?
         bne _genCharJ1          ; yes ->
-        jmp l8ee6
+        jmp _genCharJ3          ; found an empty slot! ->
 _genCharJ1
-l8e31   inx                     ; inc character slot
+        inx                     ; inc character slot
         cpx #$04                ; max index reached?
         bcc _genCharL1          ; no, try next slot
         jsr l9598
@@ -130,54 +130,54 @@ l8e31   inx                     ; inc character slot
         .aasc " space bar to return to main menu.",LF,LF,CR
         .aasc $0d,"Thy choice: ",$00
 
-l8ebb
-        jsr $1676               ; get key
+_genCharL2
+        jsr readKey
         cmp #$20                ; space bar?
-        bne l8ec5
+        bne _genCharJ2
         jmp _mainMenuL1
 
-l8ec5   cmp #$31                ; '1'
-        bcc l8ebb
-l8ec9   cmp #$35                ; '5'
-        bcs l8ebb
-l8ecd   sec
+_genCharJ2
+        cmp #$31                ; '1'
+        bcc _genCharL2
+        cmp #$35                ; '5'
+        bcs _genCharL2
+        sec
         sbc #$31                ; make 0-based index
         tax
         stx playerSlot
-        asl
+        asl                     ; roster index = char slot * 16
         asl
         asl
         asl
         tax
         lda #$00
-        sta roster,x
+        sta roster,x            ; mark roster slot as empty
         ldx #$01
         jsr saveFile            ; "RO"
-l8ee3   ldx playerSlot
-l8ee6   stx playerSlot
-        jsr $1655
-l8eec   l8eed = * + 1
-        jsr l94d7
-l8eef   ldy #0
+        ldx playerSlot          ; generate new player for this slot
+
+_genCharJ3
+        stx playerSlot
+        jsr setTextFull         ; set full text window, home
+        jsr _printFrame
+        ldy #0
         ldx #8
         jsr printAtPos
         .aasc $0e," Character Generation ",$18,$7e,$00
 
         jsr l94c0
-        lda #$e4                ; destination: $81e4
-        sta l8f2b
-        lda #$81
+        lda #<stats+2
+        sta l8f2b               ; destination pointer
+        lda #>stats+2
         sta l8f2c
-        lda #$f7                ; source: $93f7
-        sta l8f28
-        lda #$93
+        lda #<_statsInitValues+2
+        sta l8f28               ; source pointer
+        lda #>_statsInitValues+2
         sta l8f29
 l8f27   l8f28 = * + 1
-; Instruction parameter accessed.
         l8f29 = * + 2
         lda $ffff               ; copy initial stats from source
         l8f2b = * + 1
-; Instruction parameter accessed.
         l8f2c = * + 2
         sta $ffff               ; to destination (?)
         inc l8f28
@@ -192,7 +192,7 @@ l8f3d   lda l8f28
 l8f44   lda l8f29
         cmp #$94
         bne l8f27
-l8f4b   jsr l9359
+l8f4b   jsr _printAttributes
 l8f4e   lda #30
         sta _pointsLeft         ; initial points left to distribute: 30
         ldx #$01
@@ -205,10 +205,10 @@ l8f4e   lda #30
         .aasc " Press RETURN when finished,",$7e
         .aasc " or space bar to go back to main menu.",$00
 
-l9006   jsr l9359
+l9006   jsr _printAttributes
 l9009   lda #$63
         sta $32
-        jsr $1676               ; get key
+        jsr readKey
 l9010   tay
         lda _attributeId
         asl
@@ -218,10 +218,10 @@ l9010   tay
 l901a   jmp _mainMenuL1
 l901d   cpy #KEY_WEST
         bne l9030
-l9021   lda $823b,x
+l9021   lda statsAttributes,x
         cmp #10                 ; minimum value (10)?
         beq l9006               ; yes ->
-        dec $823b,x             ; dec attribute value
+        dec statsAttributes,x   ; dec attribute value
         inc _pointsLeft
         bne l9006
 
@@ -229,10 +229,10 @@ l9030   cpy #KEY_EAST
         bne l9048
         lda _pointsLeft         ; character points left?
         beq l9006               ; no ->
-        lda $823b,x
+        lda statsAttributes,x
         cmp #25                 ; maximum value (25)?
         bcs l9006               ; yes ->
-        inc $823b,x             ; inc attribute value
+        inc statsAttributes,x   ; inc attribute value
         dec _pointsLeft
         bpl l9006
 
@@ -261,8 +261,8 @@ l9071   ldy _pointsLeft
         beq l907c
 l9076   jsr $8772
 l9079   jmp l9006
-l907c   sty _attributeId
-        jsr l9359
+l907c   sty _attributeId        ; set _attributeId to 0 (none)
+        jsr _printAttributes
 l9082   jsr l94c0
 l9085   ldy #$12
         ldx #$0b
@@ -279,7 +279,7 @@ l9085   ldy #$12
 
 _selectRaceL1
 l90ce
-        jsr $1676               ; get key
+        jsr readKey
         cmp #$41                ; 'A'?
         bcc _selectRaceL1
         cmp #$45                ; 'E'?
@@ -294,7 +294,7 @@ l90ce
         .aasc "Race  ",$00
 
         ldx statsRace
-        jsr $8426               ; print from string table (?)
+        jsr printFromTableCap   ; print from string table, capitalize
         .word strTableRace
         jsr l94c0
         lda statsRace
@@ -331,7 +331,7 @@ _selectRaceJ3
         sbc #$05                ; add bonus
         sta statsStrength
 
-l913a   jsr l9359
+l913a   jsr _printAttributes
 l913d   ldy #18
         ldx #11
         jsr printAtPos
@@ -344,7 +344,7 @@ l913d   ldy #18
         .aasc "Select thy sex: ",$00
 
 _selectSexL1
-        jsr $1676               ; get key
+        jsr readKey
         cmp #$41                ; 'A'
         bcc _selectSexL1
         cmp #$43                ; 'C'
@@ -357,7 +357,7 @@ _selectSexL1
         jsr printAtPos
         .aasc "Sex  ",$00
         ldx statsGender
-        jsr $8426               ; print from string table (?)
+        jsr printFromTableCap   ; print from string table, capitalize
         .word _strTableGender
 
         jsr l94c0
@@ -375,7 +375,7 @@ _selectSexL1
         .aasc "Select thy class: ",$00
 
 _selectClassL1
-l91e8   jsr $1676               ; get key
+l91e8   jsr readKey
         cmp #$41                ; 'A'
         bcc _selectClassL1
         cmp #$45                ; 'E'
@@ -389,7 +389,7 @@ l91e8   jsr $1676               ; get key
         .aasc "Class  ",$00
 
 l9208   ldx statsClass
-        jsr $8426               ; print from string table (?)
+        jsr printFromTableCap   ; print from string table, capitalize
         .word strTableClass
         lda statsClass
         cmp #$01                ; Fighter?
@@ -425,7 +425,7 @@ _selectClassJ3
         adc #10                 ; add class bonus
         sta statsAgility
 _selectClassJ4
-        jsr l9359
+        jsr _printAttributes
 l9255   jsr $1670
 l9258   sta $8264
         jsr $1670
@@ -439,13 +439,13 @@ l925e   sta $8265
         lda #$00
         sta l93ea               ; index name character
 _enterNameL1
-l9281   jsr $1676               ; get key
+l9281   jsr readKey
         ldx l93ea
         cmp #KEY_RETURN         ; return key?
         bne _enterNameJ1
         txa                     ; index name character
         beq _enterNameL1        ; name empty ->
-l928e   dec zpCursorRow
+        dec zpCursorRow
         jsr l94c0
         lda #11
         sta zpCursorCol
@@ -476,7 +476,7 @@ _enterNameJ2
 _enterNameJ3
 l92c5   sta statsName,x         ; store character in name
         inc l93ea
-        jsr $83d7
+        jsr printChar
         jmp _enterNameL1
 
 _enterNameJ4
@@ -501,8 +501,8 @@ l92d1   cpx #$0d
 l92f4   jsr l947f
         .aasc $7e," Save this character? (Y-N) ",$00
         jsr l94c0
-        jsr $1676               ; get key
-        jsr $1667
+        jsr readKey
+        jsr drawChar
         cmp #$59                ; 'Y'
         beq _saveCharacter
         cmp #$4e                ; 'N'
@@ -539,6 +539,7 @@ _saveCharacterL1
         jsr saveFile            ; save "P<x>"
         jmp _mainMenuL1
 
+_printAttributes
 l9359   lda #$00
         sta $85be
         sta $81c4
@@ -547,47 +548,52 @@ l9359   lda #$00
         ldy #$03
         sty zpCursorRow
         lda _attributeId
-        beq l9393
+        beq _printAttsJ1        ; no selection ->
         jsr print
         .aasc "Points left to distribute: ",$00
         lda _pointsLeft
-l9390   jsr $8582
-l9393   dec $2f
+        jsr $8582
+_printAttsJ1
+        dec $2f
         jsr $164f
-l9398   inc $2f
+        inc $2f
         jsr $83f3
-l939d   inc $81c4
+_printAttsL1
+        inc $81c4
         inc zpCursorRow
         ldx #10
         stx zpCursorCol
-        lda #$20
+        lda #$20                ; char: space
         ldx $81c4
         cpx _attributeId
-        bne l93b2
-l93b0   lda #$0e
-l93b2   jsr $83d7
-        jsr $8426               ; print from string table (?)
+        bne _printAttsJ2        ; no selection ->
+        lda #$0e                ; char: blue triangle right
+_printAttsJ2
+        jsr printChar
+        jsr printFromTableCap   ; print from string table, capitalize
         .word strTableAttributes
         lda #$2e                ; '.'
         sta $85be
-l93bf   jsr $83d7
+_printAttsL2
+        jsr printChar           ; print dotted line
         ldx zpCursorCol
         cpx #26
-        bcc l93bf
-l93c8   lda $81c4
+        bcc _printAttsL2
+        lda $81c4
         asl
         tax
-        lda $823b,x
+        lda statsAttributes,x
         jsr $8582
-l93d3   lda #$20
+        lda #$20                ; char: space
         ldx $81c4
         cpx _attributeId
-        bne l93df
-l93dd   lda #$18
-l93df   jsr $83d7
-l93e2   cpx #$06
-        bcc l939d
-l93e6   rts
+        bne _printAttsJ3
+        lda #$18                ; char: blue triangle left
+_printAttsJ3
+        jsr printChar
+        cpx #$06                ; more attributes to print?
+        bcc _printAttsL1        ; yes ->
+        rts
 
 _pointsLeft
 l93e7
@@ -688,28 +694,17 @@ l947f   ldx #$02
         jsr l94c0
 l948a   jmp print
 
-l948d   ldx #$02
-        ldy #$15
+l948d   ldx #2
+        ldy #21
         jsr printAtPos
-l9494   bvc l9508
-        .asc ""
-        .byt $65,$73,$73
-l9499   jsr $7053
-        .asc ""
-        .byt $61,$63,$65
-l949f   jsr $6f74
-l94a2   jsr $6f63
-        .asc ""
-        .byt $6e,$74,$69,$6e,$75
-l94aa   adc $3a
-        jsr $2000
-l94af   ror $16,x
+        .aasc "Press Space to continue: ",$00
+        jsr readKey
         jsr $83f6
 l94b4   lda #$14
         sta zpCursorRow
         bne l94c0
-l94ba   jsr $1655
-l94bd   jsr l9519
+l94ba   jsr setTextFull         ; set full text window, home
+l94bd   jsr _cursorHome
 
 l94c0   jsr $870c
 l94c3   dec $2f
@@ -721,35 +716,39 @@ l94cb   inc zpCursorRow
         cpy $31
         bcc l94c5
 l94d4   jmp $8701
-l94d7   lda #$10
-        jsr $83d7
-l94dc   ldx #$26
-        lda #$04
-        jsr $84b9
-l94e3   lda #$12
-        jsr $1667
-l94e8   inc zpCursorRow
-        jsr $8411
-l94ed   lda #$0a
-        jsr $1667
-l94f2   lda #$27
+
+_printFrame
+l94d7   lda #$10                ; char: upper left corner of frame
+        jsr printChar
+        ldx #38                 ; # of repeats: 38
+        lda #$04                ; char: upper border
+        jsr printRepeatChar     ; print upper border
+        lda #$12                ; char: upper right corner
+        jsr drawChar
+_printFrameL1
+l94e8   inc zpCursorRow         ; next line
+        jsr printCR             ; carriage return
+        lda #$0a                ; char: left border
+        jsr drawChar
+        lda #39
         sta zpCursorCol
-        lda #$08
-        jsr $1667
-l94fb   jsr $1673
-l94fe   lda zpCursorRow
-        eor #$16
-        bne l94e8
-l9504   sta zpCursorCol
+        lda #$08                ; char: right border
+        jsr drawChar
+        jsr $1673
+        lda zpCursorRow
+        eor #22                 ; repeat 22 times
+        bne _printFrameL1
+        sta zpCursorCol         ; zpCursorCol = 0
         inc zpCursorRow
-l9508   lda #$14
-        jsr $83d7
-l950d   ldx #$26
-        lda #$02
-        jsr $84b9
-l9514   lda #$16
-        jsr $1667
-l9519   ldx #$01
+        lda #$14                ; char: lower left corner of frame
+        jsr printChar
+        ldx #38                 ; # of repeats: 38
+        lda #$02                ; char: lower border
+        jsr printRepeatChar     ; print lower border
+        lda #$16                ; char: lower right corner of frame
+        jsr drawChar
+_cursorHome
+l9519   ldx #$01                ; return cursor to upper left corner
         stx zpCursorCol
         stx zpCursorRow
         rts
@@ -765,7 +764,7 @@ l9520   jsr l9598
         .aasc $0d,"Thy choice: ",$00
 
 _selectPlayerL1
-        jsr $1676               ; get key
+        jsr readKey
         cmp #$20                ; space bar?
         bne _selectPlayerJ1
         jmp _mainMenuL1
@@ -798,13 +797,13 @@ l95a0   lda #$0d
 l95ac   lda l95f5
         clc
         adc #$31
-        jsr $1667
+        jsr drawChar
 l95b5   inc zpCursorCol
         lda #$2e
-        jsr $1667
+        jsr drawChar
 l95bc   inc zpCursorCol
         lda #$20
-        jsr $1667
+        jsr drawChar
 l95c3   inc zpCursorCol
         lda #$0c
         sta l95f6
@@ -821,7 +820,7 @@ l95d7   inx
         inx
 l95da   lda roster,x
         beq l95ea
-l95df   jsr $1667
+l95df   jsr drawChar
 l95e2   inc zpCursorCol
         inx
         dec l95f6

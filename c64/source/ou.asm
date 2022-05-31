@@ -100,15 +100,15 @@ l8d67   sta statsTransport
         beq l8d72
 l8d6f   dec $8213,x
 l8d72   ldx #$0f
-l8d74   sta $81f8,x
+l8d74   sta invWeapons,x
         dex
         bne l8d74
-l8d7a   sta $81f0
+        sta statsArmour
         sta statsWeapon
         sta $81ee
         jsr print
         .aasc $7e,"Attempting resurrection!",$00
-l8da0   inc statsHp               ; inc hit points
+l8da0   inc statsHp             ; inc hit points
         jsr l8dc5
 l8da6   lda statsHp
         cmp #99
@@ -159,7 +159,7 @@ l8e01   l8e02 = * + 1
         cmp $81c9,x
         bne l8e35
 l8e06   stx $24
-        jsr printTableString
+        jsr printFromTable
         .byt $7f
 l8e0c   adc $20a6,y
         ldy zpLatitude
@@ -241,7 +241,7 @@ attack
 l8e99   jsr print
        .aasc "with ",$00
         ldx statsWeapon
-        jsr printTableString
+        jsr printFromTable
         .word strTableWeapons
         ldx statsWeapon
         lda la131,x
@@ -332,13 +332,13 @@ l8f84   clc
         pha
         tax
         lda #$00
-        jsr $8522
-l8f8e   lda $3c
+        jsr convertToBcd16
+l8f8e   lda zpValue1e0
         and #$0f
         beq l8fa0
 l8f94   jsr l8fd4
         .aasc "copper! ",$00
-l8fa0   lda $3c
+l8fa0   lda zpValue1e0
         lsr
         lsr
         lsr
@@ -346,7 +346,7 @@ l8fa0   lda $3c
         beq l8fb4
 l8fa8   jsr l8fd4
         .aasc "silver! ",$00
-l8fb4   lda $3d
+l8fb4   lda zpValue1e2
         beq l8fc1
         jsr l8fd4
         .aasc "gold!",$00
@@ -365,8 +365,8 @@ l8fd4   pha
         bcc l8fde
 l8fdb   jsr $83f3
 l8fde   pla
-        jsr $83cd
-l8fe2   inc zpCursorCol
+        jsr printDigit
+        inc zpCursorCol         ; skip one character (blank)
         jmp print
 
 l8fe7   jsr print
@@ -376,7 +376,7 @@ l8fea   jsr $6874
 l8fee   jsr $ae00
         .asc ""
         .byt $67,$82
-l8ff3   jsr printTableString
+l8ff3   jsr printFromTable
         .byt $7f,$7a
 l8ff8   jsr print
         .asc ""
@@ -463,13 +463,13 @@ l90d1   lda #$0f
         sta $1637
         lda #$05
 l90d8   jmp l9262
-l90db   lda $81ea
+l90db   lda statsRedGem
         beq l90f3
-l90e0   lda $81eb
+l90e0   lda statsGreenGem
         beq l90f3
-l90e5   lda $81ec
+l90e5   lda statsBlueGem
         beq l90f3
-l90ea   lda $81ed
+l90ea   lda statsWhiteGem
         beq l90f3
 l90ef   lda #$06
         bne l90d8
@@ -485,12 +485,12 @@ l9101   jsr print
         .aasc $0d,"o  o  o  o",LF,CR
         .aasc $0d,"R  G  B  W",LF,LF,$00
 
-l9166   lda $81ea
-        ora $81eb
-        ora $81ec
-        ora $81ed
+l9166   lda statsRedGem
+        ora statsGreenGem
+        ora statsBlueGem
+        ora statsWhiteGem
         bne l91cb
-l9174   jsr print
+        jsr print
         .aasc $7f,$02,"Thou canst not determine how to",LF,$7f
         .aasc $02,"operate the craft at this time.",$00
 
@@ -500,22 +500,23 @@ l91bd   sta $5d
 l91c2   jsr $8701
 l91c5   jsr $85e1
 l91c8   jmp $85e4
-l91cb   lda $81ea
+
+l91cb   lda statsRedGem
         beq l91d7
 l91d0   ldx #$59
         lda #$20
         jsr l923d
-l91d7   lda $81eb
+l91d7   lda statsGreenGem
         beq l91e3
 l91dc   ldx #$71
         lda #$50
         jsr l923d
-l91e3   lda $81ec
+l91e3   lda statsBlueGem
         beq l91ef
 l91e8   ldx #$89
         lda #$60
         jsr l923d
-l91ef   lda $81ed
+l91ef   lda statsWhiteGem
         beq l91fb
 l91f4   ldx #$a1
         lda #$10
@@ -639,7 +640,7 @@ l9306   ldx $81ee
         ldx #$00
         bcc l9313
 l9312   inx
-l9313   jsr printTableString
+l9313   jsr printFromTable
         .word $9394
         ldx #$03
         stx la145
@@ -813,7 +814,7 @@ l94bb   jmp l9262
 l94be   stx la141
         jsr $8788
 l94c4   ldx la141
-        jsr printTableString
+        jsr printFromTable
 l94ca   cpx $209e
         ora ($87,x)
         jsr $8777
@@ -837,14 +838,14 @@ l950f   cpx $8263
         beq l9520
 l9514   ldx #$00
 l9516   inx
-        lda $81f8,x
+        lda invWeapons,x
         beq l9526
 l951c   cpx #$0f
         bcc l9516
 l9520   jsr $874e
 l9523   jmp l955c
 l9526   lda #$01
-        sta $81f8,x
+        sta invWeapons,x
         stx $46
         jsr print
 l9530   ror $6f59,x
@@ -857,15 +858,15 @@ l9530   ror $6f59,x
         beq l9546
 l9542   cpx #$08
         bne l954b
-l9546   lda #$6e
-        jsr $83d7
+l9546   lda #$6e                ; 'n'
+        jsr printChar
 l954b   inc zpCursorCol
         ldx $46
-        jsr printTableString
+        jsr printFromTable
         .asc ""
         .byt $7c,$77
-l9554   lda #$21
-        jsr $83d7
+l9554   lda #$21                ; '!'
+        jsr printChar
 l9559   jsr l95b9
 l955c   lda la141
         sta $8263
@@ -902,10 +903,10 @@ l959d   jsr $6f64
 l95a2   jsr $6167
 l95a5   adc #$6e
         jsr $6800
-l95aa   jsr $83cd
+l95aa   jsr printDigit
 l95ad   inc zpCursorCol
         ldx $46
-        jsr printTableString
+        jsr printFromTable
         .asc ""
         .byt $42
 l95b5   sei
@@ -1070,10 +1071,10 @@ l973b   ldx statsTransport
         beq l9746
         cpx #TRANSPORT_FRIGATE
         bne l9795
-l9746   jsr $8426
+l9746   jsr printFromTableCap
 l9749   bmi l97c4
 l974b   ldx #$03
-l974d   jsr printTableString
+l974d   jsr printFromTable
 l9750   sta $9e,x
 l9752   lda #$0e
         jmp $8774
@@ -1092,16 +1093,16 @@ l9772   cpx #$10
         beq l977a
 l9776   cpx #$13
         bne l977f
-l977a   lda #$6e
-        jsr $83d7
+l977a   lda #$6e                ; 'n'
+        jsr printChar
 l977f   inc zpCursorCol
         cpx #$14
         bne l9788
 l9785   jsr $83f3
-l9788   jsr printTableString
+l9788   jsr printFromTable
         .byt $7f,$7a
-l978d   lda #$21
-        jsr $83d7
+l978d   lda #$21                ; '!'
+        jsr printChar
 l9792   jmp l9752
 l9795   ldx $2c
         ldy $2d
@@ -1134,6 +1135,7 @@ l97d9   beq l97df
 l97db   dec $3f
         bne l97d6
 l97df   rts
+
 l97e0   lda #$00
         sta $3f
 l97e4   jsr l9d44
@@ -1636,7 +1638,7 @@ l9bb2   ldx $44
         adc #$fe
         sta $8267
         tax
-        jsr $8426
+        jsr printFromTableCap
         .byt $7f,$7a
 l9bc7   jsr print
 l9bca   jsr $7461
@@ -1651,7 +1653,7 @@ l9bda   lda #$5e
 l9be2   lda statsStamina
         lsr
         sta $43
-        lda $81f0
+        lda statsArmour
         asl
         asl
         asl
@@ -1871,13 +1873,13 @@ l9daf   sta la142
         cmp #$04
         bcs l9dcb
 l9db6   tax
-        jsr printTableString
+        jsr printFromTable
         .word _textTableSearch
 l9dbc   ldx la142
         dex
         bne l9dca
 l9dc2   ldx statsContinent
-        jsr printTableString
+        jsr printFromTable
         .word strTableLands
 l9dca   rts
 
@@ -1903,11 +1905,11 @@ l9df5   stx $8262
         rts
 
 l9df9   stx $8262
-        jsr printTableString
+        jsr printFromTable
 l9dff   cpy #$7c
         rts
 l9e02   ldx statsTransport
-        jsr printTableString
+        jsr printFromTable
         .word strTableTransport
 
         rts
