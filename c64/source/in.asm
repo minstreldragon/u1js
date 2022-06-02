@@ -13,9 +13,9 @@ l84db = $84db
 l6800   jmp l6823
 
 l6803   jsr _disableSprites
-l6806   lda #>bitmap2RAM
+l6806   lda #>bitmapRAM1
         sta $61
-        lda #<bitmap2RAM
+        lda #<bitmapRAM1
         sta $60
         tay
         ldx #$24
@@ -30,9 +30,9 @@ l681b   ldx #$0d
 l6820   jmp $7400
 
 
-l6823   lda #<bitmap2RAM
+l6823   lda #<bitmapRAM1
         sta l6878
-        lda #>bitmap2RAM
+        lda #>bitmapRAM1
         sta l6879
         lda #<_introBmpRle
         sta l686c
@@ -88,9 +88,9 @@ l687f   inc l6879
 l6882   rts
 
 
-l6883   lda #<bitmapRAM         ; set up screen pointer table
+l6883   lda #<bitmapRAM0        ; set up screen pointer table
         sta bmpLinePtrLb
-        lda #>bitmapRAM
+        lda #>bitmapRAM0
         sta bmpLinePtrHb
         ldx #$00
 l688f   lda bmpLinePtrLb,x

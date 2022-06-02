@@ -80,7 +80,7 @@
 lc00
         lda #$00
         sta VicScreenCtrlReg1
-        ldx #>bitmapRAM
+        ldx #>bitmapRAM0
         stx $fd
         lda #$00
         tay
@@ -135,10 +135,10 @@ lc52    lda lc3a
         ldx #$00
         lda #COL_BLUE << 4
 _setColorL1
-        sta screenRAM,x
-        sta screenRAM+$0100,x
-        sta screenRAM+$0200,x
-        sta screenRAM+$02f0,x
+        sta screenRAM0,x
+        sta screenRAM0+$0100,x
+        sta screenRAM0+$0200,x
+        sta screenRAM0+$02f0,x
         inx
         bne _setColorL1
 
@@ -310,7 +310,7 @@ _bitmapOriginLogo
         .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 
 
-l155e   lda #>bitmapRAM
+l155e   lda #>bitmapRAM0
         tax
         sta $e3
         lda #$00
@@ -350,7 +350,7 @@ l158f   lda $e0
 l159d   cmp #$11
         bcs l15cb
 l15a1   clc
-        adc #>bitmapRAM
+        adc #>bitmapRAM0
         sta $e3
         adc #$20
         sta $e6

@@ -1,12 +1,12 @@
 #define _ST_
 #include "archdep.h"
+#include "constants.h"
 
         .word $0c00
         * = $0c00
 
-; tileset
-
-0c00:
+tileset
+l0c00
         .byt $00,$f0,$0f,$00,$00,$f0,$0f,$00,$0f,$00,$00,$f0,$0f,$00,$00,$f0    ; water
         .byt $00,$f0,$0f,$00,$00,$f0,$0f,$00,$0f,$00,$00,$f0,$0f,$00,$00,$f0
 
@@ -151,7 +151,7 @@
         .byt $07,$1f,$3f,$7f,$fc,$f8,$f1,$f3,$e0,$f8,$fc,$fe,$3f,$1f,$8f,$cf    ; hit 2
         .byt $f1,$f8,$fc,$7f,$3f,$1f,$07,$00,$8f,$1f,$3f,$fe,$fc,$f8,$e0,$00
 
-; bmpLinePtrLb
+bmpLinePtrLb
 l1200
         .byt $00,$01,$02,$03,$04,$05,$06,$07,$40,$41,$42,$43,$44,$45,$46,$47
         .byt $80,$81,$82,$83,$84,$85,$86,$87,$c0,$c1,$c2,$c3,$c4,$c5,$c6,$c7
@@ -166,7 +166,7 @@ l1200
         .byt $00,$01,$02,$03,$04,$05,$06,$07,$40,$41,$42,$43,$44,$45,$46,$47
         .byt $80,$81,$82,$83,$84,$85,$86,$87,$c0,$c1,$c2,$c3,$c4,$c5,$c6,$c7
 
-; bmpLinePtrHb
+bmpLinePtrHb
 l12c0
         .byt $20,$20,$20,$20,$20,$20,$20,$20,$21,$21,$21,$21,$21,$21,$21,$21
         .byt $22,$22,$22,$22,$22,$22,$22,$22,$23,$23,$23,$23,$23,$23,$23,$23
@@ -199,24 +199,26 @@ l1380
         .byt $c0,$60,$30,$18,$0c,$06,$03,$01,$c0,$60,$30,$18,$0c,$06,$03,$01
         .byt $c0,$60,$30,$18,$0c,$06,$03,$01,$c0,$60,$30,$18,$0c,$06,$03,$01
 
+tilePtrLb
 l1480
         .byt $00,$20,$40,$60,$80,$a0,$c0,$e0,$00,$20,$40,$60,$80,$a0,$c0,$e0
         .byt $00,$20,$40,$60,$80,$a0,$c0,$e0,$00,$20,$40,$60,$80,$a0,$c0,$e0
         .byt $00,$20,$40,$60,$80,$a0,$c0,$e0,$00,$20,$40,$60,$80,$a0,$c0,$e0
         .byt $00,$20,$40,$60,$80,$a0,$c0,$e0,$00,$20,$40,$60,$80,$a0,$c0,$e0
 
+tilePtrHb
 l14c0
         .byt $0c,$0c,$0c,$0c,$0c,$0c,$0c,$0c,$0d,$0d,$0d,$0d,$0d,$0d,$0d,$0d
         .byt $0e,$0e,$0e,$0e,$0e,$0e,$0e,$0e,$0f,$0f,$0f,$0f,$0f,$0f,$0f,$0f
         .byt $10,$10,$10,$10,$10,$10,$10,$10,$11,$11,$11,$11,$11,$11,$11,$11
         .byt $12,$12,$12,$12,$12,$12,$12,$12,$13,$13,$13,$13,$13,$13,$13,$13
 
-; tileColors
+tileColors
 l1500   
         .byt $60,$50,$50,$f0,$10,$10,$10,$f0,$10,$10,$10,$10,$10,$10,$10,$10
         .byt $10,$10,$50,$50,$10,$10,$10,$10,$10,$10,$10,$10,$50,$50,$10,$10
         .byt $50,$50,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$30,$a0
-; charColors
+charColors
 l1530
         .byt $60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60
         .byt $60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$10,$10,$10,$10,$10,$b0
@@ -227,7 +229,7 @@ l1530
         .byt $10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10
         .byt $10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10
 
-;bmpColOffLb
+bmpColOffLb
 l15b0 
         .byt $00,$08,$10,$18,$20,$28,$30,$38
         .byt $40,$48,$50,$58,$60,$68,$70,$78
@@ -235,7 +237,7 @@ l15b0
         .byt $c0,$c8,$d0,$d8,$e0,$e8,$f0,$f8
         .byt $00,$08,$10,$18,$20,$28,$30,$38
 
-;bmpColOffHb
+bmpColOffHb
 l15d8
         .byt $00,$00,$00,$00,$00,$00,$00,$00
         .byt $00,$00,$00,$00,$00,$00,$00,$00
@@ -243,14 +245,14 @@ l15d8
         .byt $00,$00,$00,$00,$00,$00,$00,$00
         .byt $01,$01,$01,$01,$01,$01,$01,$01
 
-;videoMemRowPtrLb
+videoMemRowPtrLb
 l1600
         .byt $00,$28,$50,$78,$a0,$c8,$f0,$18
         .byt $40,$68,$90,$b8,$e0,$08,$30,$58
         .byt $80,$a8,$d0,$f8,$20,$48,$70,$98
         .byt $c0
 
-;videoMemRowPtrHb
+videoMemRowPtrHb
 l1619
         .byt $04,$04,$04,$04,$04,$04,$04,$05
         .byt $05,$05,$05,$05,$05,$06,$06,$06
@@ -297,7 +299,8 @@ getKey
 l1679   jmp _getKey
 l167c   jmp l1e50
 l167f   jmp l1e8c
-l1682   jmp l1b51
+playSoundEffect
+l1682   jmp _playSoundEffect
 l1685   jmp l1b89
 l1688   jmp l1b72
 l168b   jmp l1773
@@ -344,10 +347,10 @@ l16d5   dex
         bpl l16b9
 l16d8   lda #$29
         sta $60
-        lda #$04
+        lda #>screenRAM0
         ldx $5c
         beq l16e4
-l16e2   lda #$60
+l16e2   lda #>screenRAM1
 l16e4   ldx #$11
         sta $61
 l16e8   ldy #$25
@@ -438,11 +441,19 @@ l1782   stx l1786
 l1786   l1788 = * + 2
         l1789 = * + 3
         l178a = * + 4
-        l178b = * + 5
-        l178c = * + 6
-        l178d = * + 7
         l178e = * + 8
-        .byt $ff,$60,$06,$00,$00,$01,$03,$02,$01
+        .byt $ff
+        .byt $60
+        .byt $06
+        .byt $00
+        .byt $00
+_waterTimer
+        .byt $01
+_castleFlagTimer
+        .byt $03
+_townFlagTimer
+        .byt $02
+        .byt $01
 
 l178f   lda #$01
         sta SidVoice3FreqLb
@@ -451,7 +462,7 @@ l178f   lda #$01
         lda #$41
         sta SidVoice3CtrlReg
         lda #$8f
-        sta l1c80
+        sta _speakerValue
         sta l1c7e
         lda #$ff
         sta SidVoice3SustainRelease
@@ -469,20 +480,20 @@ l178f   lda #$01
         lda #$00
         sta VicBorderColor
         tax
-        lda #$10
-l17cd   sta $0400,x
-        sta $0500,x
-        sta $0600,x
-        sta $0700,x
-        sta $6000,x
-        sta $6100,x
-        sta $6200,x
-        sta $6300,x
+        lda #COL_BLACK + COL_WHITE << 4
+l17cd   sta screenRAM0,x
+        sta screenRAM0+$0100,x
+        sta screenRAM0+$0200,x
+        sta screenRAM0+$0300,x
+        sta screenRAM1,x
+        sta screenRAM1+$0100,x
+        sta screenRAM1+$0200,x
+        sta screenRAM1+$0300,x
         inx
         bne l17cd
-l17e8   cli
+        cli
         rts
-l17ea   clc
+        clc
         rts
 
 l17ec   rts
@@ -934,45 +945,55 @@ l1b00   ldx _drawCharStoreX     ; restore X
 _drawCharStoreX
         .byt $00
 
-l1b06   jsr l1b13
-l1b09   ldx #$0f
-        jsr l1b26
-l1b0e   ldx #$1f
-        jsr l1b26
-l1b13   ldx #$07
-l1b15   lda tileset+8,x
-        ldy tileset+$10,x
-        sta tileset+$10,x
+_animateWater
+l1b06   jsr _animateWaterJ1     ; swap quarter-tile order
+        ldx #$0f
+        jsr _cycleHalfTile      ; cycle left side of tile
+        ldx #$1f
+        jsr _cycleHalfTile      ; cycle right side of tile
+_animateWaterJ1
+l1b13   ldx #$07                ; swap quarter-tile order
+_animateWaterL1
+        lda tileset+$08,x       ; quarter tile byte at offset $08
+        ldy tileset+$10,x       ; quarter tile byte at offset $10
+        sta tileset+$10,x       ; swap bytes
         tya
-        sta tileset+8,x
-        dex
-        bpl l1b15
-l1b25   rts
-
-l1b26   lda tileset,x
-        pha
-l1b2a   dex
-        lda tileset,x
-        inx
-        sta tileset,x
-        dex
-        bmi l1b39
-l1b35   cpx #$0f
-        bne l1b2a
-l1b39   inx
-        pla
-        sta tileset,x
+        sta tileset+$08,x
+        dex                     ; repeat for all 8 bytes in quarter tiles
+        bpl _animateWaterL1
         rts
-l1b3f   l1b40 = * + 1
-        .asc ""
-        .byt $4e,$1c
-  .word l1c48,l1c2b
-        .asc "="
-        .byt $1b,$1d,$1c
-        .asc "7"
-        .byt $1b,$0c,$1c
-l1b4d   lda ($1b,x)
-        lda ($1b),y
+
+_cycleHalfTile 
+        lda tileset,x           ; store bottom row of half tile
+        pha
+_cycleHalfTileL1
+l1b2a   dex
+        lda tileset,x           ; copy tile byte
+        inx
+        sta tileset,x           ; to row below
+        dex
+        bmi _cycleHalfTileJ1    ; finished (left half)? ->
+        cpx #$0f                ; finished (right half)?
+        bne _cycleHalfTileL1    ; no ->
+_cycleHalfTileJ1
+        inx
+        pla
+        sta tileset,x           ; roll around lowest byte to uppermost
+        rts
+
+_soundFxRoutines
+l1b3f
+        .word $1c4f-1
+        .word $1c49-1
+        .word $1c2c-1
+        .word $1bbe-1
+        .word $1c1e-1
+        .word $1bb8-1
+        .word $1c0d-1
+        .word $1ba2-1
+        .word $1bb2-1
+
+_playSoundEffect
 l1b51   stx $43
         tax
         lsr
@@ -982,16 +1003,18 @@ l1b57   cpx #$12
 l1b5b   lda l1638
         beq l1b6f
 l1b60   php
-        sei
+        sei                     ; block interrupts during sound playback
         jsr l1b67
-l1b65   plp
+        plp                     ; release interrupts
         rts
-l1b67   lda l1b40,x
+
+l1b67   lda _soundFxRoutines+1,x
         pha
-        lda l1b3f,x
+        lda _soundFxRoutines,x
         pha
 l1b6f   ldx $43
         rts
+
 l1b72   lda $5b
         beq l1b88
 l1b76   lda $57
@@ -1001,7 +1024,8 @@ l1b7a   ldy $57,x
         inx
         cpx #$04
         bcc l1b7a
-l1b83   jsr l1b51
+
+l1b83   jsr _playSoundEffect
 l1b86   dec $5b
 l1b88   rts
 l1b89   ldx $5b
@@ -1022,7 +1046,7 @@ l1ba2   ldy #$10
         lda #$30
 l1ba6   pha
         jsr l16a0
-l1baa   jsr l1c70
+l1baa   jsr _toggleSpeaker
 l1bad   pla
         dey
         bne l1ba6
@@ -1045,11 +1069,11 @@ l1bcc   lda $3b
 l1bd0   ldx $2a
 l1bd2   dex
         bne l1bd2
-l1bd5   jsr l1c70
+l1bd5   jsr _toggleSpeaker
 l1bd8   ldx $2b
 l1bda   dex
         bne l1bda
-l1bdd   jsr l1c70
+l1bdd   jsr _toggleSpeaker
 l1be0   dec $43
         bne l1bd0
 l1be4   dec $2a
@@ -1062,11 +1086,11 @@ l1bee   lda $3b
 l1bf2   ldx $2a
 l1bf4   dex
         bne l1bf4
-l1bf7   jsr l1c70
+l1bf7   jsr _toggleSpeaker
 l1bfa   ldx $2b
 l1bfc   dex
         bne l1bfc
-l1bff   jsr l1c70
+l1bff   jsr _toggleSpeaker
 l1c02   dec $43
         bne l1bf2
 l1c06   inc $2a
@@ -1077,7 +1101,7 @@ l1c0d   lda #$fb
         sta $3a
 l1c11   inx
         bne l1c11
-l1c14   jsr l1c70
+l1c14   jsr _toggleSpeaker
 l1c17   dec $3a
         ldx $3a
         bne l1c11
@@ -1087,7 +1111,7 @@ l1c20   tya
         tax
 l1c22   dex
         bne l1c22
-l1c25   jsr l1c70
+l1c25   jsr _toggleSpeaker
 l1c28   dey
         bne l1c20
 l1c2b   rts
@@ -1100,15 +1124,17 @@ l1c37   ora $3b
         tax
 l1c3a   dex
         bne l1c3a
-l1c3d   jsr l1c70
+l1c3d   jsr _toggleSpeaker
 l1c40   dec $3b
         lda $3b
         cmp $3a
         bcs l1c34
 l1c48   rts
+
 l1c49   lda #$e8
         ldx #$ff
         bne l1c53
+
 l1c4f   lda #$00
         ldx #$08
 l1c53   stx $3a
@@ -1120,72 +1146,82 @@ l1c5f   ora $3b
         tax
 l1c62   dex
         bne l1c62
-l1c65   jsr l1c70
+l1c65   jsr _toggleSpeaker
 l1c68   l1c69 = * + 1
 ; Instruction parameter accessed.
         bit $c0e8
         dec $3a
         bne l1c5c
 l1c6f   rts
+
+_toggleSpeaker
 l1c70   sta $5e
-        lda l1c80
+        lda _speakerValue
         eor #$80
-        sta l1c80
+        sta _speakerValue
         sta SidFilterModeVolume
         l1c7e = * + 1
 ; Instruction parameter accessed.
         lda $5e
         rts
-l1c80   .byt $8f
+
+_speakerValue
+        .byt $8f
+
 l1c81   jsr l1e08
 l1c84   lda VicScreenCtrlReg1
         bpl l1c81
 l1c89   rts
-l1c8a   lda #$08
+
+_updateMap                      ; update map routine?
+l1c8a   lda #$08                ; start with raster line 8
         sta $45
         sec
-        lda $20
-        sbc #$09
+        lda zpLongitude         ; calculate x-offset of map window
+        sbc #9
         sta $46
         sec
-        lda $21
-        sbc #$04
+        lda zpLatitude          ; calculate y-offset of map window
+        sbc #4
         sta $47
-l1c9c   jsr l1ed5
+
+l1c9c   jsr l1ed5               ; read joystick/keyboard (?)
 l1c9f   bpl l1ca4
-l1ca1   jsr l1e0d
-l1ca4   lda $47
-        cmp #$40
-        bcs l1cc7
-l1caa   lsr
-        sta $4d
+        jsr l1e0d
+l1ca4   lda $47                 ; current map row
+        cmp #$40                ; 0 < row <= 64?
+        bcs _updateMapWaterRow  ; no -> fill this row with water
+        lsr
+        sta zpMapPtr+1          ; mapPtr = mapBuffer + row * 0x40
         lda #$00
         ror
-        lsr $4d
+        lsr zpMapPtr+1
         ror
-        sta $4c
-        lda $4d
-        adc #$64
-        sta $4d
+        sta zpMapPtr
+        lda zpMapPtr+1
+        adc #>mapBuffer
+        sta zpMapPtr+1
         ldx #$00
-        ldy $46
-l1cbf   cpy #$40
+        ldy $46                 ; current map column
+l1cbf   cpy #$40                ; 0 < column <= 64?
         bcc l1cd2
-l1cc3   lda #$00
-        beq l1cf1
+        lda #TILE_WATER         ; print water (0) for this tile
+        beq l1cf1               ; always true ->
+_updateMapWaterRow
 l1cc7   ldx #$12
-        lda #$00
+        lda #TILE_WATER         ; fill whole tile row with water
 l1ccb   sta $66,x
         dex
         bpl l1ccb
 l1cd0   bmi l1cfa
-l1cd2   lda ($4c),y
-        and #$7e
+
+l1cd2   lda (zpMapPtr),y        ; read tile from mapBuffer
+        and #$7e                ; clear highest and lowest bits
         cmp #$20
         bcc l1cf1
-l1cda   cmp #$59
+        cmp #$59
         bcs l1cf1
-l1cde   stx $48
+        stx $48
         sta $49
         inc l178e
         ldx l178e
@@ -1193,20 +1229,21 @@ l1cde   stx $48
         and #$02
         adc $49
         ldx $48
-l1cf1   lsr
-        sta $66,x
+l1cf1   lsr                     ; convert to continuous tile id
+        sta $66,x               ; store in current tile row
         inx
         iny
-        cpx #$13
+        cpx #19                 ; repeat for 19 tiles in current row
         bcc l1cbf
-l1cfa   lda $47
+
+l1cfa   lda $47                 ; current map row
         inc $47
-        cmp $21
+        cmp zpLatitude
         bne l1d08
 l1d02   lda l1639
         lsr
         sta $6f
-l1d08   ldx $45
+l1d08   ldx $45                 ; destination raster line
         lda bmpLinePtrLb,x
         clc
         adc #$28
@@ -1232,65 +1269,68 @@ l1d08   ldx $45
         ldx $5c
         beq l1d3c
 l1d39   clc
-        adc #$5c
+        adc #>(screenRAM1-screenRAM0)
 l1d3c   sta $65
-        ldx #$12
-l1d40   lda $66,x
-        tay
+        ldx #18                 ; horizontal tile index (18..0)
+_drawTilesL1
+l1d40   lda $66,x               ; read tile from current row of tiles
+        tay                     ; tile id as index
         lda tileColors,y
         sta $5e
-        lda l1480,y
-        sta l1d62
+        lda tilePtrLb,y
+        sta _tilePtrUpper
         clc
         adc #$10
-        sta l1d67
-        lda l14c0,y
-        sta l1d63
+        sta _tilePtrLower
+        lda tilePtrHb,y
+        sta _tilePtrUpper+1
         adc #$00
-        sta l1d68
-        ldy #$0f
-l1d61   l1d62 = * + 1
-        l1d63 = * + 2
-        lda tileset,y
+        sta _tilePtrLower+1
+        ldy #$0f                ; iterate for 16 tile lines
+_drawTilesL2
+_tilePtrUpper = * + 1
+        lda tileset,y           ; read tile byte (upper half)
         sta ($60),y
-        l1d67 = * + 1
-        l1d68 = * + 2
-        lda tileset,y
+_tilePtrLower = * + 1
+        lda tileset,y           ; read tile byte (lower half)
         sta ($62),y
         dey
-        bpl l1d61
-l1d6e   txa
-        asl
-        tay
+        bpl _drawTilesL2
+
+        txa
+        asl                     ; screenRAM column = xpos * 2
+        tay                     ; screenRAM index
+        iny                     ; skip left frame border
+        lda $5e                 ; tile color
+        sta ($64),y             ; store in screen RAM upper left
         iny
-        lda $5e
-        sta ($64),y
-        iny
-        sta ($64),y
+        sta ($64),y             ; store in screen RAM upper right
         tya
         clc
-        adc #$28
+        adc #40
         tay
-        lda $5e
-        sta ($64),y
+        lda $5e                 ; tile color
+        sta ($64),y             ; store in screen RAM lower right
         dey
-        sta ($64),y
+        sta ($64),y             ; store in screen RAM lower left
+
         lda $60
         sec
-        sbc #$10
+        sbc #$10                ; set bitmap pointer (upper) to next tile on the left
         sta $60
         lda $61
         sbc #$00
         sta $61
         lda $62
         sec
-        sbc #$10
+        sbc #$10                ; set bitmap pointer (lower) to next tile on the left
         sta $62
         lda $63
         sbc #$00
         sta $63
-        dex
-        bpl l1d40
+        dex                     ; repeat for 19 tiles
+        bpl _drawTilesL1
+
 l1da2   lda $45
         clc
         adc #$10
@@ -1299,40 +1339,46 @@ l1da2   lda $45
         cmp #$98
         bcs l1db2
 l1daf   jmp l1c9c
+
 l1db2   jsr l1700
-l1db5   dec l178b
-        bne l1dc4
-l1dba   lda #$02
-        sta l178b
+
+        dec _waterTimer
+        bne _animateCastleFlag
+        lda #2                  ; reset timer to 2
+        sta _waterTimer
         ldy #$00
-        jsr l1b06
-l1dc4   dec l178c
-        bne l1dda
-l1dc9   lda #$03
-        sta l178c
-        ldx tileset+$89
-        ldy tileset+$8a
-        sty tileset+$89
-        stx tileset+$8a
-l1dda   dec l178d
-        bne l1df0
-l1ddf   lda #$02
-        sta l178d
-        ldx tileset+$c3
-        ldy tileset+$c4
-        sty tileset+$c3
-        stx tileset+$c4
-l1df0   ldx tileset+$18a
-        ldy tileset+$18b
-        sty tileset+$18a
-        stx tileset+$18b
-        ldx tileset+$182
-        ldy tileset+$183
-        sty tileset+$182
-        stx tileset+$183
+        jsr _animateWater
+_animateCastleFlag
+        dec _castleFlagTimer
+        bne _animateTownFlag
+        lda #3                  ; reset timer to 3
+        sta _castleFlagTimer
+        ldx tileset+$0089       ; exchange right half of lines 1 and 2
+        ldy tileset+$008a       ; (this wiggles the castle's flag)
+        sty tileset+$0089
+        stx tileset+$008a
+_animateTownFlag
+        dec _townFlagTimer
+        bne _animateFrigateFlag
+        lda #2                  ; reset timer to 2
+        sta _townFlagTimer
+        ldx tileset+$00c3       ; exchange left half of lines 3 and 4
+        ldy tileset+$00c4       ; (this wiggles the town's flag)
+        sty tileset+$00c3
+        stx tileset+$00c4
+_animateFrigateFlag
+        ldx tileset+$018a       ; exchange lines 2 and 3 (both halfs)
+        ldy tileset+$018b       ; (this wiggles the frigate's flag)
+        sty tileset+$018a
+        stx tileset+$018b
+        ldx tileset+$0182
+        ldy tileset+$0183
+        sty tileset+$0182
+        stx tileset+$0183
 
 l1e08   jsr l1ed5
 l1e0b   bpl l1e27
+
 l1e0d   cmp #$90
         beq l1e27
 l1e11   cmp #$93
@@ -1348,8 +1394,13 @@ l1e23   sta $4e,x
         inc $56
 l1e27   rts
 
-l1e28   l1e2a = * + 2
-        .byt $97,$96,$18,$80
+_cia2PortAVal
+l1e28
+        .byt $97,$96
+_vicMemCtrlRegVal
+l1e2a
+        .byt $18,$80
+
 l1e2c   ldy #$07
 l1e2e   jsr l1e08
 l1e31   lda $56
@@ -1523,6 +1574,7 @@ l1f7a   ldy #$ff
         pha
         pla
         rts
+
 l1f83   l1f84 = * + 1
         .byt $00,$00
         .asc " "

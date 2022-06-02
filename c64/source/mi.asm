@@ -1021,7 +1021,7 @@ l876d   lda #$3f
         jsr drawChar
 
 l8772   lda #$10
-l8774   jsr $1682
+l8774   jsr playSoundEffect
 l8777   nop
         nop
         nop

@@ -57,21 +57,11 @@ IMAIN = $0302
 NMINV = $0318
 ILOAD = $0330
 
-screenRAM = $0400
+screenRAM0 = $0400
+screenRAM1 = $6000
 mapBuffer = $6400
 charset = $0800
-tileset = $0c00
-bmpLinePtrLb = $1200
-bmpLinePtrHb = $12c0
-tileColors = $1500
-charColors = $1530
-bmpColOffLb = $15b0
-bmpColOffHb = $15d8
-videoMemRowPtrLb = $1600
-videoMemRowPtrHb = $1619
-bitmapRAM = $2000
 bitmapRAM0 = $2000
-bitmap2RAM = $4000
 bitmapRAM1 = $4000
 hello = $8000
 roster = $b000
@@ -148,11 +138,23 @@ statsFood = stats + $78
 statsXp = stats + $7a
 
 #ifndef _ST_
+tileset = $0c00
+bmpLinePtrLb = $1200
+bmpLinePtrHb = $12c0
+tilePtrLb = $1480
+tilePtrHb = $14c0
+tileColors = $1500
+charColors = $1530
+bmpColOffLb = $15b0
+bmpColOffHb = $15d8
+videoMemRowPtrLb = $1600
+videoMemRowPtrHb = $1619
 setTextFull = $1655
 setTextStatus = $1658
 drawChar = $1667
 readKey = $1676
 getKey = $1679
+playSoundEffect = $1682
 #endif
 
 #ifndef _MI_

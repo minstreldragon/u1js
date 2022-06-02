@@ -157,9 +157,9 @@ _selDriveTypeL1
         dex
         bne _selDriveTypeL1
         jsr _clearScreen
-        lda #<screenRAM+80
+        lda #<screenRAM0+80
         sta $fe
-        lda #>screenRAM+80
+        lda #>screenRAM0+80
         sta $ff
         lda #<_textDriveSelect
         sta _textPtr
@@ -243,10 +243,10 @@ _clearScreen
         tax
 _clearScreenL1
         lda #$20
-        sta screenRAM,x
-        sta screenRAM+$0100,x
-        sta screenRAM+$0200,x
-        sta screenRAM+$0300,x
+        sta screenRAM0,x
+        sta screenRAM0+$0100,x
+        sta screenRAM0+$0200,x
+        sta screenRAM0+$0300,x
         inx
         bne _clearScreenL1
         rts

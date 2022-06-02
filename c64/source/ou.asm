@@ -307,7 +307,7 @@ l8f3b   lda $81c1
 l8f41   jsr print
         .aasc " damage",$00
 l8f4c   lda #$02
-        jmp $1682
+        jmp playSoundEffect
 l8f51   jsr print
         .aasc $7e,"Killed",$00
 l8f5c   jsr l8fe7
@@ -915,7 +915,7 @@ l95b5   sei
 l95b9   lda #$10
         jsr $87a1
 l95be   lda #$0a
-        jsr $1682
+        jsr playSoundEffect
 l95c3   jsr l95c9
 l95c6   jsr $879f
 l95c9   lda #$e6
@@ -1705,7 +1705,7 @@ l9c61   lda #$00
 l9c66   sta statsHp+1
         jsr $86c6
 l9c6c   lda #$02
-        jsr $1682
+        jsr playSoundEffect
 l9c71   jsr _printPlayerTile
 l9c74   jmp $166a
 l9c77   ldx $44
