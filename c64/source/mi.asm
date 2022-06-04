@@ -70,7 +70,7 @@ strTableRace
         .aasc "el",$e6
         .aasc "dwar",$e6
         .aasc "bobbi",$f4
-_strTableReadyWeapon
+strTableLongWeapons
 l777c
         .aasc "hand",$f3
         .aasc "dagge",$f2
@@ -88,7 +88,7 @@ l777c
         .aasc "light swor",$e4
         .aasc "phazo",$f2
         .aasc "blaste",$f2
-strTableWeapons
+strTableWeapon
 l77ec
         .aasc "hand",$f3
         .aasc "dagge",$f2
@@ -130,7 +130,8 @@ _strTableSpell
         .aasc "Creat",$e5
         .aasc "Destro",$f9
         .aasc "Kil",$ec
-_strTableReadyArmour
+strTableArmour
+l78d4
         .aasc "ski",$ee
         .aasc "leather armou",$f2
         .aasc "chain mai",$ec
@@ -284,6 +285,7 @@ l7cba   bmi $7cd7
 l7cbc   ora $37,x
         .byt $03,$09
 
+strTablePlaces
 l7cc0
         .aasc "The Castle of Lord Britis",$e8
         .aasc "The Castle of the Lost Kin",$e7
@@ -814,7 +816,7 @@ l85c2   iny
 l85c7   tya
         rts
 l85c9   sta $43
-        jsr $1670
+        jsr randomNumber
 l85ce   cmp $43
         bcc l85d6
 l85d2   sbc $43
@@ -1065,21 +1067,24 @@ l87c9   lda $5c
         sta $5c
         rts
 
+cmdReady
 l87d0   pha
-        lda #$07
+        lda #7
         sta zpCursorCol
         pla
         ldx #$03
-l87d8   cmp l87f5,x             ; "SWA" (Spell, Weapon, Armour)
-        beq l87e0
+_cmdReadyL1
+        cmp _readyKeyCodes-1,x  ; "SWA" (Spell, Weapon, Armour)
+        beq _cmdReadyJ1
         dex
-        bne l87d8
-l87e0   txa
-        asl
+        bne _cmdReadyL1
+_cmdReadyJ1
+        txa                     ; ready command ID
+        asl                     ; as 16 bit offset
         tay
-        lda l87fa,y
+        lda _cmdReadySubFct+1,y
         pha                     ; -> RTS address
-        lda l87f9,y
+        lda _cmdReadySubFct,y
         pha
         jsr printFromTable
         .word _strTableReady    ; "nothing", "spell:", "weapon:", "armour:"
@@ -1087,10 +1092,11 @@ l87e0   txa
         inc zpCursorCol
 _readyNothing
 l87f5   rts                     ; -> rts/jump to specific ready <item> routine
-
+_readyKeyCodes
         .aasc "SWA"
+
+_cmdReadySubFct
 l87f9
-l87fa = * + 1
         .word _readyNothing-1
         .word _readySpell-1
         .word _readyWeapon-1
@@ -1111,7 +1117,7 @@ l8810   lda statsWeapon
         jsr _readySelectItem
         .byt 15                 ; # of choices: 15
         .word invWeapons
-        .word _strTableReadyWeapon
+        .word strTableLongWeapons
         sta statsWeapon
         rts
 
@@ -1120,7 +1126,7 @@ l881f   lda statsArmour
         jsr _readySelectItem
         .byt 5
         .word invArmour
-        .word _strTableReadyArmour
+        .word strTableArmour
         sta statsArmour
         rts
 
@@ -1353,7 +1359,7 @@ l8a57   stx $46
         lda invArmour,x
         beq l8a63
 l8a5e   jsr l8b22
-        .word _strTableReadyArmour
+        .word strTableArmour
 l8a63   ldx $46
         inx
         cpx #$06
@@ -1388,7 +1394,7 @@ l8aa5   stx $46
         lda invWeapons,x
         beq l8ab1
         jsr l8b22
-        .word _strTableReadyWeapon
+        .word strTableLongWeapons
 l8ab1   ldx $46
         inx
         cpx #$10

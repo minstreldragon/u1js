@@ -269,7 +269,7 @@ l8edd   lda $830c,x
         clc
         adc #$80
         sta $43
-        jsr $1670
+        jsr randomNumber
 l8eed   cmp $43
         bcc l8eff
 l8ef1   jsr print
@@ -429,7 +429,7 @@ l9053   lda statsTransport
         jsr print
         .aasc "X-it thy craft first!",$00
         jmp $8772
-l9077   jsr l9d77
+l9077   jsr _getStoreMapTile
 l907a   cmp #$10
         bcs l9082
 l907e   cmp #$08
@@ -583,7 +583,7 @@ l9262   ldx zpLongitude
         lda #$00
         sta $60
         sta $62
-        lda #$b0
+        lda #>mapData
         sta $61
         lda #$d0
         sta $63
@@ -602,6 +602,7 @@ l9291   lda #$36
         pla
         jmp $8c60
 
+cast
 l9299   jsr $8717
 l929c   ldx $81ee
         bne l92a4
@@ -651,7 +652,7 @@ l9323   lda #$80
         clc
         adc statsWisdom
         sta $43
-        jsr $1670
+        jsr randomNumber
 l932e   cmp $43
         bcc l934f
 l9332   jsr print
@@ -721,7 +722,7 @@ l93f9   cpy statsFood
 l93fe   beq l9405
 l9400   sty statsFood
         bne l93e7
-l9405   jsr $1670
+l9405   jsr randomNumber
 l9408   and #$03
         bne l9427
 l940c   jsr l8fff
@@ -759,16 +760,16 @@ l9442   ldx zpLongitude
         ldy zpLatitude
         stx statsLongitude
         sty statsLatitude
-        jsr l9d77
-l944f   cmp #$04
+        jsr _getStoreMapTile
+l944f   cmp #TILE_CASTLE
         bcc l943f
-l9453   cmp #$08
+l9453   cmp #TILE_DUNGEON+1
         bcs l943f
 l9457   jsr print
         .aasc "ing...",$00
         jsr _informAndSearch
-l9464   lda la142
-        cmp #$05
+l9464   lda la142               ; current map tile (?)
+        cmp #TILE_SIGN
         bne l9479
 l946b   lda $8262
         ldx #$07
@@ -778,13 +779,14 @@ l9475   dex
         bpl l9470
 l9478   rts
 
-l9479   cmp #$04
+l9479   cmp #TILE_CASTLE
         bne l9486
 l947d   lda #$01
         sta $1637
-        lda #$04
+        lda #$04                ; file ID: 4+4 (CA)
         bne l94bb
-l9486   cmp #$06
+
+l9486   cmp #TILE_TOWN
         bne l94b9
 l948a   jsr l9916
 l948d   ldx zpLongitude
@@ -806,9 +808,9 @@ l94a5   sta $8228
 l94ad   sta $8229
         lda #$01
         sta $1637
-        lda #$03
+        lda #$03                ; file ID: 4+3 (TW)
         bne l94bb
-l94b9   lda #$02
+l94b9   lda #$02                ; file ID: 4+2 (DN)
 l94bb   jmp l9262
 
 l94be   stx la141
@@ -957,7 +959,7 @@ l961c   lda #$5e
 l9623   jsr l9c77
 l9626   lda $830c,x
         sta ($4c),y
-        jsr $1670
+        jsr randomNumber
 l962e   cmp #$33
         bcs l9640
 l9632   jsr print
@@ -983,18 +985,18 @@ l965e   jsr $8175
         .aasc " saved.",$00
         jmp $164f
 
-_ready
+ready
 l9671   jsr l8dd0
 l9674   jmp $87d0
 
-_xit
+xit
 l9677   lda statsTransport      ; on foot?
         bne _xitJ1              ; no ->
         jsr print
         .aasc " what",$00
         jmp $876a
 _xitJ1
-        jsr l9d77
+        jsr _getStoreMapTile
 l968b   cmp #$03
         bcc l96b6
 l968f   jsr $83f6
@@ -1285,11 +1287,11 @@ l98e6   lda $822a
 l98eb   lda $821d
         cmp #$07
         bcs l9910
-l98f2   jsr $1670
+l98f2   jsr randomNumber
 l98f5   and #$07
         tay
         iny
-        jsr $1670
+        jsr randomNumber
 l98fc   and #$07
         tax
         inx
@@ -1334,7 +1336,7 @@ l9950   rts
 l9951   lda $826b
         cmp #$41
         bcs l9987
-l9958   jsr $1670
+l9958   jsr randomNumber
 l995b   cmp #$0c
         bcc l996a
 l995f   and #$3f
@@ -1343,7 +1345,7 @@ l995f   and #$3f
 l9966   and #$07
         bne l9987
 l996a   sta $36
-        jsr $1670
+        jsr randomNumber
 l996f   and #$07
         beq l9987
 l9973   asl
@@ -1459,7 +1461,7 @@ l9a4d   .byt $00,$80
 l9a52   cpy #$e6
         inc $e6
         inc $e6
-l9a58   jsr $1670
+l9a58   jsr randomNumber
 l9a5b   ldx statsTransport
         cmp l9a4d,x
         bcc l9a4c
@@ -1500,7 +1502,7 @@ l9aa7   beq l9aaf
 l9aa9   inc $25
         bcs l9aaf
 l9aad   dec $25
-l9aaf   jsr $1670
+l9aaf   jsr randomNumber
 l9ab2   bmi l9ab9
 l9ab4   jsr l9aee
 l9ab7   bcc l9acb
@@ -1663,7 +1665,7 @@ l9be2   lda statsStamina
         lda #$c8
         sbc $43
         sta $43
-        jsr $1670
+        jsr randomNumber
 l9bfc   cmp $43
         bcc l9c17
 l9c00   lda zpCursorCol
@@ -1809,10 +1811,10 @@ l9d3a   cpx $826b
 l9d3f   ldx $46
         lda $3a
         rts
-l9d44   jsr $1670
+l9d44   jsr randomNumber
 l9d47   and #$3f
         tay
-        jsr $1670
+        jsr randomNumber
 l9d4d   and #$3f
         tax
 
@@ -1842,15 +1844,16 @@ l9d56   cpx #$40
 l9d75   lsr
         rts
 
+_getStoreMapTile
 l9d77   ldx zpLongitude
         ldy zpLatitude
         jsr getMapTile
-l9d7e   sta la142
+        sta la142
         rts
 
 _informAndSearch
 l9d82   jsr $83ed
-l9d85   jsr l9d77
+        jsr _getStoreMapTile
 l9d88   cmp #$03
         beq l9dad
 l9d8c   cmp #$08
@@ -1941,7 +1944,7 @@ l9e29   l9e2a = * + 1
         .word pass              ; pass
         .word attack            ; attack
         .word board             ; board
-        .word $9299             ; cast
+        .word cast              ; cast
         .word $876a             ; drop
         .word enter             ; enter
         .word fire              ; fire
@@ -1952,12 +1955,12 @@ l9e29   l9e2a = * + 1
         .word $8bb9             ; noise
         .word $876a             ; open
         .word quit              ; quit (and save to disk)
-        .word $9671             ; ready
+        .word ready             ; ready
         .word $876a             ; steal
         .word $876a             ; transact
         .word $876a             ; unlock
         .word $876a             ; view change
-        .word _xit              ; x-it
+        .word xit               ; x-it
         .word $890c             ; ztats
 
 _textTableSearch

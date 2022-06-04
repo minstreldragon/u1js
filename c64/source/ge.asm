@@ -426,9 +426,9 @@ _selectClassJ3
         sta statsAgility
 _selectClassJ4
         jsr _printAttributes
-l9255   jsr $1670
+l9255   jsr randomNumber
 l9258   sta $8264
-        jsr $1670
+        jsr randomNumber
 l925e   sta $8265
         ldy #$10
         ldx #$02

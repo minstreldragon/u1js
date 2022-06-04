@@ -11,4 +11,11 @@
         TRANSPORT_TIME_MACHINE = 10
 
         TILE_WATER = $00
+        TILE_GRASS = $01
+        TILE_FOREST = $02
+        TILE_MOUNTAINS = $03
+        TILE_CASTLE = $04
+        TILE_SIGN = $05
+        TILE_TOWN = $06
+        TILE_DUNGEON = $07
         TILE_PLAYER = $08

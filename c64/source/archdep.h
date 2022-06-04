@@ -152,6 +152,7 @@ videoMemRowPtrHb = $1619
 setTextFull = $1655
 setTextStatus = $1658
 drawChar = $1667
+randomNumber = $1670
 readKey = $1676
 getKey = $1679
 playSoundEffect = $1682
@@ -159,11 +160,14 @@ playSoundEffect = $1682
 
 #ifndef _MI_
 strTableRace = $7763
+strTableLongWeapons = $777c
 strTableWeapons = $77ec
 strTableAttributes = $7842
+strTableArmour = $78d4
 strTableClass = $7911
 strTableTransport = $7930
 strTableLands = $7bda
+strTablePlaces = $7cc0
 
 printTwoDigits = $83cd
 printDigit = $83cd

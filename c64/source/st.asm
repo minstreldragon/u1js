@@ -291,7 +291,9 @@ l1667
         jmp _drawChar
 l166a   jmp l1c8a
 l166d   jmp l1e2c
-l1670   jmp l1e9e
+
+randomNumber
+l1670   jmp _randomNumber
 l1673   jmp l1e08
 readKey
 l1676   jmp _readKey
@@ -1119,7 +1121,7 @@ l1c2c   lda #$40
         sta $3a
         lda #$e0
         sta $3b
-l1c34   jsr l1e9e
+l1c34   jsr _randomNumber
 l1c37   ora $3b
         tax
 l1c3a   dex
@@ -1141,7 +1143,7 @@ l1c53   stx $3a
         sta l1c69
         lda #$00
         sta $3b
-l1c5c   jsr l1e9e
+l1c5c   jsr _randomNumber
 l1c5f   ora $3b
         tax
 l1c62   dex
@@ -1460,6 +1462,7 @@ _cursorAnimPhase = * + 1
         lda #$7c                ; cursor animation phase
         jsr _drawChar           ; draw cursor
 
+_randomNumber
 l1e9e   clc
         lda l1ed4
         ldx #$0e

@@ -7,5 +7,6 @@ xa -M -O HIGH -o ge ge.asm
 xa -M -O HIGH -o ou ou.asm
 xa -M -O HIGH -o mi mi.asm
 xa -M -O HIGH -o ro ro.asm
+xa -M -O HIGH -o tw tw.asm
 
 cp u1 output
