@@ -19,7 +19,7 @@ l8cb2   lda lad5e,x
         dex
         bpl l8cb2
 l8cbb   lda #$00
-        sta lad2a
+        sta _karma
         sta $81c8
         sta lad38
         lda $8262
@@ -117,7 +117,7 @@ l8d7f
         .word cmdTwEast         ; east
         .word cmdTwWest         ; west
         .word l8e15             ; pass
-        .word l8e22             ; attack
+        .word cmdTwAttack       ; attack
         .word $876a             ; board
         .word l8fc3             ; cast
         .word cmdTwDrop         ; drop
@@ -136,7 +136,7 @@ l8d7f
         .word cmdTwUnlock       ; unlock
         .word $876a             ; view change
         .word $876a             ; x-it
-        .word $a26d             ; ztats
+        .word cmdTwZtats        ; ztats
 
 cmdTwNorth
 l8db1   ldx #$00
@@ -196,18 +196,14 @@ l8e1f   l8e20 = * + 1
 ; Instruction parameter accessed.
         bne l8e1c
 l8e21   rts
+
+cmdTwAttack
 l8e22   jsr print
-        .asc ""
-        .byt $77
-l8e26   adc #$74
-        pla
-        jsr lae00
-        .asc "o"
-        .byt $81
-l8e2e   jsr printFromTable
-        .asc "l"
-        .byt $77
-l8e33   ldx statsWeapon
+        .aasc "with ",$00
+        ldx statsWeapon
+        jsr printFromTable
+        .word strTableWeapons
+        ldx statsWeapon
         cpx #$04
         beq l8e42
 l8e3a   cpx #$08
@@ -216,10 +212,8 @@ l8e3e   cpx #$0b
         bcs l8e45
 l8e42   jmp $876a
 l8e45   jsr print
-        .asc ""
-        .byt $3a
-l8e49   jsr $2000
-l8e4c   eor $8d
+        .aasc ": ",$00
+        jsr $8d45
         beq l8e6d
 l8e50   ldx #$00
         ldy #$00
@@ -238,10 +232,9 @@ l8e66   inx
 l8e69   cmp #$3a
         beq l8e79
 l8e6d   jsr print
-        .asc ""
-        .byt $4e,$6f,$74,$68,$69
-l8e75   ror !$0067
+        .aasc "Nothing",$00
         rts
+
 l8e79   dex
 l8e7a   stx $24
         sty $25
@@ -282,11 +275,8 @@ l8ebd   plp
         bne l8e95
 l8ec3   lda #$06
         jsr playSoundEffect
-l8ec8   jsr print
-        .asc ""
-        .byt $4d,$69,$73,$73
-l8ecf   adc $64
-        and ($00,x)
+        jsr print
+        .aasc "Missed!",$00
         rts
 l8ed4   sec
         sbc #$30
@@ -300,7 +290,7 @@ l8ed4   sec
 l8ee6   cmp $4d
         bcs l8ec3
 l8eea   lda #$01
-        sta lad2a
+        sta _karma
         lda #$06
         jsr playSoundEffect
 l8ef4   jsr print
@@ -349,48 +339,46 @@ l8f56   lda #$ff
         sta $cdcc,x
         sta $cdec,x
         jsr print
-        .asc ""
-        .byt $4b
-l8f68   adc #$6c
-        jmp ($6465)
-l8f6d   and ($00,x)
+        .aasc "Killed!",$00
         lda zpMapPtr
         cmp #$04
         bne l8f7c
-l8f75   lda #$01
+l8f75   lda #$01                ; 1 XP
         ldx #$00
         jmp l8f96
-l8f7c   cmp #$05
+l8f7c   cmp #$05                ; 5 XP
         bne l8f87
-l8f80   lda #$02
+        lda #$02
         ldx #$00
         jmp l8f96
 l8f87   cmp #$01
         bne l8f92
-l8f8b   lda #$01
+        lda #$01                ; 1 XP
         ldx #$00
         jmp l8f96
+
 l8f92   lda #$0f
         ldx #$00
 l8f96   clc
-        adc $825c
-        sta $825c
+        adc statsXp
+        sta statsXp
         txa
-        adc $825d
-        sta $825d
-        lda $825c
+        adc statsXp+1
+        sta statsXp+1
+        lda statsXp
         cmp #<9999
-        lda $825d
+        lda statsXp+1
         sbc #>9999
         bcc l8fba
 l8fb0   lda #<9999
-        sta $825c
+        sta statsXp
         lda #>9999
-        sta $825d
+        sta statsXp+1
 l8fba   ldx $2c
         ldy $2d
         lda #$20
         jmp la5d3
+
 l8fc3   jsr print
         .aasc "-- Hmmmm... no effect?",$00
 l8fdd   lda #$08
@@ -740,31 +728,29 @@ l92ba   cmp #$67
         beq l92d6
 l92be   cmp #$69
         beq l92d6
-l92c2   jsr print
-        .asc ""
-        .byt $7e,$4e,$6f,$74,$68,$69
-l92cb   ror $2067
-        pla
-        adc $72
-        adc $00
+        jsr print
+        .aasc $7e
+        .aasc "Nothing here",$00
         jmp $876a
 l92d6   sta zpMapPtr
         jsr randomNumber
-l92db   cmp #$26
-        bcc l92ef
-l92df   ldy lad2a
-        bne l92ef
-l92e4   ldy statsClass
-        cpy #$04
-        beq l9312
-l92eb   cmp #$4d
-        bcs l9312
-l92ef   jsr print
+        cmp #$26                ; random < $26?
+        bcc _stealFail          ; yes -> fail
+l92df   ldy _karma              ; bad karma?
+        bne _stealFail          ; karma is bad -> fail
+        ldy statsClass
+        cpy #CLASS_THIEF        ; class = thief?
+        beq _stealSuccess       ; yes -> success!
+        cmp #$4d                ; random > $4d?
+        bcs _stealSuccess       ; yes -> success!
+_stealFail
+        jsr print
         .aasc $7e,"Oh no! Thou wert caught!",$00
         lda #$01
-        sta lad2a
+        sta _karma
         rts
-l9312   jsr print
+_stealSuccess
+        jsr print
         .aasc $7e,"Thou dost find",$7e,$00
         lda $4c
         cmp #$65
@@ -840,13 +826,13 @@ l93c3   jsr printFromTable
         rts
 
 cmdTwTransact
-l93c9   lda lad2a
-        beq l93eb
+l93c9   lda _karma              ; player's karma good?
+        beq _transactJ1         ; yes ->
         jsr print
         .aasc $7e,"None will talk to thee!",$00
         rts
-
-l93eb   ldx zpLongitude
+_transactJ1
+        ldx zpLongitude
         ldy zpLatitude
         jsr la604
 l93f2   cmp #$64
@@ -860,37 +846,19 @@ l93fa   sec
         sta zpMapPtr
         jmp l9426
 l9406   jsr print
-        .asc ""
-        .byt $7e,$54,$68,$6f,$75
-l940e   jsr $7261
-        .asc ""
-        .byt $74
-l9412   jsr $6f6e
-        .asc ""
-        .byt $74
-l9416   jsr $7962
-l9419   jsr $2061
-        .asc ""
-        .byt $63,$6f,$75,$6e,$74
-l9421   adc $72
-        and ($00,x)
+        .aasc $7e
+        .aasc "Thou art not by a counter!",$00
         rts
 l9426   jsr print
-        .asc ""
-        .byt $2d,$42
-l942b   adc $79,x
-        bit $5320
-        adc $6c
-        jmp ($203a)
-        .byt $00
+        .aasc "-Buy, Sell: ",$00
 l9436   jsr l8d45
 l9439   ldx #$09
         stx zpCursorCol
-        cmp #$42
+        cmp #$42                ; 'B'
         beq l9454
-l9441   cmp #$53
+        cmp #$53                ; 'S'
         bne l9448
-l9445   jmp l9473
+        jmp l9473
 l9448   jsr print
 l944b   and $6f6e
         ror !$0065
@@ -1459,18 +1427,18 @@ l9980   jmp l957d
 l9983   ldx $4d
         cpx #$0a
         bne l99a6
-l9989   lda $825d
+l9989   lda statsXp+1
         bne l9998
-l998e   lda $825c
+l998e   lda statsXp
         cmp #$0a
         bcs l9998
 l9995   jmp l957d
-l9998   lda $825c
+l9998   lda statsXp
         sec
         sbc #$0a
-        sta $825c
+        sta statsXp
         bcs l99a6
-l99a3   dec $825d
+l99a3   dec statsXp+1
 l99a6   inc invSpells,x
         jsr la16d
 l99ac   jsr $165b
@@ -2211,74 +2179,33 @@ la0b6   lda #$17
         .asc "T"
 la0c4   sei
         jmp la874
+
 la0c8   jsr print
-la0cb   ror $047f,x
-        eor $73,x
-        adc $64
-        jsr $6f66
-        .asc ""
-        .byt $6f,$64,$3f
-la0d8   jsr $4e20
-        .asc ""
-        .byt $6f
-la0dc   jsr $6874
-        .asc ""
-        .byt $61
-la0e0   ror $736b
-        and ($00,x)
+        .aasc $7e,$7f
+        .aasc $04,"Used food?  No thanks!",$00
         jsr $85e1
-la0e8   jmp l9597
-la0eb   jsr print
-        .asc ""
-        .byt $7e,$7f,$03,$53,$6f,$72,$72,$79,$2c
-la0f7   jsr $6577
-la0fa   jsr $6f64
-la0fd   ror $7427
-        jsr $6564
-la103   adc ($6c,x)
-        jsr $6e69
-la108   ror $097f,x
-        adc $73,x
-        adc $64
-        jsr $7473
-        .asc ""
-        .byt $75
-la113   ror $66
-        rol $2000
-        sbc ($85,x)
         jmp l9597
+
+la0eb   jsr print
+        .aasc $7e,$7f
+        .aasc $03,"Sorry, we don't deal in",$7e,$7f
+        .aasc $09,"used stuff.",$00
+        jsr $85e1
+        jmp l9597
+
 la11d   jsr print
-        .asc ""
-        .byt $7e,$7f,$05,$57,$65
-la125   jsr $6f64
-la128   ror $7427
-        jsr $7562
-la12e   adc $7320,y
-        bvs la198
-la133   jmp ($736c)
-la136   and ($00,x)
+        .aasc $7e,$7f
+        .aasc $05,"We don't buy spells!",$00
         jsr $85e1
-la13b   jmp l9597
+        jmp l9597
+
 la13e   jsr print
-        .asc ""
-        .byt $7e,$7f,$03,$57
-la145   adc zpLongitude
-        pla
-        adc ($76,x)
-        adc zpLongitude
-        bvs la1ba
-        .asc ""
-        .byt $65
-la14f   ror $7974
-        jsr $666f
-la155   jsr $6f62
-        .asc ""
-        .byt $6f,$7a,$65,$7e,$7f,$0a,$61
-la15f   jmp ($6572)
-la162   adc ($64,x)
-        adc !zpLatitude,y
+        .aasc $7e,$7f
+        .aasc $03,"We have plenty of booze",$7e,$7f
+        .aasc $0a,"already!",$00,"
         jsr $85e1
-la16a   jmp l9597
+        jmp l9597
+
 la16d   lda statsCoin
         sec
         sbc lad30
@@ -2303,36 +2230,27 @@ la1a1   pha
         jsr $8701
 la1a5   pla
         rts
+
 la1a7   jsr la85a
-la1aa   jsr print
-        .byt $7f,$0b,$53,$6f
-la1b1   jmp ($2164)
-        .byt $00,$60
+        jsr print
+        .aasc $7f
+        .aasc $0b,"Sold!",$00
+        rts
+
 la1b6   jsr la85a
 la1b9   la1ba = * + 1
 ; Instruction parameter jumped to.
         jsr print
-        .byt $7f,$0b,$44,$6f,$6e,$65
-la1c2   and ($00,x)
+        .aasc $7f
+        .aasc $0b,"Done!",$00
         rts
+
 la1c5   jsr la85a
 la1c8   jsr print
-la1cb   jsr $5420
-        .asc ""
-        .byt $68,$6f,$75
-la1d1   jsr $6163
-la1d4   ror $7473
-        jsr $6f6e
-        .asc ""
-        .byt $74
-la1db   jsr $6661
-        .asc ""
-        .byt $66,$6f,$72,$64
-la1e2   jsr $7469
-la1e5   and (zpLongitude,x)
-        jsr zpLongitude
+        .aasc "  Thou canst not afford it!   ",$00
 la1ea   jsr $8772
 la1ed   jmp la874
+
 la1f0   lda #$c8
         sec
         sbc statsWisdom
@@ -2397,10 +2315,11 @@ la261   jsr print
         .aasc " what",$00
         jmp $876a
 
+cmdTwZtats
 la26d   jsr $890c
-la270   jmp _drawTownMap
+        jmp _drawTownMap
 
-la273   lda lad2a
+la273   lda _karma
         bne la27b
 la278   jmp la3ea
 la27b   ldx #$0f
@@ -2492,20 +2411,16 @@ la33d   dec lad2b
 la342   jmp la280
 la345   rts
 la346   .byt $00
+
 la347   jsr $165b
-la34a   lda #$17
+        lda #$17
         sta zpCursorRow
         jsr print
-        .asc ""
-        .byt $7e,$41,$74,$74,$61,$63,$6b
-la358   adc $64
-        jsr $7962
-la35d   jsr $7567
-        .asc ""
-        .byt $61,$72,$64,$21,$7e,$00
-la366   lda #$04
+        .aasc $7e
+        .aasc "Attacked by guard!",$7e,$00
+        lda #$04
         jsr playSoundEffect
-la36b   lda statsStamina
+        lda statsStamina
         lsr
         sta zpMapPtr
         lda statsArmour
@@ -2521,10 +2436,7 @@ la36b   lda statsStamina
 la384   cmp zpMapPtr
         bcs la396
 la388   jsr print
-        .asc ""
-        .byt $4d,$69,$73,$73
-la38f   adc $64
-        and ($00,x)
+        .aasc "Missed!",$00
         jmp la33d
 la396   lda statsHp+1
         asl
@@ -2538,21 +2450,18 @@ la3a6   cmp zpMapPtr
         bcs la39f
 la3aa   sta $4d
         jsr print
-la3af   pha
-        adc #$74
-        rol $2e2e
-        jsr la200
-        .byt $00
-la3b9   stx $85be
+        .aasc "Hit... ",$00
+        ldx #$00
+        stx $85be
         lda $4d
         jsr $8582
 la3c1   jsr print
 la3c4   jsr $6164
 la3c7   adc $6761
         adc $00
-        lda #$02
+        lda #$02                ; sound effect: player hit
         jsr playSoundEffect
-la3d1   lda statsHp
+        lda statsHp
         sec
         sbc $4d
         sta statsHp
@@ -2562,6 +2471,7 @@ la3d1   lda statsHp
         bcs la3e7
 la3e4   jmp l8d61
 la3e7   jmp la33d
+
 la3ea   ldy #$0f
         sty lad2b
 la3ef   lda $cdac,y
@@ -2587,28 +2497,13 @@ la41b   cmp #$2f
 la41f   jsr randomNumber
 la422   cmp #$28
         bcs la456
-la426   lda #$17
+        lda #23
         sta zpCursorRow
         inc lad29
         jsr print
-la430   ror $6f49,x
-        jmp ($206f)
-        .asc ""
-        .byt $74,$68,$65
-la439   jsr $6142
-        .asc ""
-        .byt $72,$64
-la43e   jsr $6973
-        .asc ""
-        .byt $6e,$67,$73,$3a
-la445   ror $6f48,x
-        jsr $7965
-        .asc ""
-        .byt $6f
-la44c   pla
-        jsr $6568
-la450   jsr $7568
-la453   adc !zpLatitude
+        .aasc $7e
+        .aasc "Iolo the Bard sings:",$7e
+        .aasc "Ho eyoh he hum!",$00
 la456   rts
 la457   lda #$00
         sta zpMapPtr
@@ -2630,18 +2525,12 @@ la47a   cmp zpMapPtr
         bcs la4a3
 la47e   lda zpMapPtr
         beq la4a3
-la482   lda #$17
+        lda #23
         sta zpCursorRow
         inc lad29
         jsr print
-la48c   ror $6f49,x
-        jmp ($206f)
-        .asc ""
-        .byt $73,$74,$6f
-la495   jmp ($2065)
-        .asc ""
-        .byt $73,$6f,$6d,$65,$74,$68,$69,$6e,$67
-la4a1   and ($00,x)
+        .aasc $7e
+        .aasc "Iolo stole something!",$00
 la4a3   rts
 la4a4   ldy lad2b
         ldx $cdbc,y
@@ -3182,7 +3071,7 @@ lad27
         .byt $00
 lad28
         .byt $00
-lad29   lad2a = * + 1
+
         lad2b = * + 2
         lad2c = * + 3
         lad2d = * + 4
@@ -3197,7 +3086,11 @@ lad29   lad2a = * + 1
         lad36 = * + 13
         lad37 = * + 14
         lad38 = * + 15
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+lad29
+        .byt $00
+_karma
+        .byt $00
+        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 lad39
         .aasc "Kin",$e7
         .aasc "Merchan",$f4

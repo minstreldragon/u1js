@@ -319,10 +319,10 @@ l8f62   ldx $8267
         cmp #$02
         bcc l8f73
 l8f70   jsr $85c9
-l8f73   adc $825c
-        sta $825c
+l8f73   adc statsXp
+        sta statsXp
         bcc l8f7e
-l8f7b   inc $825d
+l8f7b   inc statsXp+1
 l8f7e   tya
         asl
         asl
@@ -402,15 +402,15 @@ l9015   ldx #$00
         rts
 l9022   sec
         rts
-l9024   lda $825c
+l9024   lda statsXp
         cmp #$10
-        lda $825d
+        lda statsXp+1
         sbc #$27
         bcc l903a
 l9030   lda #$0f
-        sta $825c
+        sta statsXp
         lda #$27
-        sta $825d
+        sta statsXp+1
 l903a   lda $8249
         cmp #$10
         lda $824a
@@ -1340,7 +1340,7 @@ l9958   jsr randomNumber
 l995b   cmp #$0c
         bcc l996a
 l995f   and #$3f
-        cmp $825d
+        cmp statsXp+1
         bcs l9987
 l9966   and #$07
         bne l9987
@@ -1405,7 +1405,7 @@ l99dc   rts
 l99dd   lda $22
         jsr l9ca6
 l99e2   bcs l9a04
-l99e4   lda $825d
+l99e4   lda statsXp+1
         ldx $8267
         ldy $7a57,x
         adc l9a05,y

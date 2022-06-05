@@ -19,3 +19,8 @@
         TILE_TOWN = $06
         TILE_DUNGEON = $07
         TILE_PLAYER = $08
+
+        CLASS_FIGHTER = 1
+        CLASS_CLERIC = 2
+        CLASS_WIZARD = 3
+        CLASS_THIEF = 4
