@@ -120,19 +120,19 @@ l8d7f
         .word l8e22             ; attack
         .word $876a             ; board
         .word l8fc3             ; cast
-        .word l8fe2             ; drop
+        .word cmdTwDrop         ; drop
         .word $876a             ; enter
         .word $876a             ; fire
         .word $9268             ; get
         .word $876a             ; hyper jump
-        .word $a4fc             ; inform & search
+        .word cmdTwInform       ; inform & search
         .word $876a             ; klimb
         .word $8bb9             ; noise
         .word $876a             ; open
         .word cmdTwQuit         ; quit (and save to disk)
-        .word l9299             ; ready
-        .word l92af             ; steal
-        .word l93c9             ; transact
+        .word cmdTwReady        ; ready
+        .word cmdTwSteal        ; steal
+        .word cmdTwTransact     ; transact
         .word cmdTwUnlock       ; unlock
         .word $876a             ; view change
         .word $876a             ; x-it
@@ -395,34 +395,44 @@ l8fc3   jsr print
         .aasc "-- Hmmmm... no effect?",$00
 l8fdd   lda #$08
         jmp playSoundEffect
+
+cmdTwDrop
 l8fe2   jsr print
         .aasc " Pence,Weapon,Armour: ",$00
         jsr $8d45
         ldx #$06
         stx zpCursorCol
         ldx #$03
-l9005   cmp l9022,x
+l9005   cmp _dropCmdChoices-1,x
         beq l900d
 l900a   dex
         bne l9005
 l900d   txa
         asl
         tay
-        lda l9027,y
+        lda _dropCmdTable+1,y     ; drop command table
         pha
-        lda l9026,y
+        lda _dropCmdTable,y
         pha
         jsr printFromTable
-        .word $9187
-l901d   jsr $164f
-l9020   inc zpCursorCol
+        .word _strTableDropItem
+        jsr $164f
+        inc zpCursorCol
+_cmdTwDropNothing
 l9022   rts
-l9023   bvc l907c
-l9025   l9026 = * + 1
-        eor (zpLatitude,x)
-l9027   bcc l9056
-l9029   bcc l904d
-        .byt $91,$3d,$91
+
+_dropCmdChoices
+l9023
+        .aasc "PWA"
+
+_dropCmdTable
+l9026
+        .word _cmdTwDropNothing-1
+        .word _cmdTwDropPence-1
+        .word _cmdTwDropWeapon-1
+        .word _cmdTwDropArmour-1
+
+_cmdTwDropPence
 l902e   jsr print
         .asc ""
         .byt $7e,$48,$6f,$77
@@ -478,8 +488,7 @@ l9077   lda statsCoin
 l9091   cmp #$61
         beq l909e
 l9095   jsr print
-l9098   ror $6b4f,x
-        and ($00,x)
+        .aasc $7e,"Ok!",$00
         rts
 l909e   lda $ae60
         sta zpMapPtr
@@ -540,6 +549,8 @@ l9115   jmp ($6b61)
 l911c   and ($00,x)
         lda #$0a
         jmp playSoundEffect
+
+_cmdTwDropWeapon
 l9123   jsr l91a1
         .byt $0f
         .asc "x"
@@ -551,7 +562,9 @@ l912d   tax
         cpx statsWeapon
         bne l913b
 l9138   sta statsWeapon
-l913b   jmp la51a
+l913b   jmp _drawTownMap
+
+_cmdTwDropArmour
 l913e   jsr l91a1
 l9141   ora $f2
         sta ($d4,x)
@@ -563,7 +576,7 @@ l9148   tax
         cpx statsArmour
         bne l913b
 l9153   sta statsArmour
-        jmp la51a
+        jmp _drawTownMap
 l9159   lda statsFood
         cmp #<9999
         lda statsFood+1
@@ -586,6 +599,7 @@ l917c   lda #<9999
 l9186   rts
 
 l9187
+_strTableDropItem
         .aasc "nothin",$e7
         .aasc "penc",$e5
         .aasc "weapon",$ba
@@ -703,16 +717,20 @@ l9274   lda #18
         .aasc "only allowed outdoors!",$00
         jmp $8772
 
+cmdTwReady
 l9299   jsr l8d45
-l929c   cmp #$53
-        beq l92a9
-l92a0   cmp #$57
-        beq l92a9
-l92a4   cmp #$41
-        beq l92a9
-l92a8   rts
-l92a9   jsr $87d0
-l92ac   jmp la51a
+        cmp #$53                ; 'S'
+        beq _cmdTwReadyJ1
+        cmp #$57                ; 'W'
+        beq _cmdTwReadyJ1
+        cmp #$41                ; 'A'
+        beq _cmdTwReadyJ1
+        rts
+_cmdTwReadyJ1
+        jsr $87d0
+        jmp _drawTownMap
+
+cmdTwSteal
 l92af   ldx zpLongitude
         ldy zpLatitude
         jsr la604
@@ -820,22 +838,14 @@ l93c0   dec invWeapons,x
 l93c3   jsr printFromTable
         .word strTableLongWeapons
         rts
+
+cmdTwTransact
 l93c9   lda lad2a
         beq l93eb
-l93ce   jsr print
-        .asc ""
-        .byt $7e,$4e,$6f,$6e,$65
-l93d6   jsr $6977
-l93d9   jmp ($206c)
-        .asc ""
-        .byt $74,$61
-l93de   jmp ($206b)
-        .asc ""
-        .byt $74,$6f
-l93e3   jsr $6874
-l93e6   adc $65
-        and ($00,x)
+        jsr print
+        .aasc $7e,"None will talk to thee!",$00
         rts
+
 l93eb   ldx zpLongitude
         ldy zpLatitude
         jsr la604
@@ -897,7 +907,7 @@ l9461   lda ladd2,x
         l946e = * + 1
         l946f = * + 2
         jsr $ffff
-l9470   jmp la51a
+l9470   jmp _drawTownMap
 l9473   jsr print
 l9476   and $6553
         jmp ($3a6c)
@@ -910,7 +920,7 @@ l9481   lda ladde,x
         l948e = * + 1
         l948f = * + 2
         jsr $ffff
-l9490   jmp la51a
+l9490   jmp _drawTownMap
 l9493   jsr $164f
 l9496   lda zpMapPtr
         jsr $8788
@@ -1022,9 +1032,7 @@ l9585   sta zpCursorCol
         lda #23
         sta zpCursorRow
         jsr print
-        .asc ""
-        .byt $6e,$6f,$74,$68,$69
-l9593   ror !$0067
+        .aasc "nothing",$00
         rts
 l9597   jsr $165b
 l959a   lda #$10
@@ -1041,50 +1049,16 @@ l95ac   stx $ae62
         txa
         clc
         adc #$30
-        sta l95d1
+        sta _strFoodPrice
         jsr print
-        .asc ""
-        .byt $7e
-l95ba   jsr $6150
-        .asc ""
-        .byt $63,$6b,$73
-l95c0   jsr $666f
-l95c3   jsr $3031
-l95c6   jsr $6f66
-        .asc ""
-        .byt $6f,$64
-l95cb   jsr $6f63
-        .asc ""
-        .byt $73,$74
-l95d0   l95d1 = * + 1
-; Instruction parameter accessed.
-        jsr $2058
-l95d3   bvs l963a
-        .asc ""
-        .byt $6e,$63
-l95d7   adc $7e
-        jsr $6520
-        .asc ""
-        .byt $61,$63,$68,$2e
-l95e0   jsr $4820
-        .asc ""
-        .byt $6f,$77
-l95e5   jsr $616d
-        .asc ""
-        .byt $6e,$79
-l95ea   jsr $6f64
-        .asc ""
-        .byt $73,$74
-l95ef   jsr $6874
-        .asc ""
-        .byt $6f,$75,$7e,$7f
-l95f6   asl $77
-        adc #$73
-        pla
-        jsr $6f74
-l95fe   jsr $7570
-        .asc ""
-        .byt $72,$63,$68,$61,$73,$65,$3f,$00
+        .aasc $7e
+        .aasc " Packs of 10 food cost "
+_strFoodPrice
+        .aasc "X"
+        .aasc " pence",$7e
+        .aasc "  each.  How many dost thou",$7e,$7f
+        .aasc $06,"wish to purchase?",$00
+
 l9609   jsr $870c
 l960c   jsr $165b
 l960f   lda #23
@@ -2424,7 +2398,7 @@ la261   jsr print
         jmp $876a
 
 la26d   jsr $890c
-la270   jmp la51a
+la270   jmp _drawTownMap
 
 la273   lda lad2a
         bne la27b
@@ -2708,73 +2682,79 @@ la4e8   ldy lad2b
         tay
         lda #$5f
         jmp la5d3
-la4fc   ldx #$00
-        ldy #$17
-la500   jsr printAtPos
+
+cmdTwInform
+la4fc   ldx #0
+        ldy #23
+        jsr printAtPos
         .aasc $7e
         .aasc "the city of ",$00
-la511   ldx $8262
+        ldx statsLocation
         jsr printFromTable
         .word strTablePlaces
         rts
-la51a   lda #$01
+
+_drawTownMap
+la51a   lda #1                  ; skip upper frame border
         sta zpCursorRow
         jsr $165e
-la521   jsr la553
-la524   lda #$00
-        sta la532
-        lda #$cb
-        sta la533
+        jsr la553               ; switch to town map charset
+        lda #<townMap
+        sta _townMapSrcPtr      ; set town map source pointer
+        lda #>townMap
+        sta _townMapSrcPtr+1
+_drawTownMapL1
 la52e   jsr printCR
-la531   la532 = * + 1
-; Instruction parameter accessed.
-        la533 = * + 2
-; Instruction parameter accessed.
-        lda $cb00
-        jsr printChar
-la537   inc la532
-        bne la53f
-la53c   inc la533
-la53f   lda zpCursorCol
-        cmp #$26
-        bne la531
-la545   inc zpCursorRow
+_drawTownMapL2
+_townMapSrcPtr = * + 1
+        lda townMap             ; read a town map byte
+        jsr printChar           ; print it
+        inc _townMapSrcPtr      ; inc town map source pointer
+        bne _drawTownMapJ1
+        inc _townMapSrcPtr+1
+_drawTownMapJ1
+        lda zpCursorCol
+        cmp #38                 ; repeat for 38 columns
+        bne _drawTownMapL2
+        inc zpCursorRow
         lda zpCursorRow
-        cmp #$13
-        bne la52e
-la54d   jsr la553
-la550   jmp la59d
+        cmp #19                 ; repeat for 18 rows
+        bne _drawTownMapL1
+        jsr la553               ; switch to regular character set
+        jmp la59d
+
 la553   ldx #$00
-la555   lda $c700,x
-        ldy $0800,x
-        sta $0800,x
+la555   lda charsetBackup,x
+        ldy charset,x
+        sta charset,x
         tya
-        sta $c700,x
-        lda $c800,x
-        ldy $0900,x
-        sta $0900,x
+        sta charsetBackup,x
+        lda charsetBackup+$0100,x
+        ldy charset+$0100,x
+        sta charset+$0100,x
         tya
-        sta $c800,x
-        lda $c900,x
-        ldy $0a00,x
-        sta $0a00,x
+        sta charsetBackup+$0100,x
+        lda charsetBackup+$0200,x
+        ldy charset+$0200,x
+        sta charset+$0200,x
         tya
-        sta $c900,x
-        lda $ca00,x
-        ldy $0b00,x
-        sta $0b00,x
+        sta charsetBackup+$0200,x
+        lda charsetBackup+$0300,x
+        ldy charset+$0300,x
+        sta charset+$0300,x
         tya
-        sta $ca00,x
+        sta charsetBackup+$0300,x
         dex
         bne la555
-la58c   lda $1530,x
-        ldy la887,x
-        sta la887,x
+la58c   lda charColors,x
+        ldy _charColorsTown,x
+        sta _charColorsTown,x
         tya
-        sta $1530,x
+        sta charColors,x
         inx
         bpl la58c
 la59c   rts
+
 la59d   jsr $165e
 la5a0   lda zpLongitude
         sta zpCursorCol
@@ -2826,19 +2806,20 @@ la600   rts
 la601   tya
         sec
         rts
-la604   cpx #$26
+
+la604   cpx #38
         bcc la60c
 la608   lda #$60
         clc
         rts
-la60c   cpy #$12
+la60c   cpy #18
         bcs la608
-la610   lda lad64,y
+la610   lda twMapRowOffLb,y
         clc
-        adc #$00
+        adc #<townMap
         sta la622
-        lda lad76,y
-        adc #$cb
+        lda twMapRowOffHb,y
+        adc #>townMap
         sta la623
         la622 = * + 1
         la623 = * + 2
@@ -3126,63 +3107,17 @@ la87e   jsr $16a0
 la881   dey
         bne la879
 la884   jmp $8777
-la887   .asc ""
+
+_charColorsTown
+la887
         .byt $60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60,$60
-        .asc ""
-        .byt $60,$60,$60,$60,$60,$60,$60,$60
-la89f   bvc la8f1
-la8a1   bpl la843
-        .asc ""
-        .byt $70,$70
-la8a5   bvs $a917
-la8a7   bvs $a919
-la8a9   bpl $a8bb
-la8ab   bpl $a8bd
-la8ad   bpl $a8bf
-la8af   bpl $a8c1
-la8b1   bpl $a8c3
-la8b3   bpl $a8c5
-la8b5   bpl $a8c7
-la8b7   bpl $a8c9
-la8b9   bpl $a8cb
-la8bb   bpl $a8cd
-la8bd   bpl $a8cf
-la8bf   bpl $a8d1
-la8c1   bpl $a8d3
-la8c3   bpl $a8d5
-la8c5   bpl $a8d7
-la8c7   ldy #$a0
-la8c9   ldy #$a0
-la8cb   ldy #$a0
-la8cd   ldy #$a0
-la8cf   ldy #$a0
-la8d1   ldy #$a0
-la8d3   ldy #$a0
-la8d5   ldy #$a0
-la8d7   ldy #$a0
-        ldy #$a0
-        ldy #$a0
-        ldy #$a0
-        ldy #$a0
-        bpl $a8f3
-la8e3   bpl $a8f5
-la8e5   bpl $a8f7
-la8e7   bpl $a8f9
-la8e9   bpl $a8fb
-la8eb   bpl $a8fd
-la8ed   bpl $a8ff
-la8ef   bpl $a901
-la8f1   bpl $a903
-la8f3   bpl $a905
-la8f5   bpl $a907
-la8f7   bpl $a909
-la8f9   bpl $a90b
-la8fb   bpl $a90d
-la8fd   bpl $a90f
-la8ff   bpl $a911
-la901   bpl $a913
-la903   bpl $a915
-la905   bpl $a917
+        .byt $60,$60,$60,$60,$60,$60,$60,$60,$50,$50,$10,$a0,$70,$70,$70,$70
+        .byt $70,$70,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10
+        .byt $10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10
+        .byt $a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0
+        .byt $a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$a0,$10,$10,$10,$10,$10,$10
+        .byt $10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10
+        .byt $10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10
 
 la907
         .aasc " Super Duper Transport, Inc",$ae
@@ -3269,28 +3204,27 @@ lad39
         .aasc "Princes",$f3
         .aasc "Guar",$e4
         .aasc "Jeste",$f2
+_strBeggar
 lad58
         .aasc "Wenc",$e8,$00
+_strLecher
 lad5e
         .aasc "Leche",$f2
+
+twMapRowOffLb
 lad64
-        .byt $00
+        .byt $00,$26,$4c,$72,$98,$be,$e4,$0a
+        .byt $30,$56,$7c,$a2,$c8,$ee,$14,$3a
+        .byt $60,$86
 
+twMapRowOffHb
+lad76
+        .byt $00,$00,$00,$00,$00,$00,$00,$01
+        .byt $01,$01,$01,$01,$01,$01,$02,$02
+        .byt $02,$02
 
-        .byt $26
-lad66   jmp l9872
-lad69   ldx $0ae4,y
-        bmi ladc4
-        .asc ""
-        .byt $7c
-lad6f   ldx #$c8
-        inc $3a14
-        rts
-        lad76 = * + 1
-        lad7c = * + 7
-        .byt $86,$00,$00,$00,$00,$00,$00,$00,$01,$01,$01,$01,$01,$01,$01,$02
-        lad88 = * + 3
-        .byt $02,$02,$02,$01,$01,$01,$01,$01,$01,$01,$03,$01,$01,$01,$01,$03
+lad88
+        .byt $01,$01,$01,$01,$01,$01,$01,$03,$01,$01,$01,$01,$03
         lad98 = * + 3
         .byt $01,$03,$03,$1e,$5f,$5f,$2f,$5c,$5f,$02,$07,$08,$07,$03,$0c,$04
         lada6 = * + 1
@@ -3333,3 +3267,4 @@ ladde   laddf = * + 1
         .byt $00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01
         .byt $00,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00
 lae5a   .byt $8d
+

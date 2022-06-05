@@ -66,6 +66,8 @@ bitmapRAM1 = $4000
 hello = $8000
 roster = $b000
 mapData = $b000
+charsetBackup = $c700
+townMap = $cb00
 
 stats = $81e2
 statsFileLen = stats + $00
@@ -136,6 +138,7 @@ statsRace = stats + $69
 statsClass = stats + $6b
 statsFood = stats + $78
 statsXp = stats + $7a
+statsLocation = stats + $80
 
 #ifndef _ST_
 tileset = $0c00

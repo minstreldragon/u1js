@@ -771,7 +771,7 @@ l9457   jsr print
 l9464   lda la142               ; current map tile (?)
         cmp #TILE_SIGN
         bne l9479
-l946b   lda $8262
+l946b   lda statsLocation
         ldx #$07
 l9470   cmp la119,x
         beq l94be
@@ -1888,11 +1888,8 @@ l9dca   rts
 
 l9dcb   cmp #$06
         bne l9ddf
-l9dcf   l9dd1 = * + 2
-; Instruction parameter jumped to.
         jsr print
         .aasc "the city of ",$00
-
 l9ddf
         lda statsContinentMsb
         ora zpLatitude
@@ -1904,10 +1901,10 @@ l9deb   ldy $7c6c,x
         beq l9df9
 l9df2   dex
         bpl l9de6
-l9df5   stx $8262
+l9df5   stx statsLocation
         rts
 
-l9df9   stx $8262
+l9df9   stx statsLocation
         jsr printFromTable
 l9dff   cpy #$7c
         rts
