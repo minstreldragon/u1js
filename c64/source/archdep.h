@@ -49,6 +49,7 @@ zpValue1e0 = $3c
 zpValue1e2 = $3d
 zpValue1e4 = $3e
 zpMapPtr = $4c
+zpTwMapTile = $4c
 FA = $ba
 FNADR = $bb
 

@@ -308,6 +308,7 @@ l7cc0
         .aasc "Ye",$f7
         .aasc "Tun",$e5
         .aasc "Gre",$f9
+
         .aasc "The Castle Baratari",$e1
         .aasc "The Castle Rondorli",$ee
         .aasc "The Pillar of Ozymandia",$f3
@@ -329,6 +330,7 @@ l7cc0
         .aasc "Gerr",$f9
         .aasc "Wol",$e6
         .aasc "The Snak",$e5
+
         .aasc "The Castle of Olympu",$f3
         .aasc "The Black Dragon's Castl",$e5
         .aasc "The Sign Pos",$f4
@@ -350,6 +352,7 @@ l7cc0
         .aasc "Ponde",$f2
         .aasc "Wealt",$e8
         .aasc "Poo",$f2
+
         .aasc "The White Dragon's Castl",$e5
         .aasc "The Castle of Shamin",$ef
         .aasc "The Grave of the Lost Sou",$ec

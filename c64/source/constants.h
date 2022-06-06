@@ -20,7 +20,22 @@
         TILE_DUNGEON = $07
         TILE_PLAYER = $08
 
+        TW_TILE_COUNTER_LEFT = $1c
+        TW_TILE_COUNTER_RIGHT = $1d
+        TW_TILE_COUNTER_BTM = $1e
+        TW_TILE_COUNTER_TOP = $1f
+        TW_TILE_COUNTER_HORZ = $20
+        TW_TILE_COUNTER_VERT = $21
+        TW_TILE_A = $41
+        TW_TILE_EMPTY = $60
+        TW_TILE_HIDDEN_ARMOUR = $65
+        TW_TILE_HIDDEN_FOOD = $67
+        TW_TILE_HIDDEN_WEAPON = $69
+
         CLASS_FIGHTER = 1
         CLASS_CLERIC = 2
         CLASS_WIZARD = 3
         CLASS_THIEF = 4
+
+        WEAPON_AXE = 3
+        WEAPON_AMULET = 8
