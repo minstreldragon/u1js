@@ -38,6 +38,12 @@ CR = $7f
 zpInverse = $1f
 zpLongitude = $20
 zpLatitude = $21
+zpTargetTileLonDelta = $24
+zpTargetTileLatDelta = $25
+zpX0 = $26
+zpY0 = $27
+zpX1 = $28
+zpY1 = $29
 zpWndLeft = $2e
 zpWndWdth = $2f
 zpWndTop = $30
@@ -70,10 +76,19 @@ mapData = $b000
 charsetBackup = $c700
 townMap = $cb00
 
+npcs = $cdac
+npcTile = npcs + $00
+npcLon = npcs + $10
+npcLat = npcs + $20
+npcHpLb = npcs + $30
+npcHpHb = npcs + $40
+
+#ifndef _MI_
 stats = $81e2
 statsFileLen = stats + $00
 statsContinent = stats + $02
 statsContinentMsb = stats + $03
+statsNoiseOn = stats + $05
 statsLongitude = stats + $06
 statsLatitude = stats + $07
 statsRedGem = stats + $08
@@ -140,6 +155,13 @@ statsClass = stats + $6b
 statsFood = stats + $78
 statsXp = stats + $7a
 statsLocation = stats + $80
+#endif
+
+objLon= $826c
+objLat = $82bc
+objTile = $830c
+objBckgndTile = $835c
+objHp = $bd00
 
 #ifndef _ST_
 tileset = $0c00
@@ -153,6 +175,7 @@ bmpColOffLb = $15b0
 bmpColOffHb = $15d8
 videoMemRowPtrLb = $1600
 videoMemRowPtrHb = $1619
+noiseOn = $1638
 setTextFull = $1655
 setTextStatus = $1658
 drawChar = $1667
@@ -160,6 +183,8 @@ randomNumber = $1670
 readKey = $1676
 getKey = $1679
 playSoundEffect = $1682
+drawLineTo = $1691
+drawLine = $1694
 #endif
 
 #ifndef _MI_
@@ -170,14 +195,21 @@ strTableAttributes = $7842
 strTableArmour = $78d4
 strTableClass = $7911
 strTableTransport = $7930
+strTableCommands = $797f
 strTableLands = $7bda
+locationsLatitude = $7c18
+locationsLongitude = $7c6c
 strTablePlaces = $7cc0
+strTableReady = $882e
+
+commandKeys = $81c9
 
 printTwoDigits = $83cd
 printDigit = $83cd
 printChar = $83d7
 printCR = $8411
 printFromTableCap = $8426
+printFirstFromTable = $842b
 printFromTable = $842d
 printTableString = $842d
 printAtPos = $848a
@@ -185,6 +217,8 @@ print = $848e
 printRepeatChar = $84b9
 convertToBcd16 = $8522
 checkCommandKey = $85fd
+cmdInvalid = $876a
+cmdNoise = $8bb9
 #endif
 
 loadFile = $c480

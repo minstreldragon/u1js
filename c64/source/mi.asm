@@ -193,6 +193,7 @@ l7a30
         .aasc "Blue Ge",$ed
         .aasc "White Ge",$ed
 
+l7a51
         .byt $0a,$05,$04,$03,$02,$01,$04,$06,$08,$0a,$01,$02,$04,$06,$08
         l7a69 = * + 9
         l7a6a = * + 10
@@ -249,41 +250,41 @@ l7bda
         .aasc "the Dark Unknow",$ee
         .aasc "Danger and Despai",$f2
 
+locationsLatitude
 l7c18
-        .byt $1f,$14,$03,$02,$06,$24,$16,$35,$1e,$04,$2a,$0f,$3d
-l7c25   jsr $3622
-        l7c2e = * + 6
-        .byt $15,$38,$1b,$38,$0f,$5e,$56,$7b,$5a,$48,$43,$5d,$71,$53,$66,$74
-        .asc ""
-        .byt $6b,$5c,$5d,$78,$4f,$64,$6a,$48,$7c
-l7c41   ror $a1,x
-        lda #$84
-        lda $b7
-        ldy $a28e,x
-        ldy l8b99
-        sty $a3,x
-        ldx #$87
-        bcs $7bee
-        .byt $95
-        .asc "7"
-        .byt $83,$89
-        .asc "_TCBFdVu"
-        .byt $de
-        .asc "DjO"
-        .asc "}`bvUx[xO"
-        .byt $1e,$16,$3b,$1a,$08,$03,$31
-        l7c77 = * + 4
-        .byt $1d,$13,$26,$34,$2b,$1c,$1d,$38,$0f,$24,$2a,$08,$3c,$36,$1f,$14
-        .byt $03,$02,$06,$24,$35,$16,$1e,$04,$2a,$0f,$3d
-l7c8e   jsr $3622
-        .byt $15,$38,$1b,$38,$0f,$1f,$14,$03,$02,$06,$24,$16,$35,$1e,$04,$2a
-        .byt $0f,$3d
-l7ca3   jsr $3622
-        .byt $15,$38,$1b,$38,$0f,$21,$29,$04,$25,$37,$3c,$0e,$22,$2c,$19,$0b
-        .byt $14,$23,$22,$07
-l7cba   bmi $7cd7
-l7cbc   ora $37,x
-        .byt $03,$09
+        .byt $1f,$14,$03,$02,$06,$24,$16,$35    ; continent 0
+        .byt $1e,$04,$2a,$0f,$3d,$20,$22,$36
+        .byt $15,$38,$1b,$38,$0f
+
+        .byt $5e,$56,$7b,$5a,$48,$43,$5d,$71    ; continent 1
+        .byt $53,$66,$74,$6b,$5c,$5d,$78,$4f
+        .byt $64,$6a,$48,$7c,$76
+
+        .byt $a1,$a9,$84,$a5,$b7,$bc,$8e,$a2    ; continent 2
+        .byt $ac,$99,$8b,$94,$a3,$a2,$87,$b0
+        .byt $9b,$95,$b7,$83,$89
+
+        .byt $df,$d4,$c3,$c2,$c6,$e4,$d6,$f5    ; continent 3
+        .byt $de,$c4,$ea,$cf,$fd,$e0,$e2,$f6
+        .byt $d5,$f8,$db,$f8,$cf
+
+locationsLongitude
+l7c6c
+        .byt $1e,$16,$3b,$1a,$08,$03,$31,$1d    ; continent 0
+        .byt $13,$26,$34,$2b,$1c,$1d,$38,$0f
+        .byt $24,$2a,$08,$3c,$36
+
+        .byt $1f,$14,$03,$02,$06,$24,$35,$16    ; continent 1
+        .byt $1e,$04,$2a,$0f,$3d,$20,$22,$36
+        .byt $15,$38,$1b,$38,$0f
+
+        .byt $1f,$14,$03,$02,$06,$24,$16,$35    ; continent 2
+        .byt $1e,$04,$2a,$0f,$3d,$20,$22,$36
+        .byt $15,$38,$1b,$38,$0f
+
+        .byt $21,$29,$04,$25,$37,$3c,$0e,$22    ; continent 3
+        .byt $2c,$19,$0b,$14,$23,$22,$07,$30
+        .byt $1b,$15,$37,$03,$09
 
 strTablePlaces
 l7cc0
@@ -410,7 +411,7 @@ l81c6   l81c7 = * + 1
 l81c8
         .byt $00
 
-_commandKeys
+commandKeys
 l81c9
         ; allowed commands
         .aasc "@/;: ABCDEFGHIKNOQRSTUVXZ"
@@ -423,7 +424,7 @@ l81e4
         .byt $00                ; continent << 6
         .byt $ff
 
-l81e7
+statsNoiseOn
         .byt $ff
 l81e8   l81ea = * + 2
         jsr $0020
@@ -431,12 +432,20 @@ l81e8   l81ea = * + 2
         l81ef = * + 4
         l81f0 = * + 5
         l81f1 = * + 6
-        .byt $00,$00,$00,$00,$00,$00,$00
-; invArmour
+        .byt $00,$00,$00
+statsSpell
+        .byt $00
+statsWeapon
+        .byt $00
+statsArmour
+        .byt $00
+statsTransport
+        .byt $00
+invArmour
 l81f2   ora ($01,x)
         ora ($01,x)
         ora ($01,x)
-; invWeapons
+invWeapons
 l81f8   ora ($01,x)
         ora ($01,x)
         ora ($01,x)
@@ -446,21 +455,22 @@ l8200   ora ($01,x)
         ora ($01,x)
         ora ($01,x)
 
-; invSpells
+invSpells
+invPrayer
 l8208   ora ($03,x)
         l8213 = * + 9
         .byt $03,$03,$00,$03,$03,$03,$03,$03,$03,$01,$01,$01,$01,$01,$01,$00
         .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$ff,$ff,$ff,$ff
         l822b = * + 1
         .byt $00,$00
-;statsGender
+statsGender
 l822c   l822d = * + 1
 ; Instruction opcode accessed.
         ora ($47,x)
         jmp ($6e69)
         .byt $64,$61,$00,$00,$00,$00,$00,$00,$00,$00
 
-; statsHp
+statsHp
 l823b
         .word $0384
         .byt $5a,$00,$5a,$00
@@ -469,16 +479,22 @@ l823b
         l824f = * + 14
         l8250 = * + 15
         .byt $0f,$00,$0f,$00,$32,$00,$0f,$00
-; statsCoin
+statsCoin
 l8249
         .word $0838
-        .byt $02,$00,$02,$00,$00,$00
+statsRace
+        .byt $02
+        .byt $00
+statsClass
+        .byt $02
+        .byt $00,$00,$00
         l825c = * + 11
         l825d = * + 12
         .byt $00,$00,$00,$00,$00,$00,$00,$00
 l8259
         .byt $95
-; statsFood
+
+statsFood
 l825a
         .word $0059
         .byt $37,$02
@@ -567,6 +583,7 @@ l83f6   lda #$01
         rts
 
 l83fb   jsr $164f
+
 l83fe   inc zpCursorRow
         lda zpCursorRow
         cmp zpWndBtm
@@ -598,7 +615,11 @@ l8416   inc zpWndTop
 printFromTableCap
 l8426   sec
         ror l81ad               ; capitalize output string
-        bit !$00a2
+        .byt $2c                ; bit !$00a2
+
+printFirstFromTable
+l842b
+        ldx #$00                ; print first string from string table
 
 printFromTable
 l842d   pla
@@ -850,7 +871,7 @@ l85fc   .asc ""
 checkCommandKey
 l85fd   ldx #24                 ; iterate over command keys
 _checkCmdKeyL1
-        cmp _commandKeys,x      ; valid command?
+        cmp commandKeys,x       ; valid command?
         beq _checkCmdKeyJ1      ; yes ->
         dex
         bpl _checkCmdKeyL1
@@ -863,21 +884,22 @@ _checkCmdKeyL1
 _checkCmdKeyJ1
         txa                     ; command index
         pha                     ; store
-        cmp #$04
-        bcs l8630
-l861a   lda l81c8
-        beq l8630
-l861f   sta l862c
+        cmp #$04                ; direction command?
+        bcs _checkCmdKeyJ2      ; no ->
+        lda l81c8
+        beq _checkCmdKeyJ2      ; print "North/South/East/West"
+        sta l862c
         lda l81c7
         sta l862b
-        jsr printFromTable
+        jsr printFromTable      ; print "Forward/Turn around/Turn right/Turn left"
 l862b   l862c = * + 1
         .word _strTableCommands
-l862d   jmp l8635
+        jmp _checkCmdKeyJ3
 
-l8630   jsr printFromTable     ; print the command
+_checkCmdKeyJ2
+        jsr printFromTable     ; print the command
         .word _strTableCommands
-l8635
+_checkCmdKeyJ3
         pla                     ; restore command id
         asl                     ; as 16 bit index
         tax
@@ -988,6 +1010,7 @@ l8717   ldx statsSpell
         .word _strTableSpell
         rts
 
+_skipBackLeftBlanks
 l8720   lda zpCursorRow
         asl
         asl
@@ -1021,8 +1044,9 @@ l874e   jsr print
 l8766   lda #$08
         bne l8774
 
-l876a   jsr l8720
-l876d   lda #$3f
+cmdInvalid
+l876a   jsr _skipBackLeftBlanks
+        lda #$3f                ; '?'
         jsr drawChar
 
 l8772   lda #$10
@@ -1037,34 +1061,35 @@ l8781   lda #$00
         sta $5b
         sta $56
         rts
+
 l8788   jsr l870c
-l878b   lda #$04
+l878b   lda #4                  ; set up transaction window
         sta zpWndTop
         sta zpWndLeft
-        lda #$10
+        lda #16
         sta zpWndBtm
-        lda #$20
+        lda #32
         sta zpWndWdth
         jsr $1652
 l879c   jsr l83f3
 l879f   lda #$60
         jsr $168b
 l87a4   jsr l87c9
-l87a7   ldx #$04
-        ldy #$12
-        stx $26
-        sty $27
-        ldx #$fa
-        jsr $1691
-l87b4   ldx $26
-        ldy #$6d
-        jsr $1691
-l87bb   ldx #$04
-        ldy $27
-        jsr $1691
-l87c2   ldx $26
-        ldy #$12
-        jsr $1691
+l87a7   ldx #4                  ; draw transaction window border
+        ldy #18
+        stx zpX0                ; P0 = (4,18)
+        sty zpY0
+        ldx #250                ; P1 = (250,18)
+        jsr drawLineTo          ; draw line P0 to P1
+        ldx zpX0                ; P0 = (250,18)
+        ldy #109                ; P1 = (250,109)
+        jsr drawLineTo          ; draw line P0 to P1
+        ldx #4                  ; P0 = (250,109)
+        ldy zpY0                ; P1 = (4, 109)
+        jsr drawLineTo          ; draw line P0 to P1
+        ldx zpX0                ; P0 = (4,109)
+        ldy #18                 ; P1 = (4,18)
+        jsr drawLineTo          ; draw line P0 to P1
 l87c9   lda $5c
         eor $5d
         sta $5c
@@ -1090,7 +1115,7 @@ _cmdReadyJ1
         lda _cmdReadySubFct,y
         pha
         jsr printFromTable
-        .word _strTableReady    ; "nothing", "spell:", "weapon:", "armour:"
+        .word strTableReady     ; "nothing", "spell:", "weapon:", "armour:"
         jsr $164f
         inc zpCursorCol
 _readyNothing
@@ -1133,7 +1158,7 @@ l881f   lda statsArmour
         sta statsArmour
         rts
 
-_strTableReady
+strTableReady
 l882e
         .aasc "nothin",$e7
         .aasc "spell",$ba
@@ -1511,11 +1536,12 @@ l8bae   rts
 l8bb0   jsr print
         .aasc " off",$00        ; noise off
         rts
-_noise
-l8bb9   lda $1638
+
+cmdNoise
+l8bb9   lda noiseOn
         eor #$ff
-        sta $1638
-        sta l81e7
+        sta noiseOn
+        sta statsNoiseOn
         beq l8bb0
         jsr print
         .aasc " on",$00         ; noise on

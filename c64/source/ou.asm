@@ -135,7 +135,7 @@ l8dd7   dex
 l8dda   tax
         rts
 
-pass
+cmdPass
 l8ddc   ldy #$05
         lda #$50
         jmp $863a
@@ -150,53 +150,62 @@ l8de3   lda #$00
         sta zpMapPtr+1
         ldy $22
         rts
+
+_promptTargetTile
 l8df6   jsr print
         .aasc ": ",$00
         jsr l8dd0
-l8dff   ldx #$03
-l8e01   l8e02 = * + 1
-; Instruction parameter jumped to.
-        cmp $81c9,x
-        bne l8e35
-l8e06   stx $24
-        jsr printFromTable
-        .byt $7f
-l8e0c   adc $20a6,y
+        ldx #$03                ; iterate over command keys for north, south, east, west
+_promptTTL1
+        cmp commandKeys,x
+        bne _promptTTJ2
+        stx $24                 ; selected direction
+        jsr printFromTable      ; print selected direction
+        .word strTableCommands
+        ldx zpLongitude
         ldy zpLatitude
         stx $22
         sty $23
         ldx #$00
         ldy #$00
         dec $24
-        bmi l8e2c
-l8e1d   dec $24
-        bmi l8e2f
-l8e21   dec $24
-        bmi l8e32
-l8e25   dex
-l8e26   stx $24
-        sty $25
-        clc
+        bmi _promptTTNorth
+        dec $24
+        bmi _promptTTSouth
+        dec $24
+        bmi _promptTTEast
+_promptTTWest
+        dex
+_promptTTJ1
+        stx zpTargetTileLonDelta
+        sty zpTargetTileLatDelta
+        clc                     ; return success
         rts
-l8e2c   dey
-        bne l8e26
-l8e2f   iny
-        bne l8e26
-l8e32   inx
-        bne l8e26
-l8e35   dex
-        bpl l8e01
-l8e38   jsr $842b
-l8e3b   rol $3888
+_promptTTNorth
+        dey
+        bne _promptTTJ1
+_promptTTSouth
+        iny
+        bne _promptTTJ1
+_promptTTEast
+        inx
+        bne _promptTTJ1
+_promptTTJ2
+        dex                     ; iterate over all directions
+        bpl _promptTTL1
+        jsr printFirstFromTable ; print first string from table:
+        .word strTableReady     ; string 0: "nothing"
+        sec                     ; return fail
         rts
+
 l8e3f   lda $22
         clc
-        adc $24
+        adc zpTargetTileLonDelta
         sta $22
         tax
         lda $23
         clc
-        adc $25
+        adc zpTargetTileLatDelta
         sta $23
         tay
         jsr getMapTile
@@ -208,6 +217,7 @@ l8e5b   dec la145
         bne l8e3f
 l8e60   sec
 l8e61   rts
+
 l8e62   ldx $826b
         beq l8e97
 l8e67   dex
@@ -237,7 +247,7 @@ l8e94   txa
 l8e97   sec
         rts
 
-attack
+cmdAttack
 l8e99   jsr print
        .aasc "with ",$00
         ldx statsWeapon
@@ -246,9 +256,9 @@ l8e99   jsr print
         ldx statsWeapon
         lda la131,x
         bne l8eb5
-        jmp $876a
+        jmp cmdInvalid
 l8eb5   sta la145
-        jsr l8df6
+        jsr _promptTargetTile
 l8ebb   bcc l8ec9
 l8ebd   rts
 
@@ -292,9 +302,9 @@ l8f0f   sta $81c1
         lda $bd00,x
         sec
         sbc $81c1
-        beq l8f51
-l8f22   bcc l8f51
-l8f24   sta $bd00,x
+        beq l8f51               ; hp = 0? -> kill
+        bcc l8f51               ; hp < 0? -> kill
+        sta $bd00,x
         jsr print
         .aasc $7e,"Hit",$00
 l8f2f   jsr l8fe7
@@ -503,56 +513,30 @@ l91c8   jmp $85e4
 
 l91cb   lda statsRedGem
         beq l91d7
-l91d0   ldx #$59
-        lda #$20
+        ldx #$59
+        lda #COL_RED << 4
         jsr l923d
 l91d7   lda statsGreenGem
         beq l91e3
-l91dc   ldx #$71
-        lda #$50
+        ldx #$71
+        lda #COL_GREEN << 4
         jsr l923d
 l91e3   lda statsBlueGem
         beq l91ef
-l91e8   ldx #$89
-        lda #$60
+        ldx #$89
+        lda #COL_BLUE << 4
         jsr l923d
 l91ef   lda statsWhiteGem
         beq l91fb
-l91f4   ldx #$a1
-        lda #$10
+        ldx #$a1
+        lda #COL_WHITE << 4
         jsr l923d
 l91fb   jsr print
-        .byt $7f,$05,$54,$68,$6f
-l9203   adc $20,x
-        pla
-        adc ($73,x)
-        .asc ""
-        .byt $74
-l9209   jsr $6f6e
-        .asc ""
-        .byt $74
-l920d   jsr $6c61
-l9210   jmp ($7420)
-        .asc ""
-        .byt $68,$65
-l9215   jsr $6567
-        .asc ""
-        .byt $6d,$73,$7c,$7f,$04,$6e,$65
-l921f   adc $64
-        adc $64
-        jsr $6f74
-l9226   jsr $706f
-        .asc ""
-        .byt $65,$72,$61,$74,$65
-l922e   jsr $6874
-        .asc ""
-        .byt $79
-l9232   jsr $7263
-        .asc ""
-        .byt $61
-l9236   ror $74
-        and ($00,x)
+        .aasc $7f
+        .aasc $05,"Thou hast not all the gems",$7c,$7f
+        .aasc $04,"needed to operate thy craft!",$00
         jmp l91bb
+
 l923d   stx $46
         inx
         inx
@@ -560,17 +544,17 @@ l923d   stx $46
         inx
         stx $47
         ldy #$39
-        sty $27
+        sty zpY0
         jsr $168b
 l924c   jsr l924f
 l924f   jsr l9255
 l9252   jsr l9255
 l9255   ldx $46
-        stx $26
+        stx zpX0
         ldx $47
-        inc $27
-        ldy $27
-        jmp $1691
+        inc zpY0
+        ldy zpY0
+        jmp drawLineTo
 
 l9262   ldx zpLongitude
         ldy zpLatitude
@@ -630,7 +614,7 @@ l92d3   dec $8208,x
         jsr print
         .aasc $7e,"Failed, dungeon spell only!",$00
         jmp $8766
-l92f9   jsr l8df6
+l92f9   jsr _promptTargetTile
 l92fc   bcc l9301
 l92fe   jmp _mainLoopOutdoors
 l9301   lda #$0a
@@ -753,7 +737,7 @@ l9438   inc la143
         rts
 l943c   lda #$ff
         rts
-l943f   jmp $876a
+l943f   jmp cmdInvalid
 
 enter
 l9442   ldx zpLongitude
@@ -935,13 +919,13 @@ _fireJ1
         beq _fireJ2
         jsr print
         .aasc "what",$00
-        jmp $876a
+        jmp cmdInvalid
 _fireJ2
         jsr print
         .aasc "lasers",$00
 
 _fireJ3
-        jsr l8df6
+        jsr _promptTargetTile
         bcc l960d
         rts
 l9602   jsr print
@@ -971,7 +955,7 @@ l9640   ldx statsTransport
 l9649   adc #$1e
         jmp l8f0f
 
-quit
+cmdQuit
 l964e   ldx zpLongitude
         ldy zpLatitude
         stx statsLongitude
@@ -985,16 +969,16 @@ l965e   jsr $8175
         .aasc " saved.",$00
         jmp $164f
 
-ready
+cmdReady
 l9671   jsr l8dd0
 l9674   jmp $87d0
 
-xit
+cmdXit
 l9677   lda statsTransport      ; on foot?
         bne _xitJ1              ; no ->
         jsr print
         .aasc " what",$00
-        jmp $876a
+        jmp cmdInvalid
 _xitJ1
         jsr _getStoreMapTile
 l968b   cmp #$03
@@ -1894,9 +1878,9 @@ l9ddf
         lda statsContinentMsb
         ora zpLatitude
         ldx #$53
-l9de6   cmp $7c18,x
+l9de6   cmp locationsLatitude,x
         bne l9df2
-l9deb   ldy $7c6c,x
+        ldy locationsLongitude,x
         cpy zpLongitude
         beq l9df9
 l9df2   dex
@@ -1938,26 +1922,26 @@ l9e29   l9e2a = * + 1
         .word south             ; south
         .word east              ; east
         .word west              ; west
-        .word pass              ; pass
-        .word attack            ; attack
+        .word cmdPass           ; pass
+        .word cmdAttack         ; attack
         .word board             ; board
         .word cast              ; cast
-        .word $876a             ; drop
+        .word cmdInvalid        ; drop
         .word enter             ; enter
         .word fire              ; fire
-        .word $876a             ; get
-        .word $876a             ; hyper jump
+        .word cmdInvalid        ; get
+        .word cmdInvalid        ; hyper jump
         .word _informAndSearch  ; inform & search
-        .word $876a             ; klimb
-        .word $8bb9             ; noise
-        .word $876a             ; open
-        .word quit              ; quit (and save to disk)
-        .word ready             ; ready
-        .word $876a             ; steal
-        .word $876a             ; transact
-        .word $876a             ; unlock
-        .word $876a             ; view change
-        .word xit               ; x-it
+        .word cmdInvalid        ; klimb
+        .word cmdNoise          ; noise
+        .word cmdInvalid        ; open
+        .word cmdQuit           ; quit (and save to disk)
+        .word cmdReady          ; ready
+        .word cmdInvalid        ; steal
+        .word cmdInvalid        ; transact
+        .word cmdInvalid        ; unlock
+        .word cmdInvalid        ; view change
+        .word cmdXit            ; x-it
         .word $890c             ; ztats
 
 _textTableSearch

@@ -37,5 +37,19 @@
         CLASS_WIZARD = 3
         CLASS_THIEF = 4
 
+        WEAPON_HANDS = 0
+        WEAPON_DAGGER = 1
+        WEAPON_MACE = 2
         WEAPON_AXE = 3
+        WEAPON_ROPE = 4
+        WEAPON_SWORD = 5
+        WEAPON_GSWORD = 6
+        WEAPON_BOW = 7
         WEAPON_AMULET = 8
+        WEAPON_WAND = 9
+        WEAPON_STAFF = 10
+        WEAPON_TRIANGLE = 11
+        WEAPON_PISTOL = 12
+        WEAPON_LSWORD = 13
+        WEAPON_PHAZOR = 14
+        WEAPON_BLASTER = 15

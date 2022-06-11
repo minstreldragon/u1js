@@ -264,6 +264,7 @@ l1632
         .asc " ;:/@"
 l1637
         .byt $02
+noiseOn
 l1638
         .byt $ff
 l1639
@@ -307,8 +308,10 @@ l1685   jmp l1b89
 l1688   jmp l1b72
 l168b   jmp l1773
 l168e   jmp l17ed
-l1691   jmp l1866
-l1694   jmp l186a
+drawLineTo
+l1691   jmp _drawLineTo
+drawLine
+l1694   jmp _drawLine
 l1697   jmp l16ac
 l169a   jmp l16ac
 l169d   jmp l1c81
@@ -563,13 +566,16 @@ l184c   ldy #$08
 l1862   ldy $5e
 l1864   rts
 l1865   .byt $00
-l1866   stx $28
-        sty $29
+
+_drawLineTo
+l1866   stx zpX1
+        sty zpY1
+_drawLine
 l186a   jsr l17ed
-l186d   lda $28
-        cmp $26
+l186d   lda zpX1
+        cmp zpX0
         bne l1879
-l1873   lda $29
+l1873   lda zpY1
         cmp $27
         beq l1864
 l1879   lda #$01
@@ -577,21 +583,21 @@ l1879   lda #$01
         sta $2b
         ldx #$ff
         sec
-        lda $28
-        sbc $26
+        lda zpX1
+        sbc zpX0
         bcs l188f
 l1888   sec
-        lda $26
-        sbc $28
+        lda zpX0
+        sbc zpX1
         stx $2a
 l188f   sta $24
         sec
-        lda $29
+        lda zpY1
         sbc $27
         bcs l189f
 l1898   sec
         lda $27
-        sbc $29
+        sbc zpY1
         stx $2b
 l189f   sta $25
         cmp $24
@@ -608,9 +614,9 @@ l18aa   clc
         bcc l18bf
 l18b6   sta $3b
         clc
-        lda $26
+        lda zpX0
         adc $2a
-        sta $26
+        sta zpX0
 l18bf   clc
         lda $27
         adc $2b
@@ -626,9 +632,9 @@ l18ce   lda $24
         lsr
         sta $3b
 l18d5   clc
-        lda $26
+        lda zpX0
         adc $2a
-        sta $26
+        sta zpX0
         tax
         clc
         lda $3b
@@ -738,6 +744,7 @@ l199e   lda zpCursorRow
 l19a0   ldx #$00
         stx zpCursorCol
         beq l19ae
+
 l19a6   ldx zpCursorCol
         cpx zpWndWdth
         bcs l1a0a
@@ -1002,7 +1009,7 @@ l1b51   stx $43
         bcs l1b6f
 l1b57   cpx #$12
         bcs l1b6f
-l1b5b   lda l1638
+l1b5b   lda noiseOn
         beq l1b6f
 l1b60   php
         sei                     ; block interrupts during sound playback
@@ -1030,6 +1037,7 @@ l1b7a   ldy $57,x
 l1b83   jsr _playSoundEffect
 l1b86   dec $5b
 l1b88   rts
+
 l1b89   ldx $5b
         beq l1b9d
 l1b8d   ldy $56,x

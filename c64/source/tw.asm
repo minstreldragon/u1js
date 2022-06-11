@@ -61,7 +61,7 @@ _enterTownL3
         dey
         bne _enterTownL3
 l8d07   jsr la51a
-l8d0a   jmp l8d51
+l8d0a   jmp _mainLoopTown
 
 l8d0d   jsr $1649
 l8d10   lda #$0e
@@ -74,9 +74,9 @@ l8d1d   lda #$00
         jsr $83f6
 l8d25   lda #$20
         jsr printChar
-l8d2a   jsr la273
-l8d2d   jsr l8e15
-l8d30   lda lad29
+        jsr la273
+        jsr l8e15
+        lda lad29
         bne l8d0d
 l8d35   lda #23
         sta zpCursorRow
@@ -94,25 +94,26 @@ l8d4c   dex
 l8d4f   tax
         rts
 
+_mainLoopTown
 l8d51   lda statsHp
         ora statsHp+1
-        beq l8d61               ; -> starving
-l8d59   lda statsFood
+        beq _townPlayerDead     ; -> starving
+        lda statsFood
         ora statsFood+1
-        bne l8d67
+        bne _mainLoopTownJ1
+_townPlayerDead
 l8d61   jsr $1649               ; dead!
-l8d64   jmp $8c5b
-
-l8d67   jsr l8d0d               ; wait for command / check command key
-l8d6a   lda _commandTable,x
-        sta l8d77
+        jmp $8c5b
+_mainLoopTownJ1
+        jsr l8d0d               ; wait for command / check command key
+        lda _commandTable,x
+        sta _cmdJmpPtr
         lda _commandTable+1,x
-        sta l8d78
-        l8d77 = * + 1
-        l8d78 = * + 2
+        sta _cmdJmpPtr+1
+_cmdJmpPtr = * + 1
         jsr $ffff
-l8d79   jsr la273
-l8d7c   jmp l8d51
+        jsr la273
+        jmp _mainLoopTown
 
 _commandTable
 l8d7f
@@ -122,24 +123,24 @@ l8d7f
         .word cmdTwWest         ; west
         .word cmdTwPass         ; pass
         .word cmdTwAttack       ; attack
-        .word $876a             ; board
+        .word cmdInvalid        ; board
         .word cmdTwCast         ; cast
         .word cmdTwDrop         ; drop
-        .word $876a             ; enter
-        .word $876a             ; fire
+        .word cmdInvalid        ; enter
+        .word cmdInvalid        ; fire
         .word cmdTwGet          ; get
-        .word $876a             ; hyper jump
+        .word cmdInvalid        ; hyper jump
         .word cmdTwInform       ; inform & search
-        .word $876a             ; klimb
-        .word $8bb9             ; noise
-        .word $876a             ; open
+        .word cmdInvalid        ; klimb
+        .word cmdNoise          ; noise
+        .word cmdInvalid        ; open
         .word cmdTwQuit         ; quit (and save to disk)
         .word cmdTwReady        ; ready
         .word cmdTwSteal        ; steal
         .word cmdTwTransact     ; transact
         .word cmdTwUnlock       ; unlock
-        .word $876a             ; view change
-        .word $876a             ; x-it
+        .word cmdInvalid        ; view change
+        .word cmdInvalid        ; x-it
         .word cmdTwZtats        ; ztats
 
 cmdTwNorth
@@ -167,30 +168,30 @@ l8dc7   txa
         adc zpLatitude
         sta $2d
         tay
-        jsr la5eb
-l8dd8   bcs l8dff
-l8dda   lda $2c
-        cmp #$26
-        bcs l8de6
-l8de0   lda $2d
-        cmp #$12
-        bcc l8de9
-l8de6   jmp $8c5e
+        jsr la5eb               ; ?? get tile ??
+        bcs l8dff               ; is tile empty? -> yes
+        lda $2c                 ; target location x
+        cmp #38                 ; >= 38?
+        bcs l8de6               ; yes, outside town ->
+        lda $2d                 ; target location y
+        cmp #18                 ; >= 18?
+        bcc l8de9               ; no ->
+l8de6   jmp $8c5e               ; ?? leave town ??
 l8de9   lda #$0e
         jsr playSoundEffect
-l8dee   jsr $83f6
-l8df1   jsr print
+        jsr $83f6
+        jsr print
         .aasc "Blocked",$00
-l8dfc   jmp l8e15
+        jmp l8e15
 l8dff   ldx zpLongitude
         ldy zpLatitude
-        lda #$20
+        lda #$20                ; char: empty field
         jsr la5d3
 l8e08   ldx $2c
         stx zpLongitude
         ldy $2d
         sty zpLatitude
-        lda #$7b
+        lda #$7b                ; char: player (?)
         jsr la5d3
 
 cmdTwPass
@@ -208,42 +209,50 @@ l8e22   jsr print
         jsr printFromTable
         .word strTableWeapons
         ldx statsWeapon
-        cpx #$04
-        beq l8e42
-l8e3a   cpx #$08
-        bcc l8e45
-l8e3e   cpx #$0b
-        bcs l8e45
-l8e42   jmp $876a
-l8e45   jsr print
+        cpx #WEAPON_ROPE        ; weapon == Rope? -> invalid
+        beq _townAttackInvalid
+        cpx #WEAPON_AMULET      ; weapon < Amulet? -> OK
+        bcc _townAttackJ1
+        cpx #WEAPON_TRIANGLE    ; weapon >= Triangle? -> OK
+        bcs _townAttackJ1
+_townAttackInvalid
+        jmp cmdInvalid          ; can't attack with current weapon!
+
+_townAttackJ1
+        jsr print               ; print prompt (direction)
         .aasc ": ",$00
         jsr $8d45
-        beq l8e6d
-l8e50   ldx #$00
+        beq _townAttackNothing
+        ldx #$00
         ldy #$00
-        cmp #$40
-        bne l8e5b
-l8e58   dey
-        bne l8e7a
-l8e5b   cmp #$2f
-        bne l8e62
-l8e5f   iny
-        bne l8e7a
-l8e62   cmp #$3b
-        bne l8e69
-l8e66   inx
-        bne l8e7a
-l8e69   cmp #$3a
-        beq l8e79
-l8e6d   jsr print
+        cmp #KEY_NORTH
+        bne _townAttackJ2
+        dey
+        bne _townAttackJ6
+_townAttackJ2
+        cmp #KEY_SOUTH
+        bne _townAttackJ3
+        iny
+        bne _townAttackJ6
+_townAttackJ3
+        cmp #KEY_EAST
+        bne _townAttackJ4
+        inx
+        bne _townAttackJ6
+_townAttackJ4
+        cmp #KEY_WEST
+        beq _townAttackJ5
+_townAttackNothing
+        jsr print               ; no direction selected, cancel attack
         .aasc "Nothing",$00
         rts
-
-l8e79   dex
-l8e7a   stx $24
+_townAttackJ5
+        dex
+_townAttackJ6
+        stx $24
         sty $25
-        jsr checkCommandKey
-l8e81   jsr $83ed
+        jsr checkCommandKey     ; check command (again), print direction
+        jsr $83ed
 l8e84   ldx statsWeapon
         lda lad88,x
         sta lad2d
@@ -311,22 +320,22 @@ l8ed4   sec
         adc statsWeapon
         sta $4d
 l8f18   jsr randomNumber        ; damage = random [0..max damage]
-        cmp #$00
-        beq l8f18
-        cmp $4d
-        bcs l8f18
-l8f23   sta $4d
+        cmp #$00                ; damage > 0?
+        beq l8f18               ; no -> repeat
+        cmp $4d                 ; damage < max damage?
+        bcs l8f18               ; no -> repeat
+        sta $4d
         lda #$02
         jsr playSoundEffect
-l8f2a   ldx lad2e
-        lda $cddc,x
+        ldx lad2e               ; current NPC index
+        lda npcHpLb,x           ; subtract damage from NPC's HP
         sec
         sbc $4d
-        sta $cddc,x
-        lda $cdec,x
+        sta npcHpLb,x
+        lda npcHpHb,x
         sbc #$00
-        sta $cdec,x
-        bcc l8f56
+        sta npcHpHb,x
+        bcc l8f56               ; underflow? ->
 l8f40   lda $4d
         ldx #$00
         stx $85be
@@ -337,10 +346,10 @@ l8f50   adc $6761
         adc $00
         rts
 l8f56   lda #$ff
-        sta $cdac,x
-        sta $cdbc,x
-        sta $cdcc,x
-        sta $cdec,x
+        sta npcTile,x
+        sta npcLon,x
+        sta npcLat,x
+        sta npcHpHb,x
         jsr print
         .aasc "Killed!",$00
         lda zpMapPtr
@@ -426,74 +435,50 @@ l9026
 
 _cmdTwDropPence
 l902e   jsr print
-        .asc ""
-        .byt $7e,$48,$6f,$77
-l9035   jsr $756d
-        .asc ""
-        .byt $63,$68,$3f
-l903b   jsr $2000
-l903e   adc $a6,x
-        lda $ae60
-        ora $ae61
-        bne l9049
-l9048   rts
-l9049   lda statsCoin
-        l904d = * + 1
-; Instruction parameter jumped to.
-        cmp $ae60
+        .aasc $7e,"How much? ",$00
+        jsr _enterNumber
+        lda _numEntry
+        ora _numEntry+1
+        bne _townDropPenceJ1
+        rts
+_townDropPenceJ1
+        lda statsCoin           ; owned coins >= entered number?
+        cmp _numEntry
         lda statsCoin+1
-        sbc $ae61
-        l9056 = * + 1
-; Instruction parameter jumped to.
-        bcs l9077
-l9057   jsr print
-        .asc ""
-        .byt $7e,$54,$68,$6f
-l905e   adc zpLongitude,x
-l9060   pla
-        adc ($73,x)
-        .asc ""
-        .byt $74
-l9064   jsr $6f6e
-        .asc ""
-        .byt $74
-l9068   jsr $6874
-l906b   adc ($74,x)
-        jsr $756d
-        .asc ""
-        .byt $63
-l9071   pla
-        and ($00,x)
+        sbc _numEntry+1
+        bcs _townDropPenceJ2    ; yes ->
+        jsr print
+        .aasc $7e,"Thou hast not that much!",$00
         jmp $8772
-l9077   lda statsCoin
+_townDropPenceJ2
+        lda statsCoin           ; subtract coins to drop
         sec
-        l907c = * + 1
-; Instruction parameter jumped to.
-        sbc $ae60
+        sbc _numEntry
         sta statsCoin
         lda statsCoin+1
-        sbc $ae61
+        sbc _numEntry+1
         sta statsCoin+1
-        ldx zpLongitude
+        ldx zpLongitude         ; get town tile at player location
         ldy zpLatitude
         jsr _getTownTile
-l9091   cmp #$61
-        beq l909e
-l9095   jsr print
+        cmp #$61                ; nearby some water?
+        beq _townDropPenceJ3    ; yes ->
+        jsr print
         .aasc $7e,"Ok!",$00
         rts
-l909e   lda $ae60
+_townDropPenceJ3
+l909e   lda _numEntry
         sta zpMapPtr
-        lda $ae61
+        lda _numEntry+1
         lsr
         sta $4d
         ror zpMapPtr
         lda zpMapPtr
         clc
-        adc $ae60
+        adc _numEntry
         sta zpMapPtr
         lda $4d
-        adc $ae61
+        adc _numEntry+1
         sta $4d
         lda statsHp
         clc
@@ -515,12 +500,10 @@ l90e1   jsr randomNumber
 l90e4   cmp #$10
         bcc l90f9
 l90e8   jsr print
-l90eb   ror $6853,x
-        adc ($7a,x)
-        adc ($6d,x)
-        and ($00,x)
+        .aasc $7e,"Shazam!",$00
         lda #$0a
         jmp playSoundEffect
+
 l90f9   jsr randomNumber
 l90fc   and #$0f
         cmp #$08
@@ -531,54 +514,54 @@ l9106   tax
         inx
         inc invSpells,x
         bne l9110
-l910d   dec invSpells,x
+        dec invSpells,x         ; prevent overflow
 l9110   jsr print
-        .asc ""
-        .byt $7e,$41
-l9115   jmp ($6b61)
-        .asc ""
-        .byt $61,$7a,$6f,$74
-l911c   and ($00,x)
+        .aasc $7e,"Alakazot!",$00
         lda #$0a
         jmp playSoundEffect
 
 _cmdTwDropWeapon
 l9123   jsr l91a1
         .byt $0f
-        .asc "x"
-        .byt $81,$7c,$77
-l912b   bmi l913b
-l912d   tax
+        .word invWeapons
+        .word strTableLongWeapons
+        bmi _cmdTwDropItemEnd
+        tax                     ; selected weapon type as index
         lda #$00
-        sta invWeapons,x
-        cpx statsWeapon
-        bne l913b
-l9138   sta statsWeapon
-l913b   jmp _drawTownMap
+        sta invWeapons,x        ; drop weapon, i.e. drop all of that kind
+        cpx statsWeapon         ; weapon currently wielded?
+        bne _cmdTwDropItemEnd   ; no ->
+        sta statsWeapon         ; wield nothing (hands)
+_cmdTwDropItemEnd
+        jmp _drawTownMap
 
 _cmdTwDropArmour
 l913e   jsr l91a1
-l9141   ora $f2
-        sta ($d4,x)
-        sei
-        bmi l913b
-l9148   tax
+        .byt $05
+        .word invArmour
+        .word strTableArmour
+        bmi _cmdTwDropItemEnd
+        tax                     ; selected armour type as index
         lda #$00
-        sta invArmour,x
+        sta invArmour,x         ; drop armour, i.e. drop all of that kind
         cpx statsArmour
-        bne l913b
+        bne _cmdTwDropItemEnd
 l9153   sta statsArmour
         jmp _drawTownMap
-l9159   lda statsFood
+
+_limitFood
+l9159   lda statsFood           ; check that food <= 9999
         cmp #<9999
         lda statsFood+1
         sbc #>9999
-        bcc l916f
-l9165   lda #<9999
+        bcc _limitFoodEnd       ; food <= 9999? -> OK
+        lda #<9999              ; else, set food to max: 9999
         sta statsFood
         lda #>9999
         sta statsFood+1
-l916f   rts
+_limitFoodEnd
+        rts
+
 l9170   lda statsCoin
         cmp #<9999
         lda statsCoin+1
@@ -601,16 +584,16 @@ l91a1   pla
         sta $83b5
         pla
         sta $83b6
-        jsr $83ac
+        jsr $83ac               ; fetch parameter byte
 l91ac   sta l9267
-        jsr $83ac
-l91b2   sta $41
-        jsr $83ac
-l91b7   sta $42
-        jsr $83ac
-l91bc   sta l9263
-        jsr $83ac
-l91c2   sta l9264
+        jsr $83ac               ; fetch parameter byte
+        sta $41
+        jsr $83ac               ; fetch parameter byte
+        sta $42
+        jsr $83ac               ; fetch parameter byte
+l91bc   sta l9263               ; (string table lb)
+        jsr $83ac               ; fetch parameter byte
+l91c2   sta l9264               ; (string table hb)
         lda $83b6
         pha
         lda $83b5
@@ -677,12 +660,11 @@ l9244   cmp l9267
         bcc l924b
 l9249   bne l9250
 l924b   tay
-        lda ($41),y
+        lda ($41),y             ; # of this item in inventory
         bne l925d
 l9250   ldy #$ff
         jsr print
-l9255   ror $6e6f
-        adc $00
+        .aasc "none",$00
         tya
         tax
         rts
@@ -691,7 +673,7 @@ l925e   tax
         pha
         jsr printFromTableCap
 l9263   l9264 = * + 1
-        .byt $00,$00
+        .word $0000
 l9265   pla
         rts
 l9267   .byt $0a
@@ -699,7 +681,7 @@ l9267   .byt $0a
 cmdTwGet
 l9268   jsr print
         .aasc " what",$00
-        jmp $876a
+        jmp cmdInvalid
 
 cmdTwQuit
 l9274   lda #18
@@ -735,7 +717,7 @@ l92af   ldx zpLongitude
         jsr print
         .aasc $7e
         .aasc "Nothing here",$00
-        jmp $876a
+        jmp cmdInvalid
 _stealJ1
         sta zpTwMapTile         ; store map tile
         jsr randomNumber
@@ -802,7 +784,7 @@ _stealFoodL1
         bcc _stealFoodJ1
         inc statsFood+1
 _stealFoodJ1
-        jmp l9159
+        jmp _limitFood
 
 _stealWeapon
 l9388   jsr la723
@@ -908,17 +890,19 @@ _transactSell
         jsr $ffff
 l9490   jmp _drawTownMap
 
+
 l9493   jsr $164f
-l9496   lda zpMapPtr
+l9496   lda zpMapPtr            ; ?? shop id ??
         jsr $8788
 l949b   dec zpWndWdth
         jsr l94ab
-l94a0   jsr $83f3
-l94a3   jsr $83f3
+        jsr $83f3               ; newline in window
+        jsr $83f3               ; newline in window
 l94a6   lda zpMapPtr
         asl
         tax
         rts
+
 l94ab   lda zpMapPtr
         asl
         tax
@@ -933,6 +917,7 @@ l94bc = * + 1
         jsr printFromTable
 l94c0   l94c1 = * + 1
         .byt $ff,$ff,$60
+
 l94c3   lda #$01
         sta lad34               ; item index = 1
 
@@ -961,8 +946,8 @@ l94fd   lda #$00
         sta $85be
         ldx lad30
         lda lad31
-        jsr $857c
-l950b   jsr $83f3
+        jsr $857c               ; print number ??
+l950b   jsr $83f3               ; newline in window
 l950e   inc lad34               ; inc item index
         lda lad34
         cmp #$06                ; max index for armour trade?
@@ -1025,6 +1010,7 @@ l9585   sta zpCursorCol
 l9597   jsr $165b
 l959a   lda #$10
         bne l9585
+
 l959e   ldx #$05
         lda statsIntelligence
 l95a3   sec
@@ -1042,8 +1028,7 @@ l95ac   stx $ae62
         .aasc $7e
         .aasc " Packs of 10 food cost "
 _strFoodPrice
-        .aasc "X"
-        .aasc " pence",$7e
+        .aasc "X pence",$7e
         .aasc "  each.  How many dost thou",$7e,$7f
         .aasc $06,"wish to purchase?",$00
 
@@ -1053,14 +1038,14 @@ l960f   lda #23
         sta zpCursorRow
         lda #15
         sta zpCursorCol
-        jsr la675
+        jsr _enterNumber
 l961a   jsr $8701
-l961d   lda $ae61
+l961d   lda _numEntry+1
         cmp #$1a
         bcc l9627
 l9624   jmp l9580
-l9627   lda $ae60
-        ora $ae61
+l9627   lda _numEntry
+        ora _numEntry+1
         bne l9632
 l962f   jmp l9580
 l9632   ldx $ae62
@@ -1071,30 +1056,30 @@ l9632   ldx $ae62
         sta $4d
 l963b   lda zpMapPtr
         clc
-        adc $ae60
+        adc _numEntry
         sta zpMapPtr
         lda $4d
-        adc $ae61
+        adc _numEntry+1
         sta $4d
         dex
         bne l963b
-l964d   asl $ae60
-        rol $ae61
-        lda $ae61
+l964d   asl _numEntry
+        rol _numEntry+1
+        lda _numEntry+1
         pha
-        lda $ae60
+        lda _numEntry
         pha
-        asl $ae60
-        rol $ae61
-        asl $ae60
-        rol $ae61
+        asl _numEntry
+        rol _numEntry+1
+        asl _numEntry
+        rol _numEntry+1
         pla
         clc
-        adc $ae60
-        sta $ae60
+        adc _numEntry
+        sta _numEntry
         pla
-        adc $ae61
-        sta $ae61
+        adc _numEntry+1
+        sta _numEntry+1
         lda statsCoin
         cmp zpMapPtr
         lda statsCoin+1
@@ -1110,10 +1095,10 @@ l9685   lda statsCoin
         sta statsCoin+1
         lda statsFood
         clc
-        adc $ae60
+        adc _numEntry
         sta statsFood
         lda statsFood+1
-        adc $ae61
+        adc _numEntry+1
         sta statsFood+1
         jsr la1a7
 l96ac   jsr $165b
@@ -1128,7 +1113,8 @@ l96bb   jsr $6170
 l96c1   jsr $6f66
         .asc ""
         .byt $6f,$64,$00
-l96c7   jmp l9159
+l96c7   jmp _limitFood
+
 l96ca   lda #$01
         sta lad34
         lda #$07
@@ -1196,8 +1182,8 @@ l9750   lda #$00
         sta $85be
         ldx lad30
         lda lad31
-        jsr $857c
-l975e   jsr $83f3
+        jsr $857c               ; print number ??
+l975e   jsr $83f3               ; newline in window
 l9761   inc lad34
         lda lad34
         cmp #$10
@@ -1238,6 +1224,7 @@ l97ac   l97ad = * + 1
 l97b1   lda invWeapons,x
         cmp #$ff
 l97b6   rts
+
 l97b7   lda #$01
         sta lad34
         lda #$00
@@ -1261,13 +1248,11 @@ l97da   lda #$42
         clc
         adc lad34
         jsr printChar
-l97ec   jsr print
-        .asc ""
-        .byt $29,$20,$00
+        jsr print
+        .aasc ") ",$00
 l97f2   ldx lad34
         jsr printFromTable
-        .asc ""
-        .byt $7c,$77
+        .word strTableLongWeapons
 l97fa   lda #$17
         sta zpCursorCol
         jsr print
@@ -1277,7 +1262,7 @@ l9801   and !zpLongitude
         clc
         adc #$28
         sta zpMapPtr
-        lda ladb6,x
+        lda _priceList,x
         tax
         jsr la23f
 l9816   lda lad31
@@ -1288,8 +1273,8 @@ l9816   lda lad31
         sta lad31
         sta $85be
         ldx lad30
-        jsr $857c
-l982d   jsr $83f3
+        jsr $857c               ; print number ??
+l982d   jsr $83f3               ; newline in window
 l9830   inc lad34
         lda lad34
         cmp #$10
@@ -1329,14 +1314,14 @@ l986d   sec
 l9874   bne l9879
 l9876   jmp l9597
 l9879   stx $4d
-        lda statsCharisma
+        lda statsCharisma       ; price unit = Charisma + 40
         clc
-        adc #$28
+        adc #40
         sta zpMapPtr
-        lda ladb6,x
+        lda _priceList,x
         tax
         jsr la23f
-l988a   lda lad31
+l988a   lda lad31               ; sell price = price / 256 + 1
         clc
         adc #$01
         sta lad30
@@ -1366,6 +1351,7 @@ l98c6   sta zpCursorCol
         .asc ""
         .byt $7c,$77
 l98cf   jmp la874
+
 l98d2   lda #$01
         sta lad34
         lda _townLayoutId
@@ -1410,8 +1396,8 @@ l992c   lda #$00
         sta $85be
         ldx lad30
         lda lad31
-        jsr $857c
-l993a   jsr $83f3
+        jsr $857c               ; print number ??
+l993a   jsr $83f3               ; newline in window
 l993d   inc lad34
         lda lad34
         cmp #$0b
@@ -1471,38 +1457,18 @@ l99af   lda #23
 l99bc   dey
         sei
         jmp la874
+
 l99c1   lda statsCoin
         ora statsCoin+1
         bne l9a17
 l99c9   jsr print
-        .byt $7f,$07,$54,$68,$6f,$75
-l99d2   jsr $7261
-        .asc ""
-        .byt $74
-l99d6   jsr $7262
-        .asc ""
-        .byt $6f,$6b,$65,$21,$7e,$7e,$7f,$03,$43,$6f,$6d,$65
-l99e5   jsr $6162
-        .asc ""
-        .byt $63,$6b
-l99ea   jsr $6877
-l99ed   adc $6e
-        jsr $6874
-        .asc ""
-        .byt $6f,$75
-l99f4   jsr $6168
-        .asc ""
-        .byt $73,$74,$7e,$7f,$05,$73,$6f
-l99fe   adc $2065
-        adc $6e6f
-        adc $79
-        jsr $6f74
-l9a09   jsr $7073
-        .asc ""
-        .byt $65,$6e,$64
-l9a0f   rol $2000
-        sbc ($85,x)
+        .aasc $7f
+        .aasc $07,"Thou art broke!",$7e,$7e,$7f
+        .aasc $03,"Come back when thou hast",$7e,$7f
+        .aasc $05,"some money to spend.",$00
+        jsr $85e1
         jmp l9597
+
 l9a17   dec statsCoin
         lda statsCoin
         cmp #$ff
@@ -1684,113 +1650,16 @@ l9cc3   jsr print
         lda #$08
         sta zpCursorRow
         jsr print
+        .aasc "The quest of --Ultima-- is to",$7e
+        .aasc " traverse the lands in search",$7e,$7f
+        .aasc $03,"of a time machine.  Upon",$7e
+        .aasc " finding such a device, thou",$7e
+        .aasc "should go back in time to the",$7e
+        .aasc " days before Mondain created",$7e
+        .aasc "the evil gem and destroy him.",$00
+        jmp $85e1
 
-
-
-
-        .asc ""
-        .byt $54,$68,$65
-l9d56   jsr $7571
-        .asc ""
-        .byt $65,$73,$74
-l9d5c   jsr $666f
-l9d5f   jsr $2d2d
-        .asc ""
-        .byt $55
-l9d63   jmp ($6974)
-        .asc ""
-        .byt $6d,$61
-l9d68   and $202d
-        adc #$73
-        jsr $6f74
-        .asc ""
-        .byt $7e
-l9d71   jsr $7274
-        .asc ""
-        .byt $61,$76,$65,$72,$73,$65
-l9d7a   jsr $6874
-l9d7d   adc zpLongitude
-        jmp ($6e61)
-        .asc ""
-        .byt $64,$73
-l9d84   jsr $6e69
-l9d87   jsr $6573
-        .asc ""
-        .byt $61,$72,$63,$68,$7e,$7f,$03,$6f,$66
-l9d93   jsr $2061
-        .asc ""
-        .byt $74
-l9d97   adc #$6d
-        adc zpLongitude
-        adc $6361
-        pla
-        adc #$6e
-        adc zpWndLeft
-        jsr $5520
-l9da6   bvs l9e17
-        .asc ""
-        .byt $6e,$7e
-l9daa   jsr $6966
-        .asc ""
-        .byt $6e,$64,$69,$6e,$67
-l9db2   jsr $7573
-        .asc ""
-        .byt $63
-l9db6   pla
-        jsr $2061
-        .asc ""
-        .byt $64
-l9dbb   adc $76
-        adc #$63
-        adc $2c
-        jsr $6874
-        .asc ""
-        .byt $6f,$75,$7e,$73,$68,$6f,$75
-l9dcb   jmp ($2064)
-        .asc ""
-        .byt $67,$6f
-l9dd0   jsr $6162
-        .asc ""
-        .byt $63,$6b
-l9dd5   jsr $6e69
-l9dd8   jsr $6974
-        .asc ""
-        .byt $6d,$65
-l9ddd   jsr $6f74
-l9de0   jsr $6874
-l9de3   adc $7e
-        jsr $6164
-        .asc ""
-        .byt $79,$73
-l9dea   jsr $6562
-        .asc ""
-        .byt $66,$6f,$72,$65
-l9df1   jsr $6f4d
-l9df4   ror $6164
-        adc #$6e
-        jsr $7263
-        .asc ""
-        .byt $65
-l9dfd   adc ($74,x)
-        adc $64
-        ror $6874,x
-        adc zpLongitude
-        adc $76
-        adc #$6c
-        jsr $6567
-        .asc ""
-        .byt $6d
-l9e0e   jsr $6e61
-        .asc ""
-        .byt $64
-l9e12   jsr $6564
-        l9e17 = * + 2
-        .asc ""
-        .byt $73,$74,$72,$6f
-l9e19   adc $6820,y
-        adc #$6d
-        rol $4c00
-        sbc ($85,x)
+l9e23
         lda #$00
         sta lad35
         sta lad36
@@ -1818,63 +1687,34 @@ l9e51   lda lad36
         ora lad35
         bne l9e7a
 l9e5c   jsr print
-        .byt $7f
-l9e60   asl $43
-        jmp ($736f)
-l9e65   adc $64
-        jsr $6f66
-        .asc ""
-        .byt $72
-l9e6b   jsr $6874
-        .asc ""
-        .byt $65
-l9e6f   jsr $6164
-l9e72   adc $2000,y
-        sbc ($85,x)
+        .aasc $7f
+        .aasc $06,"Closed for the day",$00
+        jsr $85e1
         jmp l9580
+
 l9e7a   lda lad36
         ora lad37
         beq l9eb2
 l9e82   jsr print
-        .byt $7f,$07
-l9e87   adc ($29,x)
-        jsr $6f48
-        .asc ""
-        .byt $72,$73
-l9e8e   adc zpLongitude
-        jsr $2d20
-l9e93   jsr la200
-l9e96   ora (zpLongitude,x)
-        bcs l9e39
-l9e9a   jsr print
-        .byt $7f,$07,$62,$29
-l9ea1   jsr $6143
-        .asc ""
-        .byt $72,$74
-l9ea6   jsr $2020
-l9ea9   jsr $202d
-        .byt $00
-l9ead   ldx #$02
+        .aasc $7f
+        .aasc $07,"a) Horse   - ",$00
+        ldx #$01
+        jsr l9fb0
+        jsr print
+        .aasc $7f
+        .aasc $07,"b) Cart    - ",$00
+        ldx #$02
         jsr l9fb0
 l9eb2   lda lad35
         beq l9ee7
-l9eb7   jsr print
-        .byt $7f,$07,$63,$29
-l9ebe   jsr $6152
-l9ec1   ror $74
-        jsr $2020
-l9ec6   jsr $202d
-        .byt $00
-l9eca   ldx #$03
+        jsr print
+        .aasc $7f
+        .aasc $07,"c) Raft    - ",$00
+        ldx #$03
         jsr l9fb0
-l9ecf   jsr print
-        .byt $7f,$07,$64
-l9ed5   and #$20
-        lsr $72
-        adc #$67
-        adc ($74,x)
-        adc zpLongitude
-        and !zpLongitude
+        jsr print
+        .aasc $7f
+        .aasc $07,"d) Frigate - ",$00
         ldx #$04
         jsr l9fb0
 l9ee7   lda lad36
@@ -1889,28 +1729,15 @@ l9eec   lda $8250
         sbc #$00
         bcc l9f37
 l9f02   jsr print
-        .byt $7f,$07
-l9f07   adc $29
-        jsr $6941
-        .asc ""
-        .byt $72
-l9f0d   jsr $6143
-        .asc ""
-        .byt $72
-l9f11   jsr $202d
-        .byt $00
+        .aasc $7f
+        .aasc $07,"e) Air Car - ",$00
 l9f15   ldx #$05
         jsr l9fb0
 l9f1a   lda $8219
         bne l9f37
 l9f1f   jsr print
-        .byt $7f,$07
-l9f24   ror $29
-        jsr $6853
-        .asc ""
-        .byt $75,$74,$74
-l9f2c   jmp ($2065)
-l9f2f   and !zpLongitude
+        .aasc $7f
+        .aasc $07,"f) Shuttle - ",$00
         ldx #$06
         jsr l9fb0
 l9f37   jsr la190
@@ -1967,14 +1794,16 @@ l9f9e   lda #23
         jsr printFromTable
 l9fab   bmi la026
 l9fad   jmp la874
+
 l9fb0   inc $ae62,x
         jsr la22b
 l9fb6   lda #$00
         sta $85be
         ldx lad30
         lda lad31
-        jsr $857c
-l9fc4   jmp $83f3
+        jsr $857c               ; print number ??
+        jmp $83f3               ; newline in window
+
 l9fc7   lda #$01
         sta lad34
         lda #$00
@@ -1990,18 +1819,16 @@ l9fdd   inc $ae62
         adc lad34
         jsr printChar
 l9fe9   jsr print
-        .asc ""
-        .byt $29,$20,$00
+        .aasc ") ",$00
 l9fef   ldx lad34
         jsr printFromTable
-        .asc "T"
-l9ff6   sei
-        lda #$17
+        .word strTableArmour
+        lda #23
         sta zpCursorCol
         jsr print
-l9ffe   and !zpLongitude
+        .aasc "- ",$00
         ldx lad34
-        lda statsCharisma
+        lda statsCharisma       ; sell price unit = charisma / 4
         lsr
         lsr
         sta zpMapPtr
@@ -2010,8 +1837,8 @@ la00e   lda #$00
         sta $85be
         ldx lad30
         lda lad31
-        jsr $857c
-la01c   jsr $83f3
+        jsr $857c               ; print number ??
+la01c   jsr $83f3               ; newline in window
 la01f   inc lad34
         lda lad34
         la026 = * + 1
@@ -2186,7 +2013,7 @@ la20d   lda #$ff
         sec
         sbc statsIntelligence
         sta zpMapPtr
-        lda ladb6,x
+        lda _priceList,x
         tax
         jsr la23f
 la21c   lda lad31
@@ -2196,26 +2023,27 @@ la21c   lda lad31
         lda #$00
         sta lad31
         rts
-la22b   lda #$c8
+
+la22b   lda #200
         sec
         sbc statsIntelligence
-        ldy #$00
+        ldy #$00                ; price unit = (200 - INT) / 5 + 1
 la233   iny
         sec
         sbc #$05
         bcs la233
-la239   sty zpMapPtr
-        lda ladb6,x
+la239   sty zpMapPtr            ; price unit
+        lda _priceList,x        ; price of item in price units
         tax
 la23f   lda #$00
-        sta lad30
+        sta lad30               ; price = 0
         sta lad31
 la247   dex
         cpx #$ff
         beq la260
 la24c   lda lad30
         clc
-        adc zpMapPtr
+        adc zpMapPtr            ; price += price unit
         sta lad30
         lda lad31
         adc #$00
@@ -2227,7 +2055,7 @@ la260   rts
 cmdTwUnlock
 la261   jsr print
         .aasc " what",$00
-        jmp $876a
+        jmp cmdInvalid
 
 cmdTwZtats
 la26d   jsr $890c
@@ -2239,7 +2067,7 @@ la278   jmp la3ea
 la27b   ldx #$0f
         stx lad2b
 la280   ldx lad2b
-        lda $cdac,x
+        lda npcTile,x
         cmp #$03
         beq la28d
 la28a   jmp la33d
@@ -2253,7 +2081,7 @@ la29b   jmp la33d
 la29e   ldy #$00
         ldx lad2b
         lda zpLongitude
-        cmp $cdbc,x
+        cmp npcLon,x
         beq la2b0
 la2aa   bmi la2af
 la2ac   iny
@@ -2262,18 +2090,18 @@ la2af   dey
 la2b0   sty $24
         ldy #$00
         lda zpLatitude
-        cmp $cdcc,x
+        cmp npcLat,x
         beq la2c1
 la2bb   bmi la2c0
 la2bd   iny
         bne la2c1
 la2c0   dey
 la2c1   sty $25
-        lda $cdcc,x
+        lda npcLat,x
         clc
         adc $25
         sta $2d
-        lda $cdbc,x
+        lda npcLon,x
         clc
         adc $24
         sta $2c
@@ -2283,35 +2111,35 @@ la2d6   ora #$01
 la2db   lda la346
         bmi la2f9
 la2e0   ldx lad2b
-        lda $cdbc,x
+        lda npcLon,x
         tax
         ldy $2d
         jsr la5eb
 la2ec   bcc la331
 la2ee   ldx lad2b
-        lda $cdbc,x
+        lda npcLon,x
         sta $2c
         jmp la30e
 la2f9   ldx lad2b
-        ldy $cdcc,x
+        ldy npcLat,x
         ldx $2c
         jsr la5eb
 la304   bcc la331
 la306   ldx lad2b
-        ldy $cdcc,x
+        ldy npcLat,x
         sty $2d
 la30e   ldx lad2b
-        ldy $cdcc,x
-        lda $cdbc,x
+        ldy npcLat,x
+        lda npcLon,x
         tax
         lda #$20
         jsr la5d3
 la31d   ldx lad2b
         lda $2d
-        sta $cdcc,x
+        sta npcLat,x
         tay
         lda $2c
-        sta $cdbc,x
+        sta npcLon,x
         tax
         lda #$2f
         jsr la5d3
@@ -2383,12 +2211,12 @@ la3c7   adc $6761
         sbc #$00
         sta statsHp+1
         bcs la3e7
-la3e4   jmp l8d61
+la3e4   jmp _townPlayerDead
 la3e7   jmp la33d
 
 la3ea   ldy #$0f
         sty lad2b
-la3ef   lda $cdac,y
+la3ef   lda npcTile,y
         cmp #$04
         bne la3fc
 la3f6   jsr la40c
@@ -2447,17 +2275,17 @@ la47e   lda zpMapPtr
         .aasc "Iolo stole something!",$00
 la4a3   rts
 la4a4   ldy lad2b
-        ldx $cdbc,y
-        lda $cdcc,y
+        ldx npcLon,y
+        lda npcLat,y
         tay
         lda #$20
         jsr la5d3
 la4b3   ldy lad2b
         lda $2c
-        sta $cdbc,y
+        sta npcLon,y
         tax
         lda $2d
-        sta $cdcc,y
+        sta npcLat,y
         tay
         lda #$5c
         jmp la5d3
@@ -2471,17 +2299,17 @@ la4d4   cmp #$6d
         bne la4d9
 la4d8   rts
 la4d9   ldy lad2b
-        ldx $cdbc,y
-        lda $cdcc,y
+        ldx npcLon,y
+        lda npcLat,y
         tay
         lda #$20
         jsr la5d3
 la4e8   ldy lad2b
         lda $2c
-        sta $cdbc,y
+        sta npcLon,y
         tax
         lda $2d
-        sta $cdcc,y
+        sta npcLat,y
         tay
         lda #$5f
         jmp la5d3
@@ -2567,12 +2395,12 @@ la5a0   lda zpLongitude
         lda #$7b
         jsr printChar
 la5af   ldy #$0f
-la5b1   lda $cdbc,y
+la5b1   lda npcLon,y
         sta zpCursorCol
-        lda $cdcc,y
+        lda npcLat,y
         sta zpCursorRow
         inc zpCursorRow
-        lda $cdac,y
+        lda npcTile,y
         bmi la5cd
 la5c2   sty zpMapPtr
         tax
@@ -2582,6 +2410,7 @@ la5cb   ldy zpMapPtr
 la5cd   dey
         bpl la5b1
 la5d0   jmp $165b
+
 la5d3   stx zpMapPtr
         sty $4d
         pha
@@ -2594,6 +2423,7 @@ la5db   pla
         sty zpCursorRow
         jsr printChar
 la5e8   jmp $165b
+
 la5eb   jsr _getTownTile
 la5ee   bcs la5f1
 la5f0   rts
@@ -2628,21 +2458,21 @@ la610   lda twMapRowOffLb,y
         la622 = * + 1
         la623 = * + 2
         lda $ffff,x
-        cmp #$60
-        bcs la629
+        cmp #$60                ; can player step on tile?
+        bcs la629               ; yes ->
 la628   rts
 la629   stx zpMapPtr
         sty $4d
         ldx #$0f
         tay
-la630   lda $cdbc,x
+la630   lda npcLon,x
         cmp zpMapPtr            ; compare with target x
         bne la648
-la637   lda $cdcc,x
+la637   lda npcLat,x
         cmp $4d                 ; compare with target y
         bne la648
 la63e   stx lad2e
-        lda $cdac,x             ; read npc tile
+        lda npcTile,x             ; read npc tile
         clc                     ; NPC found
         adc #$30
         rts
@@ -2665,85 +2495,98 @@ la65f   lda #$01
         rts
 la662   jsr la64e
 la665   clc
-        adc $cdbc,y
+        adc npcLon,y
         sta $2c
         jsr la64e
 la66e   clc
-        adc $cdcc,y
+        adc npcLat,y
         sta $2d
         rts
+
+_enterNumber
 la675   lda #$00
-        sta $ae60
-        sta $ae61
-        sta $ae5e
-        sta $ae5f
-        sta lad2c
-la686   jsr getKey
-la689   beq la686
-la68b   cmp #$0d
-        bne la69a
-la68f   lda lad2c
-        bne la699
-la694   jsr print
-la697   bmi la699
-la699   rts
-la69a   cmp #$14
-        bne la6b6
-la69e   lda lad2c
-        beq la686
-la6a3   dec lad2c
+        sta _numEntry           ; entered number, lb
+        sta _numEntry+1         ; entered number, hb
+        sta _numEntryStack+4    ; clear previous number
+        sta _numEntryStack+5
+        sta _numEntryDigit
+_enterNumberL1
+        jsr getKey
+        beq _enterNumberL1
+        cmp #KEY_RETURN         ; finish entry?
+        bne _enterNumberJ1      ; yes ->
+        lda _numEntryDigit
+        bne _enterNumberEnd
+        jsr print
+        .aasc "0",$00
+_enterNumberEnd
+        rts
+
+_enterNumberJ1
+        cmp #KEY_BACKSPACE
+        bne _enterNumberJ2      ; no backspace ->
+        lda _numEntryDigit
+        beq _enterNumberL1
+        dec _numEntryDigit
         ldx #$05
-la6a8   lda lae5a,x
-        sta $ae5c,x
+_enterNumberL2
+        lda _numEntryStack,x    ; restore previous number from entry stack
+        sta _numEntryStack+2,x
         dex
-        bpl la6a8
-la6b1   dec zpCursorCol
-        jmp la686
-la6b6   cmp #$30
-        bcc la686
-la6ba   cmp #$3a
-        bcs la686
-la6be   pha
-        jsr printChar
-la6c2   pla
+        bpl _enterNumberL2
+        dec zpCursorCol
+        jmp _enterNumberL1
+
+_enterNumberJ2
+        cmp #$30                ; entry < '0'?
+        bcc _enterNumberL1      ; yes -> ignore
+        cmp #$3a                ; entry > '9'
+        bcs _enterNumberL1      ; yes -> ignore
+        pha                     ; store key entry
+        jsr printChar           ; echo entry
+        pla                     ; restore entry
         sec
-        sbc #$30
-        pha
+        sbc #$30                ; convert to 0-based number
+        pha                     ; store digit
         ldx #$00
-la6c9   lda $ae5c,x
-        sta lae5a,x
+_enterNumberL3
+        lda _numEntryStack+2,x  ; store current number on entry stack
+        sta _numEntryStack,x
         inx
         cpx #$06
-        bne la6c9
-la6d4   asl $ae60
-        rol $ae61
-        lda $ae61
+        bne _enterNumberL3
+
+        asl _numEntry           ; number = number * 10
+        rol _numEntry+1         ; (calculate number * 2) 
+        lda _numEntry+1         ;
+        pha                     ; (store number * 2)
+        lda _numEntry
         pha
-        lda $ae60
-        pha
-        asl $ae60
-        rol $ae61
-        asl $ae60
-        rol $ae61
+        asl _numEntry           ; (calculate number * 8)
+        rol _numEntry+1
+        asl _numEntry
+        rol _numEntry+1
         pla
         clc
-        adc $ae60
-        sta $ae60
+        adc _numEntry           ; (add number * 2)
+        sta _numEntry           ; (equals number * 10)
         pla
-        adc $ae61
-        sta $ae61
-        pla
+        adc _numEntry+1
+        sta _numEntry+1
+        pla                     ; restore recently entered digit
         clc
-        adc $ae60
-        sta $ae60
-        bcc la70a
-la707   inc $ae61
-la70a   inc lad2c
-        lda lad2c
+        adc _numEntry           ; add to number
+        sta _numEntry
+        bcc _enterNumberJ3
+        inc _numEntry+1
+_enterNumberJ3
+        inc _numEntryDigit
+        lda _numEntryDigit
         cmp #$04
-        bcs la717
-la714   jmp la686
-la717   rts
+        bcs _enterNumberJ4
+        jmp _enterNumberL1
+_enterNumberJ4
+        rts
 
 la718   jsr randomNumber
 la71b   sta zpMapPtr
@@ -2782,14 +2625,14 @@ la765   jsr $165b
 la768   jsr $1649
 la76b   jmp $8b64
 la76e   stx lad24
-        lda $cdbc,x
+        lda npcLon,x
         cmp #$ff
         beq la7f0
 la778   lda zpLongitude
         cmp #$ff
         beq la7f0
 la77e   sec
-        sbc $cdbc,x
+        sbc npcLon,x
         bcs la78d
 la784   sta lad33
         sec
@@ -2813,7 +2656,7 @@ la7a5   inc lad26
 la7aa   ldx lad24
         lda zpLatitude
         sec
-        sbc $cdcc,x
+        sbc npcLat,x
         bcs la7be
 la7b5   sta lad33
         sec
@@ -2988,26 +2831,31 @@ lad27
         .byt $00
 lad28
         .byt $00
-
-        lad2b = * + 2
-        lad2c = * + 3
-        lad2d = * + 4
-
-        lad2e = * + 5
-        lad2f = * + 6
-        lad30 = * + 7
-        lad31 = * + 8
-        lad33 = * + 10
-        lad34 = * + 11
-        lad35 = * + 12
-        lad36 = * + 13
-        lad37 = * + 14
-        lad38 = * + 15
 lad29
         .byt $00
+
 _karma
         .byt $00
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+lad2b
+        .byt $00
+
+_numEntryDigit
+lad2c
+        .byt $00
+lad2d
+        .byt $00
+lad2e
+        lad2f = * + 1
+        lad30 = * + 2
+        lad31 = * + 3
+        lad33 = * + 5
+        lad34 = * + 6
+        lad35 = * + 7
+        lad36 = * + 8
+        lad37 = * + 9
+        lad38 = * + 10
+        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+
 _strTableNpc
 lad39
         .aasc "Kin",$e7
@@ -3041,25 +2889,16 @@ lad88
         lada6 = * + 1
         ladaf = * + 10
         .byt $0b,$00,$00,$01,$01,$02,$02,$03,$04,$05,$01,$01,$01,$00,$00,$01
-ladb5   ladb6 = * + 1
-        ora ($00,x)
-        ora ($04,x)
-ladb9   ora #$10
-        ora $3124,y
-        rti
-ladbf   eor ($64),y
-        adc $a990,y
-ladc4   cpy $e1
+ladb5
+        .byt $01
+
+_priceList
+ladb6
+        .byt $00,$01,$04,$09,$10,$19,$24,$31,$40,$51,$64,$79,$90
+
+        .byt $a9,$c4,$e1
 
 ladc6
-
-
-
-
-
-
-
-
 
 
    ladc7 = * + 1
@@ -3069,15 +2908,29 @@ ladc6
         .asc ",U+"
         .byt $67
         .asc "*U)"
-        ladd2 = * + 2
-        ladd3 = * + 3
-  .word la907,l94c3,l959e,l96ca,l98d2,l99c1
-        .asc ""
-        .byt $23,$9e
+
+        .word la907
+
+                                ; transact: buy
+ladd2
+        ladd3 = * + 1
+        .word l94c3
+        .word l959e             ; buy food
+        .word l96ca
+        .word l98d2             ; buy spells
+        .word l99c1
+        .word l9e23             ; buy transport
+
+                                ; transact: sell
 ladde   laddf = * + 1
         ladea = * + 12
         ladeb = * + 13
-  .word l9fc7,la0c8,l97b7,la11d,la13e,la0eb
+        .word l9fc7
+        .word la0c8             ; "Used food?  No thanks!"
+        .word l97b7
+        .word la11d             ; "We don't buy spells!"
+        .word la13e             ; "We have plenty of booze"
+        .word la0eb             ; "Sorry, we don't deal in used stuff..."
         .word l9b2e             ; "about space travel..."
         .word l9b8c             ; "to watch the..."
         .word l9bab             ; "that the princess will give..."
@@ -3085,7 +2938,7 @@ ladde   laddf = * + 1
         .word $9c40             ; "thou should destroy..."
         .word l9c6a             ; "that many lakes..."
         .word l9ca7             ; "this is a great game..."
-        .word l9cc3
+        .word l9cc3             ; "that over 1000 years ago,..."
         lae00 = * + 6
         .byt $00,$01,$00,$01,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
         .byt $00,$00,$01,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
@@ -3093,5 +2946,8 @@ ladde   laddf = * + 1
         .byt $00,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00,$00,$00,$00,$00
         .byt $00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01
         .byt $00,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00,$01,$00
+
+_numEntryStack
+        _numEntry = * + 6
 lae5a   .byt $8d
 

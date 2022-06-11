@@ -91,7 +91,7 @@ l8dee   inc l8de7
 l8df7   stx Cia2PortA
         lda #$36
         sta $01
-        lda $81e7
+        lda statsNoiseOn
         sta $1638
         lda #$60
         sta $5c
