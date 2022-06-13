@@ -44,20 +44,31 @@ zpX0 = $26
 zpY0 = $27
 zpX1 = $28
 zpY1 = $29
+
 zpWndLeft = $2e
 zpWndWdth = $2f
 zpWndTop = $30
 zpWndBtm = $31
-
 zpCursorCol = $32
 zpCursorRow = $33
+
 zpValue1e0 = $3c
 zpValue1e2 = $3d
 zpValue1e4 = $3e
 zpMapPtr = $4c
 zpTwMapTile = $4c
+zpBmpEorActive = $5c
+zpBmpPtr = $60
+zpScreenPtr = $60
 FA = $ba
 FNADR = $bb
+zpFadeInRnd = $e0
+zpFadeInDstPtr = $e2
+zpFadeInSrcPtr = $e5
+zpFadeInCtr = $e7
+zpFadeInBit = $e9
+zpTmpPtr = $fc
+zpTmpCtr = $fe
 
 KEYLOG = $028f
 IMAIN = $0302
@@ -139,6 +150,19 @@ invCreate = stats + $2e
 invDestroy = stats + $2f
 invKill = stats + $30
 
+invTransport = stats + $31
+invFoot = stats + $31
+invHorse = stats + $32
+invCart = stats + $33
+invRaft = stats + $34
+invFrigate = stats + $35
+invAircar = stats + $36
+invShuttle = stats + $37
+invPhantom = stats + $38
+invStarCruiser = stats + $39
+invBattleBase = stats + $3a
+invTimeMachine = stats + $3b
+
 statsGender = stats + $4a
 statsName = stats + $4b
 statsAttributes = stats + $59
@@ -176,8 +200,11 @@ bmpColOffHb = $15d8
 videoMemRowPtrLb = $1600
 videoMemRowPtrHb = $1619
 noiseOn = $1638
+clearTextLine = $164c
+clearTextToEol = $164f
 setTextFull = $1655
 setTextStatus = $1658
+clearGameScreen = $1661
 drawChar = $1667
 randomNumber = $1670
 readKey = $1676
@@ -217,6 +244,9 @@ print = $848e
 printRepeatChar = $84b9
 convertToBcd16 = $8522
 checkCommandKey = $85fd
+restoreTextWinLayout = $8701
+storeTextWinLayout = $870c
+printCurrentSpell = $8717
 cmdInvalid = $876a
 cmdNoise = $8bb9
 #endif

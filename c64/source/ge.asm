@@ -1,4 +1,5 @@
 #include "archdep.h"
+#include "constants.h"
 
         .word $8c9e
         * = $8c9e
@@ -10,7 +11,7 @@ _mainMenuL1
 l8ca3   jsr setTextFull         ; set full text window, home
         lda #$00
         sta $5d
-        sta $5c
+        sta zpBmpEorActive
         jsr _printFrame
         jsr l94c0
         ldy #6
@@ -94,7 +95,7 @@ l8df7   stx Cia2PortA
         lda statsNoiseOn
         sta $1638
         lda #$60
-        sta $5c
+        sta zpBmpEorActive
         jsr $84c0
 l8e0b   jsr $165b
 l8e0e   jsr $1649
@@ -121,7 +122,7 @@ _genCharJ1
         inx                     ; inc character slot
         cpx #$04                ; max index reached?
         bcc _genCharL1          ; no, try next slot
-        jsr l9598
+        jsr _printRoster        ; print roster of available characters
         ldx #1
         ldy #14
         jsr printAtPos
@@ -298,45 +299,46 @@ l90ce
         .word strTableRace
         jsr l94c0
         lda statsRace
-        cmp #$01                ; human?
+        cmp #RACE_HUMAN         ; Human?
         bne _selectRaceJ1
-        lda statsIntelligence
+        lda statsIntelligence   ; +5 Intelligence
         clc
         adc #$05                ; add bonus
         sta statsIntelligence
-        bne l913a
+        bne _selectSex
 _selectRaceJ1
-        cmp #$02                ; elf?
+        cmp #RACE_ELF           ; Elf?
         bne _selectRaceJ2
-        lda statsAgility
+        lda statsAgility        ; +5 Agility
         clc
         adc #$05                ; add bonus
         sta statsAgility
-        bne l913a
+        bne _selectSex
 _selectRaceJ2
-l9119   cmp #$03                ; dwarf?
+l9119   cmp #RACE_DWARF         ; Dwarf?
         bne _selectRaceJ3
-        lda statsStrength
+        lda statsStrength       ; +5 Strength
         clc
         adc #$05                ; add bonus
         sta statsStrength
-        bne l913a
+        bne _selectSex
 _selectRaceJ3
-        lda statsWisdom         ; bobbit
-        clc
-        adc #$0a
+        lda statsWisdom         ; Bobbit
+        clc                     ; +10 Wisdom
+        adc #10                 ; add bonus
         sta statsWisdom
-        lda statsStrength
+        lda statsStrength       ; +5 Strength
         sec
         sbc #$05                ; add bonus
         sta statsStrength
 
+_selectSex
 l913a   jsr _printAttributes
-l913d   ldy #18
+        ldy #18
         ldx #11
         jsr printAtPos
         .aasc "a) Male",LF,CR
-        .aasc $0b,"b) Female",$00
+        .aasc 11,"b) Female",$00
 
         ldy #16
         ldx #2
@@ -360,14 +362,15 @@ _selectSexL1
         jsr printFromTableCap   ; print from string table, capitalize
         .word _strTableGender
 
+_selectClass
         jsr l94c0
         ldy #18
         ldx #11
         jsr printAtPos
         .aasc "a) Fighter",LF,CR
-        .aasc $0b,"b) Cleric",LF,CR
-        .aasc $0b,"c) Wizard",LF,CR
-        .aasc $0b,"d) Thief",$00
+        .aasc 11,"b) Cleric",LF,CR
+        .aasc 11,"c) Wizard",LF,CR
+        .aasc 11,"d) Thief",$00
 
         ldy #16
         ldx #2
@@ -388,48 +391,50 @@ l91e8   jsr readKey
         jsr printAtPos
         .aasc "Class  ",$00
 
-l9208   ldx statsClass
+        ldx statsClass
         jsr printFromTableCap   ; print from string table, capitalize
         .word strTableClass
         lda statsClass
-        cmp #$01                ; Fighter?
+        cmp #CLASS_FIGHTER      ; Fighter?
         bne _selectClassJ1
-        lda statsStrength
+        lda statsStrength       ; +10 Strength
         clc
         adc #10                 ; add class bonus
         sta statsStrength
-        lda statsAgility
+        lda statsAgility        ; +10 Agility
         clc
-        adc #$0a
+        adc #10
         sta statsAgility
         bne _selectClassJ4
 _selectClassJ1
-        cmp #$02                ; Cleric?
+        cmp #CLASS_CLERIC       ; Cleric?
         bne _selectClassJ2
-        lda statsWisdom
+        lda statsWisdom         ; +10 Wisdom
         clc
         adc #10                 ; add class bonus
         sta statsWisdom
         bne _selectClassJ4
 _selectClassJ2
-        cmp #$03                ; Wizard?
+        cmp #CLASS_WIZARD       ; Wizard?
         bne _selectClassJ3
-        lda statsIntelligence
+        lda statsIntelligence   ; +10 Intelligence
         clc
         adc #10                 ; add class bonus
         sta statsIntelligence
         bne _selectClassJ4
 _selectClassJ3
         lda statsAgility        ; Thief
-        clc
+        clc                     ; +10 Agility
         adc #10                 ; add class bonus
         sta statsAgility
 _selectClassJ4
         jsr _printAttributes
+
 l9255   jsr randomNumber
-l9258   sta $8264
+        sta $8264               ; luck number??
         jsr randomNumber
-l925e   sta $8265
+        sta $8265
+
         ldy #$10
         ldx #$02
         jsr printAtPos
@@ -437,10 +442,10 @@ l925e   sta $8265
 
         jsr $94c0
         lda #$00
-        sta l93ea               ; index name character
+        sta _enterNameIdx       ; index name character
 _enterNameL1
 l9281   jsr readKey
-        ldx l93ea
+        ldx _enterNameIdx
         cmp #KEY_RETURN         ; return key?
         bne _enterNameJ1
         txa                     ; index name character
@@ -452,7 +457,7 @@ l9281   jsr readKey
         lda #3
         sta zpCursorRow
         jsr $8ba1
-        jmp l92f4
+        jmp _saveCharacter
 _enterNameJ1
 l92a1   cmp #KEY_WEST           ; cursor left (backspace)
         beq _enterNameBs
@@ -461,7 +466,7 @@ l92a1   cmp #KEY_WEST           ; cursor left (backspace)
 _enterNameBs
         dex
         bmi _enterNameL1
-        stx l93ea
+        stx _enterNameIdx
         lda #$00
         sta statsName,x
         dec zpCursorCol
@@ -475,7 +480,7 @@ _enterNameJ2
         bcs _enterNameL1
 _enterNameJ3
 l92c5   sta statsName,x         ; store character in name
-        inc l93ea
+        inc _enterNameIdx
         jsr printChar
         jmp _enterNameL1
 
@@ -492,24 +497,25 @@ l92d1   cpx #$0d
         bcc _enterNameJ3
         cmp #$5b                ; 'Z'+1
         bcs _enterNameJ3
-        ldy statsGender,x
+        ldy statsName-1,x       ; previous character was a blank?
         cpy #$20
-        beq _enterNameJ3
-        ora #$20
+        beq _enterNameJ3        ; yes -> use lower case
+        ora #$20                ; else, change to upper case
         bne _enterNameJ3
 
-l92f4   jsr l947f
+_saveCharacter
+        jsr l947f
         .aasc $7e," Save this character? (Y-N) ",$00
         jsr l94c0
         jsr readKey
         jsr drawChar
         cmp #$59                ; 'Y'
-        beq _saveCharacter
+        beq _saveCharacterJ1
         cmp #$4e                ; 'N'
-        bne l92f4
+        bne _saveCharacter
         jmp _generateCharacter
 
-_saveCharacter
+_saveCharacterJ1
 l9329   lda playerSlot
         asl
         asl
@@ -522,13 +528,13 @@ l9329   lda playerSlot
         inx
         inx
         inx
-_saveCharacterL1
+_saveCharacterL2
         lda statsName,y         ; copy player name
         sta roster,x            ; to roster
         inx
         iny
         cpy #$0d
-        bcc _saveCharacterL1
+        bcc _saveCharacterL2
         ldx #$01
         jsr saveFile            ; save "RO"
 
@@ -602,6 +608,8 @@ l93e7
 _attributeId
 l93e9
         .byt $00
+
+_enterNameIdx
 l93ea
         .byt $00
 
@@ -626,7 +634,8 @@ l93f7
         .byt $01                ; armour
         .byt $00                ; transport (TRANSPORT_FOOT)
                                 ; offset: $10
-        .byt $01
+                                ; -- inventory: armour --
+        .byt $01                ; skin ($10)
         .byt $01                ; leather armour ($11)
         .byt $00                ; chain mail ($12)
         .byt $00                ; plate mail ($13)
@@ -660,9 +669,20 @@ l93f7
         .byt $00                ; blink ($2d)
         .byt $00                ; create ($2e)
         .byt $00                ; destroy ($2f)
-        .byt $00                ; kill ($2f)
-
-        .byt $01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+        .byt $00                ; kill ($30)
+                                ; -- inventory: transport --
+        .byt $01                ; foot ($31)
+        .byt $00                ; horse ($32)
+        .byt $00                ; cart ($33)
+        .byt $00                ; raft ($34)
+        .byt $00                ; frigate ($35)
+        .byt $00                ; aircar ($36)
+        .byt $00                ; shuttle ($37)
+        .byt $00                ; phantom ($38)
+        .byt $00                ; star cruiser ($39)
+        .byt $00                ; battle base ($3a)
+        .byt $00                ; time machine ($3b)
+        .byt $00,$00,$00,$00
                                 ; offset: $40
         .byt $00,$00,$00,$00,$ff,$ff,$ff,$ff,$00,$00
         .byt $00                ; gender ($4a)
@@ -684,15 +704,17 @@ l93f7
         .byt $00,$00,$00,$00,$00,$00,$00,$95
         .word $00c8             ; food ($78)
         .word $0000             ; experience ($7a)
-        .byt $e8,$03,$e8,$03,$00,$ff,$ef,$be,$00,$00,$00,$00,$00,$00
+        .byt $e8,$03,$e8,$03
 
+        .byt $00                ; location ($80)
+        .byt $ff,$ef,$be,$00,$00,$00,$00,$00,$00
 
 l947f   ldx #$02
         stx zpCursorCol
         ldy #$14
         sty zpCursorRow
         jsr l94c0
-l948a   jmp print
+        jmp print
 
 l948d   ldx #2
         ldy #21
@@ -707,15 +729,15 @@ l94ba   jsr setTextFull         ; set full text window, home
 l94bd   jsr _cursorHome
 
 l94c0   jsr $870c
-l94c3   dec $2f
+l94c3   dec zpWndWdth
 l94c5   jsr $164f
 l94c8   jsr $83f6
 l94cb   inc zpCursorRow
         ldy zpCursorRow
         iny
-        cpy $31
+        cpy zpWndBtm
         bcc l94c5
-l94d4   jmp $8701
+        jmp $8701
 
 _printFrame
 l94d7   lda #$10                ; char: upper left corner of frame
@@ -755,7 +777,7 @@ l9519   ldx #$01                ; return cursor to upper left corner
 
 
 _selectPlayer
-l9520   jsr l9598
+l9520   jsr _printRoster        ; print roster of available characters
         ldx #5
         ldy #14
         jsr printAtPos
@@ -785,53 +807,61 @@ _selectPlayerJ1
         beq _selectPlayerL1
         rts
 
-l9598   jsr $1661
-l959b   lda #$00
-        sta l95f5
-l95a0   lda #$0d
-        sta zpCursorCol
-        lda l95f5
+_printRoster
+l9598   jsr clearGameScreen     ; print area inside border frame
+        lda #$00                ; roster index = 0
+        sta _rosterIdx
+_printRosterL1
+        lda #13
+        sta zpCursorCol         ; cursor col = 13
+        lda _rosterIdx
         clc
-        adc #$08
-        sta zpCursorRow
-l95ac   lda l95f5
+        adc #8
+        sta zpCursorRow         ; cursor row = roster index + 8
+        lda _rosterIdx
         clc
-        adc #$31
+        adc #$31                ; '1'
+        jsr drawChar            ; print number of roster index ('1'..'4')
+        inc zpCursorCol
+        lda #$2e                ; '.'
         jsr drawChar
-l95b5   inc zpCursorCol
-        lda #$2e
+        inc zpCursorCol
+        lda #$20                ; ' '
         jsr drawChar
-l95bc   inc zpCursorCol
-        lda #$20
-        jsr drawChar
-l95c3   inc zpCursorCol
-        lda #$0c
-        sta l95f6
-        lda l95f5
-        asl
+        inc zpCursorCol
+        lda #12                 ; max length of character name - 1
+        sta _rosterNameLenLeft
+        lda _rosterIdx
+        asl                     ; roster offset = roster index * 16
         asl
         asl
         asl
         tax
-        lda roster,x
-        beq l95ea
-l95d7   inx
+        lda roster,x            ; read roster entry, byte 0: entry in use
+        beq _printRosterJ1      ; entry unused ->
         inx
+        inx                     ; inc idx to roster entry byte 3
         inx
-l95da   lda roster,x
-        beq l95ea
-l95df   jsr drawChar
-l95e2   inc zpCursorCol
-        inx
-        dec l95f6
-        bpl l95da
-l95ea   inc l95f5
-        lda l95f5
+_printRosterL2
+        lda roster,x            ; read character name byte
+        beq _printRosterJ1      ; end of string? ->
+        jsr drawChar            ; draw name character
+        inc zpCursorCol
+        inx                     ; inc idx to next roster entry byte
+        dec _rosterNameLenLeft
+        bpl _printRosterL2
+_printRosterJ1
+        inc _rosterIdx
+        lda _rosterIdx
         cmp #$04
-        bcc l95a0
-l95f4   rts
-l95f5   l95f6 = * + 1
-        .byt $00,$00
+        bcc _printRosterL1
+        rts
+
+_rosterIdx
+        .byt $00
+
+_rosterNameLenLeft
+        .byt $00
 
 _packedMapOutdoors
 l95f7

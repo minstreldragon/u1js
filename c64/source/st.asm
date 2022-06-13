@@ -276,8 +276,13 @@ l1643   jmp l1722
 l1646   jmp l1723
 scrollTextWindow
 l1649   jmp _scrollTextWindow
-l164c   jmp l199e
-l164f   jmp l19a6
+
+clearTextLine
+l164c   jmp _clearTextLine
+
+clearTextToEol
+l164f   jmp _clearTextToEol
+
 l1652   jmp l1a48
 setTextFull
 l1655   jmp _setTextFull
@@ -285,7 +290,9 @@ setTextStatus
 l1658   jmp _setTextStatus
 l165b   jmp l1a0d
 l165e   jmp l1a3a
-l1661   jmp l16ad
+
+clearGameScreen
+l1661   jmp _clearGameScreen
 l1664   jmp l1700
 drawChar
 l1667
@@ -326,63 +333,73 @@ l16ab   rts
 
 l16ac   rts
 
-l16ad   lda #$21
-        eor $5c
-        sta $61
-        lda #$48
-        sta $60
-        ldx #$11
-l16b9   ldy #$00
+_clearGameScreen
+l16ad   lda #>(bitmapRAM0 + 41*8)
+        eor zpBmpEorActive
+        sta zpBmpPtr+1
+        lda #<(bitmapRAM0 + 41*8)
+        sta zpBmpPtr
+        ldx #17                 ; clear 18 rows
+_clrGameScreenL1
+        ldy #$00
         tya
-l16bc   sta ($60),y
+_clrGameScreenL2
+        sta (zpBmpPtr),y        ; clear first 32 characters
         iny
-        bne l16bc
-l16c1   inc $61
+        bne _clrGameScreenL2
+        inc zpBmpPtr+1          ; zpBmpPtr += 32 * 8
         ldy #$2f
-l16c5   sta ($60),y
+_clrGameScreenL3
+        sta (zpBmpPtr),y        ; clear remaining 6 characters
         dey
-        bpl l16c5
-l16ca   lda $60
+        bpl _clrGameScreenL3
+        lda zpBmpPtr
         clc
-        adc #$40
-        sta $60
-        bcc l16d5
-l16d3   inc $61
-l16d5   dex
-        bpl l16b9
-l16d8   lda #$29
-        sta $60
+        adc #$40                ; zpBmpPtr += 8 * 8
+        sta zpBmpPtr
+        bcc _clrGameScreenJ1
+        inc zpBmpPtr+1
+_clrGameScreenJ1
+        dex
+        bpl _clrGameScreenL1    ; repeat for 18 rows
+
+        lda #41                 ; skip upper and left frame border
+        sta zpScreenPtr
         lda #>screenRAM0
-        ldx $5c
-        beq l16e4
-l16e2   lda #>screenRAM1
-l16e4   ldx #$11
-        sta $61
-l16e8   ldy #$25
-        lda #$10
-l16ec   sta ($60),y
+        ldx zpBmpEorActive
+        beq _clrGameScreenJ2
+        lda #>screenRAM1
+_clrGameScreenJ2
+        ldx #17                 ; set color for 18 rows
+        sta zpScreenPtr+1
+_clrGameScreenL4
+        ldy #37                 ; set color for 38 chars in row
+        lda #COL_WHITE << 4
+_clrGameScreenL5
+        sta (zpScreenPtr),y
         dey
-        bpl l16ec
-l16f1   lda $60
+        bpl _clrGameScreenL5    ; repeat for 38 chars in row
+        lda zpScreenPtr
         clc
-        adc #$28
-        sta $60
-        bcc l16fc
-l16fa   inc $61
-l16fc   dex
-        bpl l16e8
-l16ff   rts
+        adc #40                 ; inc screen pointer to next row
+        sta zpScreenPtr
+        bcc _clrGameScreenJ3
+        inc zpScreenPtr+1
+_clrGameScreenJ3
+        dex
+        bpl _clrGameScreenL4    ; repeat for all rows
+        rts
 
 l1700   jsr l1c81
-l1703   lda $5c
+l1703   lda zpBmpEorActive
         tax
         beq l170a
 l1708   ldx #$01
 l170a   eor $5d
-        sta $5c
-        lda l1e28,x
+        sta zpBmpEorActive
+        lda _cia2PortAVal,x
         sta Cia2PortA
-        lda l1e2a,x
+        lda _vicMemCtrlRegVal,x
         sta VicMemCtrlReg
 l171a   jsr l1b72
 l171d   bne l171a
@@ -395,7 +412,7 @@ l1722   rts
 
 l1723   lda #>bitmapRAM0
         tax
-        eor $5c
+        eor zpBmpEorActive
         sta l1737
         eor $5d
         sta l1734
@@ -740,24 +757,27 @@ l197b   l197c = * + 1
         dec $43
         bne _scrollTextWinL1
 
+_clearTextLine
 l199e   lda zpCursorRow
 l19a0   ldx #$00
         stx zpCursorCol
-        beq l19ae
+        beq _clearTextToEolJ1
 
+_clearTextToEol
 l19a6   ldx zpCursorCol
         cpx zpWndWdth
         bcs l1a0a
-l19ac   lda zpCursorRow
-l19ae   asl
+        lda zpCursorRow
+_clearTextToEolJ1
         asl
+        asl                     ; bitmap row = cursor row * 8
         asl
         tax
-        lda zpWndLeft
+        lda zpWndLeft           ; column = window left + cursor col
         clc
         adc zpCursorCol
         tay
-        lda bmpLinePtrLb,x
+        lda bmpLinePtrLb,x      ; get bitmap pointer to cursor pos
         clc
         adc bmpColOffLb,y
         sta l19f4
@@ -783,24 +803,27 @@ l19ae   asl
         tay
         sta $5e
         lda $5f
-        beq l19f1
-l19ef   ldy #$ff
-l19f1   lda zpInverse
+        beq _clearTextToEolJ2
+        ldy #$ff
+_clearTextToEolJ2
+        lda zpInverse
+_clearTextToEolL1
 l19f3   l19f4 = * + 1
         l19f5 = * + 2
-        sta $2000,y
+        sta bitmapRAM0,y
         l19f7 = * + 1
         l19f8 = * + 2
-        sta $4000,y
+        sta bitmapRAM1,y
         dey
         cpy #$ff
-        bne l19f3
-l19fe   ldy $5e
+        bne _clearTextToEolL1
+        ldy $5e
         inc l19f5
         inc l19f8
         dec $5f
-        bpl l19f3
+        bpl _clearTextToEolL1
 l1a0a   jmp l1e08
+
 l1a0d   lda #$1e
         sta zpWndWdth
         lda #$00

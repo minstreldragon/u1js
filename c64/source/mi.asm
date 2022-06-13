@@ -384,7 +384,7 @@ l8175   bcc l818e
         sec
 l818e   rts
 
-l818f   lda $5c
+l818f   lda zpBmpEorActive
         bne l8196
 l8193   jsr $1646
 l8196   lda #$97
@@ -392,11 +392,20 @@ l8196   lda #$97
         lda #$18
         sta VicMemCtrlReg
         lda #$00
-        sta $5c
+        sta zpBmpEorActive
         sta $5d
         rts
-l81a7   l81ad = * + 6
-        .byt $00,$28,$00,$18,$00,$00,$00,$2f,$55
+
+l81a7
+        .byt 0                  ; backup zpWndLeft
+        .byt 40                 ; backup zpWndWdth
+        .byt 0                  ; backup zpWndTop
+        .byt 24                 ; backup zpWndBtm
+        .byt 0                  ; backup zpCursorCol
+        .byt 0                  ; backup zpCursorRow
+
+l81ad
+        .byt $00,$2f,$55
 l81b0   and ($2e),y
         bvc l8200
         l81c3 = * + 15
@@ -458,8 +467,11 @@ l8200   ora ($01,x)
 invSpells
 invPrayer
 l8208   ora ($03,x)
-        l8213 = * + 9
-        .byt $03,$03,$00,$03,$03,$03,$03,$03,$03,$01,$01,$01,$01,$01,$01,$00
+        .byt $03,$03,$00,$03,$03,$03,$03,$03,$03
+
+invTransport
+l8213
+        .byt $01,$01,$01,$01,$01,$01,$00
         .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$ff,$ff,$ff,$ff
         l822b = * + 1
         .byt $00,$00
@@ -945,7 +957,7 @@ l867c   lda l8250,x
 l8687   cld
         rts
 
-l8689   jsr l870c
+l8689   jsr storeTextWinLayout
         jsr setTextStatus       ; set text window for status, home
         jsr print
         .aasc "Hits ",$7c
@@ -968,7 +980,7 @@ l86bb   jsr l857c
         sta zpInverse           ; reverse flag off
         rts
 
-l86c6   jsr l870c
+l86c6   jsr storeTextWinLayout
 
 l86c9   jsr setTextStatus
 l86cc   sta l85be
@@ -991,20 +1003,25 @@ l86f5   lda statsCoin+1
         jsr l857c               ; print amount: coin
 l86fe   jsr $164f
 
+restoreTextWinLayout
 l8701   ldx #$05
-l8703   lda l81a7,x
+_restTxtWinLayoutL1
+        lda l81a7,x
         sta zpWndLeft,x
         dex
-        bpl l8703
-l870b   rts
+        bpl _restTxtWinLayoutL1
+        rts
 
+storeTextWinLayout
 l870c   ldx #$05
-l870e   lda zpWndLeft,x
+_storeTxtWinLayoutL1
+        lda zpWndLeft,x
         sta l81a7,x
         dex
-        bpl l870e
-l8716   rts
+        bpl _storeTxtWinLayoutL1
+        rts
 
+printCurrentSpell
 l8717   ldx statsSpell
         jsr printFromTable
         .word _strTableSpell
@@ -1024,7 +1041,7 @@ l872a   dey
         adc bmpColOffLb,y
         sta $36
         lda bmpLinePtrHb,x
-        eor $5c
+        eor zpBmpEorActive
         adc bmpColOffHb,y
         sta $37
         ldy #$07
@@ -1062,7 +1079,7 @@ l8781   lda #$00
         sta $56
         rts
 
-l8788   jsr l870c
+l8788   jsr storeTextWinLayout
 l878b   lda #4                  ; set up transaction window
         sta zpWndTop
         sta zpWndLeft
@@ -1090,9 +1107,9 @@ l87a7   ldx #4                  ; draw transaction window border
         ldx zpX0                ; P0 = (4,109)
         ldy #18                 ; P1 = (4,18)
         jsr drawLineTo          ; draw line P0 to P1
-l87c9   lda $5c
+l87c9   lda zpBmpEorActive
         eor $5d
-        sta $5c
+        sta zpBmpEorActive
         rts
 
 cmdReady
@@ -1185,7 +1202,7 @@ l886c   sta l8908
         pha
         lda l83b5
         pha
-        jsr l870c
+        jsr storeTextWinLayout
 l887a   jsr $165e
 l887d   ldx #$0e
         ldy #$00
@@ -1230,7 +1247,7 @@ l88ca   cpy l890b
         bne l88b6               ; yes ->
         beq l88ca               ; no ->
 
-l88d9   jsr l8701
+l88d9   jsr restoreTextWinLayout
 l88dc   lda l81c3
         sta $5d
         jsr $1664
@@ -1261,8 +1278,8 @@ l8909   pla
 l890b   .byt $0a
 
 ztats
-l890c   jsr $1661
-        jsr l870c
+l890c   jsr clearGameScreen
+        jsr storeTextWinLayout
         jsr $165e
         jsr l8416
         ldx #$0c
@@ -1396,9 +1413,9 @@ l8a6a   lda l81f1
         sta l81c4
         ldx #$01
 l8a72   stx $46
-        lda l8213,x
+        lda invTransport,x
         beq l8a7e
-l8a79   jsr l8b22
+        jsr l8b22
         .word _strTableTransport
 l8a7e   ldx $46
         inx
@@ -1441,7 +1458,7 @@ l8acc   ldx $46
         bcc l8ac0
 l8ad3   jsr l8b56
 l8ad6   jsr l84c6
-l8ad9   jmp l8701
+l8ad9   jmp restoreTextWinLayout
 l8adc   ldx #$00
         stx zpCursorCol
         ldy zpCursorRow
@@ -1466,7 +1483,7 @@ l8af8   ldx #13
 l8b07   lda #$00
         sta $5d
         inc zpCursorCol
-        jsr l870c
+        jsr storeTextWinLayout
 l8b10   lda #$05
         sta zpWndTop
         lsr
@@ -1506,7 +1523,7 @@ l8b56   lda l81c3
         sta $5d
         jsr $1664
 l8b5e   jsr $1646
-l8b61   jsr l8701
+l8b61   jsr restoreTextWinLayout
 l8b64   jsr print
         .aasc $7d,"Press Space to continue: ",$00
         jsr l8777
@@ -1522,7 +1539,7 @@ l8b97   inc zpCursorCol
 l8b99; Instruction opcode accessed.
         dec zpCursorRow
         jsr l8777
-l8b9e   jmp l870c
+l8b9e   jmp storeTextWinLayout
 l8ba1   ldx #$00
 l8ba3   lda l822d,x
         beq l8bae
@@ -1563,7 +1580,7 @@ l8bd4   jsr print
         sty l81c3
         sta $5d
         jsr l86c6
-l8c09   jsr $1661
+l8c09   jsr clearGameScreen
         lda #<_bitmapSkull
         sta $60                 ; $60/$61 = $7403
         lda #>_bitmapSkull
@@ -1571,7 +1588,7 @@ l8c09   jsr $1661
         lda #$80
         sta $62
         lda #$25
-        eor $5c
+        eor zpBmpEorActive
         sta $63
         ldx #$0c                ; copy 12*8 raster lines
 l8c20   ldy #$47                ; copy 9*8 pixels per row (72)
@@ -1629,7 +1646,7 @@ l8c86   bcs l8c7a
 l8c88   jsr l818f
 l8c8b   jsr l8689
 l8c8e   jsr l84c6
-l8c91   jsr l8701
+l8c91   jsr restoreTextWinLayout
 l8c94   jmp l8c9e
 
 l8c97   .byt $04
@@ -1646,7 +1663,7 @@ l8c9e   sei
         jsr setTextFull         ; set full text window, home
         jsr $163a
 l8cb2   lda #$60
-        sta $5c
+        sta zpBmpEorActive
         sta $5d
         jsr $1664
 l8cbb   jsr l818f

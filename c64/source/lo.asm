@@ -81,56 +81,59 @@ lc00
         lda #$00
         sta VicScreenCtrlReg1
         ldx #>bitmapRAM0
-        stx $fd
+        stx zpTmpPtr+1
         lda #$00
-        tay
-        sta $fc
-        ldx #$40
-lc10    sta ($fc),y             ; clear bitmap $2000-$3fff
+        tay                     ; bitmap index
+        sta zpTmpPtr
+        ldx #$40                ; clear $4000 bytes
+_clearMemoryL1
+        sta (zpTmpPtr),y        ; clear memory $2000-$5fff
         iny
-        bne lc10
-        inc $fd
+        bne _clearMemoryL1
+        inc zpTmpPtr+1
         dex
-        bne lc10
+        bne _clearMemoryL1
 
-        lda #$08
-        sta $fe
-        lda #$60                ; dest bitmap ptr: $4660
-        sta lc3a
-        lda #$46
-        sta lc3b
+        lda #$08                ; copy 8*8 rows of bitmap data
+        sta zpTmpCtr
+        lda #<bitmapRAM1 + (5*40+4)*8
+        sta _bmpLogoDstPtr
+        lda #>bitmapRAM1 + (5*40+4)*8
+        sta _bmpLogoDstPtr+1
         lda #<_bitmapOriginLogo ; bitmap data: Origin logo
-        sta lc37
+        sta _bmpLogoSrcPtr
         lda #>_bitmapOriginLogo
-        sta lc38
+        sta _bmpLogoSrcPtr+1
+_copyOriginLogoL1
 lc32    ldx #$02                ; repeat for $118 = 280 bytes (width of apple bitmap)
         ldy #$18
-lc36    lc37 = * + 1
-        lc38 = * + 2
-        lda lc9e                ; read bitmap data
-        lc3a = * + 1
-        lc3b = * + 2
-        sta $2500               ; store it in bitmap 2 buffer
-        inc lc37                ; inc src ptr
-        bne lc44
-        inc lc38
-lc44    inc lc3a                ; inc dst ptr
-        bne lc4c
-        inc lc3b
-lc4c    dey
-        bne lc36
-lc4f    dex
-        bne lc36
+_copyOriginLogoL2
+_bmpLogoSrcPtr = * + 1
+        lda _bitmapOriginLogo   ; read bitmap data
+_bmpLogoDstPtr = * + 1
+        sta bitmapRAM0 + 4*40*8 ; store it in logo bitmap buffer
+        inc _bmpLogoSrcPtr      ; inc src ptr
+        bne _copyOriginLogoJ1
+        inc _bmpLogoSrcPtr+1
+_copyOriginLogoJ1
+        inc _bmpLogoDstPtr      ; inc dst ptr
+        bne _copyOriginLogoJ2
+        inc _bmpLogoDstPtr+1
+_copyOriginLogoJ2
+        dey
+        bne _copyOriginLogoL2
+        dex
+        bne _copyOriginLogoL2
 
-lc52    lda lc3a
+        lda _bmpLogoDstPtr
         clc
         adc #40                 ; skip 40 bytes (C64: 320 px, Apple: 280 px)
-        sta lc3a
-        lda lc3b
+        sta _bmpLogoDstPtr
+        lda _bmpLogoDstPtr+1
         adc #$00
-        sta lc3b
-        dec $fe
-        bne lc32
+        sta _bmpLogoDstPtr+1
+        dec zpTmpCtr
+        bne _copyOriginLogoL1
 
         ldx #$00
         lda #COL_BLUE << 4
@@ -310,78 +313,85 @@ _bitmapOriginLogo
         .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 
 
+_lockScreen
 l155e   lda #>bitmapRAM0
         tax
-        sta $e3
+        sta zpFadeInDstPtr+1
         lda #$00
         tay
-        sta $e2
-l1568   sta ($e2),y
+        sta zpFadeInDstPtr
+_lockScreenL1
+        sta (zpFadeInDstPtr),y  ; clear destination byte
         iny
-        bne l1568
-l156d   inc $e3
+        bne _lockScreenL1
+        inc zpFadeInDstPtr+1
         dex
-        bne l1568
-l1572   jsr _fadeInOriginLogo
+        bne _lockScreenL1
+        jsr _fadeInOriginLogo
+_lockScreenL2
 l1575
-        jmp l1575
+        jmp _lockScreenL2
 
 
 _fadeInOriginLogo
 l1578   ldx #$ff
-        stx $e0
-        stx $e1
+        stx zpFadeInRnd         ; initialize 16 bit random value
+        stx zpFadeInRnd+1
         inx
-        stx $e7
-        stx $e8
-l1583   lsr $e1
-        ror $e0
-        bcc l158f
-l1589   lda $e1
-        eor #$b4
-        sta $e1
-l158f   lda $e0
-        sta $e2
-        sta $e5
-        lda $e1
-        and #$1f
-        cmp #$06
-        bcc l15cb
-l159d   cmp #$11
-        bcs l15cb
-l15a1   clc
+        stx zpFadeInCtr         ; initialize 16 bit random counter
+        stx zpFadeInCtr+1
+_fadeInL1
+        lsr zpFadeInRnd+1       ; rotate random bit into carry
+        ror zpFadeInRnd
+        bcc _fadeInJ1           ; random bit == 0? ->
+        lda zpFadeInRnd+1
+        eor #$b4                ; randomize high byte of random value
+        sta zpFadeInRnd+1
+_fadeInJ1
+        lda zpFadeInRnd         ; low byte of random value: bitmap ptr lb
+        sta zpFadeInDstPtr      ; dst ptr lb
+        sta zpFadeInSrcPtr      ; src ptr lb
+        lda zpFadeInRnd+1       ; high byte of random value:
+        and #$1f                ; constraint to bitmapRAM area
+        cmp #$06                ; above logo area in bitmap?
+        bcc _fadeInCont         ; yes ->
+        cmp #$11                ; below logo area in bitmap?
+        bcs _fadeInCont         ; yes ->
+        clc
         adc #>bitmapRAM0
-        sta $e3
-        adc #$20
-        sta $e6
-        lda $e1
-        and #$e0
+        sta zpFadeInDstPtr+1    ; dst ptr hb
+        adc #>(bitmapRAM1-bitmapRAM0)
+        sta zpFadeInSrcPtr+1    ; src ptr hb
+        lda zpFadeInRnd+1
+        and #$e0                ; high three bits of random value
         rol
+        rol                     ; shift into lower nibble
+        rol                     ; resulting value: [0,1,2,3,4,5,6,7]
         rol
-        rol
-        rol
-        tay
-        sec
-        lda #$00
-l15b6   ror
-        dey
-        bpl l15b6
-l15ba   iny
-        tax
-        and ($e5),y             ; source byte at $4000-$5fff
-        beq l15cb
-l15c0   sta $e9
+        tay                     ; counter: number of times to rotate bit mask
+        sec                     ; prepare a single '1' bit for a bit mask
+        lda #$00                ; empty mask
+_fadeInL2
+        ror                     ; rotate '1' into/within mask
+        dey                     ; repeat n times
+        bpl _fadeInL2
+        iny                     ; y = 0
+        tax                     ; x = mask
+        and (zpFadeInSrcPtr),y  ; get masked bit from source byte (bitmapRAM1)
+        beq _fadeInCont         ; if empty ->
+        sta zpFadeInBit
         txa
-        eor #$ff
-        and ($e2),y             ; dest (bitmap) byte at $2000-$3fff
-        ora $e9
-        sta ($e2),y
-l15cb   inc $e7                 ; inc counter lb
-        bne l1583
-l15cf   inc $e8                 ; inc counter hb, repeat $ffff times
-        bne l1583
-l15d3   lda $4000
-        sta $2000
+        eor #$ff                ; invert mask
+        and (zpFadeInDstPtr),y  ; clear masked bit from dest byte (bitmapRAM0)
+        ora zpFadeInBit         ; set the source bit
+        sta (zpFadeInDstPtr),y  ; write back to dest byte
+_fadeInCont
+        inc zpFadeInCtr         ; inc counter lb
+        bne _fadeInL1
+        inc zpFadeInCtr+1       ; inc counter hb, repeat $ffff times
+        bne _fadeInL1
+        lda bitmapRAM1
+        sta bitmapRAM0
         rts
 
-        .asc "N"
+        .byt $ce                ; extra byte?

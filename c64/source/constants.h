@@ -32,6 +32,14 @@
         TW_TILE_HIDDEN_FOOD = $67
         TW_TILE_HIDDEN_WEAPON = $69
 
+        RACE_HUMAN = 1
+        RACE_ELF = 2
+        RACE_DWARF = 3
+        RACE_BOBBIT = 4
+
+        GENDER_MALE = 0
+        GENDER_FEMALE = 1
+
         CLASS_FIGHTER = 1
         CLASS_CLERIC = 2
         CLASS_WIZARD = 3

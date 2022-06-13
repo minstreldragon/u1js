@@ -1741,31 +1741,32 @@ l9f1f   jsr print
         ldx #$06
         jsr l9fb0
 l9f37   jsr la190
-l9f3a   cmp #$41
+l9f3a   cmp #$41                ; 'A'
         bcc l9f4b
-l9f3e   cmp #$47
+        cmp #$47                ; 'F'
         bcs l9f4b
-l9f42   sec
-        sbc #$40
+        sec
+        sbc #$40                ; convert to 0-based transport id
         tax
-        lda $ae62,x
+        lda $ae62,x             ; item for sale at this shop (?)
         bne l9f4e
 l9f4b   jmp l9580
 l9f4e   stx $4d
-        jsr la22b
-l9f53   jsr la183
-l9f56   bcs l9f5b
+        jsr la22b               ; calculate price for transport
+l9f53   jsr la183               ; have enough gold?
+l9f56   bcs l9f5b               ; yes ->
 l9f58   jmp l957d
-l9f5b   ldx $4d
-        inc $8213,x
-        cpx #$06
+l9f5b   ldx $4d                 ; selected item
+        inc invTransport,x
+        cpx #TRANSPORT_SHUTTLE
         bne l9f74
-l9f64   lda #$e8
+l9f64   lda #<1000              ; initial shield value
         sta $825e
         sta $8260
-        lda #$03
+        lda #>1000
         sta $825f
         sta $8261
+
 l9f74   lda ladaf,x
         ldy #$03
 l9f79   cmp $8226,y
@@ -2739,7 +2740,6 @@ la85a   lda #$06
         sta zpCursorRow
         jsr $83f6
 la861   jsr print
-        .asc ""
         .byt $7e,$00
 la866   jsr $164f
 la869   lda zpCursorRow

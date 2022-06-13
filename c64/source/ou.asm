@@ -36,7 +36,7 @@ l8cc2   lda #$36
         sta zpLatitude
         lda #$60
         sta $5d
-        sta $5c
+        sta zpBmpEorActive
         jsr $1646
 l8ce3   ldx #$00
         stx $81c8
@@ -96,16 +96,16 @@ l8d60   lda #$00
         ldx statsTransport
         beq l8d72
 l8d67   sta statsTransport
-        ldy $8213,x
+        ldy invTransport,x
         beq l8d72
-l8d6f   dec $8213,x
+l8d6f   dec invTransport,x
 l8d72   ldx #$0f
 l8d74   sta invWeapons,x
         dex
         bne l8d74
         sta statsArmour
         sta statsWeapon
-        sta $81ee
+        sta statsSpell
         jsr print
         .aasc $7e,"Attempting resurrection!",$00
 l8da0   inc statsHp             ; inc hit points
@@ -484,7 +484,7 @@ l90ea   lda statsWhiteGem
 l90ef   lda #$06
         bne l90d8
 l90f3   jsr $870c
-l90f6   jsr $1661
+        jsr clearGameScreen
 l90f9   jsr $165e
 l90fc   sta $5d
         jsr $8416
@@ -587,8 +587,8 @@ l9291   lda #$36
         jmp $8c60
 
 cast
-l9299   jsr $8717
-l929c   ldx $81ee
+l9299   jsr printCurrentSpell
+l929c   ldx statsSpell
         bne l92a4
 l92a1   jmp l93ba
 l92a4   lda $8208,x
@@ -619,7 +619,7 @@ l92fc   bcc l9301
 l92fe   jmp _mainLoopOutdoors
 l9301   lda #$0a
         jsr $1685
-l9306   ldx $81ee
+l9306   ldx statsSpell
         dec $8208,x
         cpx #$0a
         ldx #$00
@@ -654,7 +654,7 @@ l9354   lda #$5c
 l935b   jsr l9c77
 l935e   lda $830c,x
         sta ($4c),y
-        lda $81ee
+        lda statsSpell
         cmp #$03
         beq l936f
 l936a   lda #$ff
@@ -1291,13 +1291,13 @@ l9910   lda #$00
         rts
 l9916   lda #$00
         ldx #$0a
-l991a   sta $8213,x
+l991a   sta invTransport,x
         dex
         bne l991a
 l9920   sta la143
         ldx statsTransport
         beq l992e
-l9928   inc $8213,x
+l9928   inc invTransport,x
         inc la143
 l992e   ldy $826b
         beq l9950
