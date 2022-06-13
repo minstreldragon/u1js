@@ -1,0 +1,63 @@
+        TRANSPORT_FOOT = 0
+        TRANSPORT_HORSE = 1
+        TRANSPORT_CART = 2
+        TRANSPORT_RAFT = 3
+        TRANSPORT_FRIGATE = 4
+        TRANSPORT_AIRCAR = 5
+        TRANSPORT_SHUTTLE = 6
+        TRANSPORT_PHANTOM = 7
+        TRANSPORT_STAR_CRUISER = 8
+        TRANSPORT_BATTLE_BASE = 9
+        TRANSPORT_TIME_MACHINE = 10
+
+        TILE_WATER = $00
+        TILE_GRASS = $01
+        TILE_FOREST = $02
+        TILE_MOUNTAINS = $03
+        TILE_CASTLE = $04
+        TILE_SIGN = $05
+        TILE_TOWN = $06
+        TILE_DUNGEON = $07
+        TILE_PLAYER = $08
+
+        TW_TILE_COUNTER_LEFT = $1c
+        TW_TILE_COUNTER_RIGHT = $1d
+        TW_TILE_COUNTER_BTM = $1e
+        TW_TILE_COUNTER_TOP = $1f
+        TW_TILE_COUNTER_HORZ = $20
+        TW_TILE_COUNTER_VERT = $21
+        TW_TILE_A = $41
+        TW_TILE_EMPTY = $60
+        TW_TILE_HIDDEN_ARMOUR = $65
+        TW_TILE_HIDDEN_FOOD = $67
+        TW_TILE_HIDDEN_WEAPON = $69
+
+        RACE_HUMAN = 1
+        RACE_ELF = 2
+        RACE_DWARF = 3
+        RACE_BOBBIT = 4
+
+        GENDER_MALE = 0
+        GENDER_FEMALE = 1
+
+        CLASS_FIGHTER = 1
+        CLASS_CLERIC = 2
+        CLASS_WIZARD = 3
+        CLASS_THIEF = 4
+
+        WEAPON_HANDS = 0
+        WEAPON_DAGGER = 1
+        WEAPON_MACE = 2
+        WEAPON_AXE = 3
+        WEAPON_ROPE = 4
+        WEAPON_SWORD = 5
+        WEAPON_GSWORD = 6
+        WEAPON_BOW = 7
+        WEAPON_AMULET = 8
+        WEAPON_WAND = 9
+        WEAPON_STAFF = 10
+        WEAPON_TRIANGLE = 11
+        WEAPON_PISTOL = 12
+        WEAPON_LSWORD = 13
+        WEAPON_PHAZOR = 14
+        WEAPON_BLASTER = 15
