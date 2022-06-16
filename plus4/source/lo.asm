@@ -1,7 +1,7 @@
 #include "archdep.h"
 
-        .word $0800
-        * = $0800
+        .word $1000
+        * = $1000
 
         ; Character Set: $0800-$0bff
 
@@ -77,9 +77,9 @@
         .byt $6c,$3c,$38,$66,$66,$38,$3c,$6c,$3c,$38,$66,$6c,$6c,$66,$38,$3c
         .byt $38,$66,$6c,$3c,$3c,$6c,$66,$38,$66,$6c,$3c,$38,$38,$3c,$6c,$66
 
-lc00
+; $1400
         lda #$00
-        sta VicScreenCtrlReg1
+        sta TedScreenCtrlReg1   ; turn screen off
         ldx #>bitmapRAM0
         stx zpTmpPtr+1
         lda #$00
@@ -136,7 +136,7 @@ _copyOriginLogoJ2
         bne _copyOriginLogoL1
 
         ldx #$00
-        lda #COL_BLUE << 4
+        lda #(COL_LIGHTBLUE & 15) * 16 + (COL_BLACK & 15)
 _setColorL1
         sta screenRAM0,x
         sta screenRAM0+$0100,x
@@ -145,14 +145,24 @@ _setColorL1
         inx
         bne _setColorL1
 
+        lda #(COL_LIGHTBLUE >> 4) + (COL_BLACK >> 4) * 16
+_setColorL2
+        sta colorRAM0,x
+        sta colorRAM0+$0100,x
+        sta colorRAM0+$0200,x
+        sta colorRAM0+$02f0,x
+        inx
+        bne _setColorL2
+
         lda #COL_BLACK
-        sta VicBorderColor
-        lda #$37                ; vscroll 3, 24 rows, screen on, bitmap mode, raster line $0xx
-        sta VicScreenCtrlReg1
-        lda #$08                ; MC mode off, screen width: 40 column, horz scroll = 0
-        sta VicScreenCtrlReg2
-        lda #$18                ; bitmap memory (relative to VIC bank): $2000-$3fff
-        sta VicMemCtrlReg
+        sta TedBorderColor
+        lda #$3b                ; vscroll 3, 25 rows, screen on, bitmap mode, raster line $0xx
+        sta TedScreenCtrlReg1
+        lda #$08                ; reverse mode on, MC mode off, screen width: 40 column, horz scroll = 0
+        sta TedScreenCtrlReg2
+        lda #$08                ; bitmap at $2000
+        sta TedMemCtrl1
+
         jsr _fadeInOriginLogo
         ldx #$05
         jsr loadSpecial         ; load "OU",$e000
