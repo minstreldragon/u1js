@@ -37,44 +37,45 @@ _mainMenuL2
 _mainMenuJ1
         cmp #$42                ; 'B'
         bne _mainMenuL2
+_continueGame
         lda #$62                ; continue previous game
         jsr drawChar
         lda roster              ; check whether a player has been created
         ora roster+$10
         ora roster+$20
         ora roster+$30
-        beq l8da9
+        beq _continueGameJ2
         jsr _selectPlayer
         lda playerSlot
         clc
         adc #$12                ; add base file id
         tax
-        jsr loadFile            ; load "P0" / "P1" / "P2" / "P3"
-        bcs _mainMenuJ2
+        jsr loadFile            ; load "P0" / "P1" / "P2" / "P3" to stats
+        bcs _continueGameJ1
         lda statsFileLen
-        cmp #$ca                ; check first two byte i.e. file length
-        bne _mainMenuJ2
+        cmp #$ca                ; check first byte of stats (file length lb)
+        bne _continueGameJ1
         lda statsFileLen+1
-        cmp #$01
-        beq l8ddd
-_mainMenuJ2
-        jsr $870c
+        cmp #$01                ; second byte (file length hb)
+        beq _continueGameJ3
+_continueGameJ1
+        jsr storeTextWinLayout
         ldx #2
         ldy #20
         jsr printAtPos
         .aasc "Disk error.",$00
-
-        jsr $8701
+        jsr restoreTextWinLayout
         jsr l948d
         jmp _mainMenuL1
-l8da9   jsr $870c
-        ldx #$02
-        ldy #$15
+_continueGameJ2
+l8da9   jsr storeTextWinLayout
+        ldx #2
+        ldy #21
         jsr printAtPos
         .aasc "Thou must first create a character.",$00
-        jsr $8701
+        jsr restoreTextWinLayout
         jmp _mainMenuL2
-
+_continueGameJ3
 l8ddd   ldy #$00
         lda #$30
         sta $01
@@ -97,8 +98,8 @@ l8df7   stx Cia2PortA
         lda #$60
         sta zpBmpEorActive
         jsr $84c0
-l8e0b   jsr $165b
-l8e0e   jsr $1649
+        jsr setTextCommandWindow
+        jsr $1649
 l8e11   jsr $8689
 l8e14   lda #$60
         sta $5d
@@ -709,9 +710,9 @@ l93f7
         .byt $00                ; location ($80)
         .byt $ff,$ef,$be,$00,$00,$00,$00,$00,$00
 
-l947f   ldx #$02
+l947f   ldx #2
         stx zpCursorCol
-        ldy #$14
+        ldy #20
         sty zpCursorRow
         jsr l94c0
         jmp print
@@ -722,14 +723,14 @@ l948d   ldx #2
         .aasc "Press Space to continue: ",$00
         jsr readKey
         jsr $83f6
-l94b4   lda #$14
+l94b4   lda #20
         sta zpCursorRow
         bne l94c0
 l94ba   jsr setTextFull         ; set full text window, home
 l94bd   jsr _cursorHome
 
-l94c0   jsr $870c
-l94c3   dec zpWndWdth
+l94c0   jsr storeTextWinLayout
+        dec zpWndWdth
 l94c5   jsr $164f
 l94c8   jsr $83f6
 l94cb   inc zpCursorRow
@@ -737,7 +738,7 @@ l94cb   inc zpCursorRow
         iny
         cpy zpWndBtm
         bcc l94c5
-        jmp $8701
+        jmp restoreTextWinLayout
 
 _printFrame
 l94d7   lda #$10                ; char: upper left corner of frame

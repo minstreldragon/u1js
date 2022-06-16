@@ -288,8 +288,10 @@ setTextFull
 l1655   jmp _setTextFull
 setTextStatus
 l1658   jmp _setTextStatus
-l165b   jmp l1a0d
-l165e   jmp l1a3a
+setTextCommandWindow
+l165b   jmp _setTextCommandWindow
+setTextyTransactWindow
+l165e   jmp _setTextTransactWindow
 
 clearGameScreen
 l1661   jmp _clearGameScreen
@@ -824,7 +826,8 @@ l19f3   l19f4 = * + 1
         bpl _clearTextToEolL1
 l1a0a   jmp l1e08
 
-l1a0d   lda #$1e
+_setTextCommandWindow
+l1a0d   lda #30
         sta zpWndWdth
         lda #$00
         beq l1a1b
@@ -852,9 +855,10 @@ l1a2c   lda #40
         sta zpWndLeft
         beq l1a23
 
-l1a3a   lda #$26
+_setTextTransactWindow
+l1a3a   lda #38
         sta zpWndWdth
-        lda #$13
+        lda #19
         sta zpWndBtm
         lda #$01
         sta zpWndLeft

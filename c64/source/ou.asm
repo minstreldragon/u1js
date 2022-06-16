@@ -291,7 +291,7 @@ l8eff   lda statsWeapon
         asl
         asl
         adc statsStrength
-        jsr $85c9
+        jsr rangedRandom
 l8f0b   lsr
         clc
         adc #$01
@@ -328,7 +328,7 @@ l8f62   ldx $8267
         lsr
         cmp #$02
         bcc l8f73
-l8f70   jsr $85c9
+l8f70   jsr rangedRandom
 l8f73   adc statsXp
         sta statsXp
         bcc l8f7e
@@ -336,7 +336,7 @@ l8f7b   inc statsXp+1
 l8f7e   tya
         asl
         asl
-        jsr $85c9
+        jsr rangedRandom
 l8f84   clc
         adc #$0a
         pha
@@ -380,18 +380,14 @@ l8fde   pla
         jmp print
 
 l8fe7   jsr print
-l8fea   jsr $6874
-        .asc ""
-        .byt $65
-l8fee   jsr $ae00
-        .asc ""
-        .byt $67,$82
-l8ff3   jsr printFromTable
-        .byt $7f,$7a
+        .aasc " the ",$00
+        ldx $8267
+l8ff3   jsr printFromTable      ; print monster name
+        .word strTableMonsters
 l8ff8   jsr print
-        .asc ""
-        .byt $21
-l8ffc   jsr $6000
+        .aasc "! ",$00
+        rts
+
 l8fff   ldx $8268
         cpx $826b
         bcs l9022
@@ -483,9 +479,9 @@ l90ea   lda statsWhiteGem
         beq l90f3
 l90ef   lda #$06
         bne l90d8
-l90f3   jsr $870c
+l90f3   jsr storeTextWinLayout
         jsr clearGameScreen
-l90f9   jsr $165e
+        jsr setTextTransactWindow
 l90fc   sta $5d
         jsr $8416
 l9101   jsr print
@@ -501,13 +497,13 @@ l9166   lda statsRedGem
         ora statsWhiteGem
         bne l91cb
         jsr print
-        .aasc $7f,$02,"Thou canst not determine how to",LF,$7f
-        .aasc $02,"operate the craft at this time.",$00
+        .aasc $7f,$02,"Thou canst not determine how to",LF
+        .aasc $7f,$02,"operate the craft at this time.",$00
 
 l91bb   lda #$60
 l91bd   sta $5d
         jsr $1664
-l91c2   jsr $8701
+        jsr restoreTextWinLayout
 l91c5   jsr $85e1
 l91c8   jmp $85e4
 
@@ -532,9 +528,8 @@ l91ef   lda statsWhiteGem
         lda #COL_WHITE << 4
         jsr l923d
 l91fb   jsr print
-        .aasc $7f
-        .aasc $05,"Thou hast not all the gems",$7c,$7f
-        .aasc $04,"needed to operate thy craft!",$00
+        .aasc $7f,$05,"Thou hast not all the gems",$7c
+        .aasc $7f,$04,"needed to operate thy craft!",$00
         jmp l91bb
 
 l923d   stx $46
@@ -660,7 +655,7 @@ l935e   lda $830c,x
 l936a   lda #$ff
         jmp l8f0f
 l936f   lda $8247
-        jsr $85c9
+        jsr rangedRandom
 l9375   inc $43
         lda $43
         ldx statsWeapon
@@ -727,6 +722,7 @@ l941f   adc $766f
         and ($00,x)
         rts
 l9427   jmp $874e
+
 l942a   lda la143
         cmp #$35
         bcs l943c
@@ -776,7 +772,7 @@ l948a   jsr l9916
 l948d   ldx zpLongitude
         ldy zpLatitude
         dey
-        jsr l942a
+        jsr l942a               ; (get map tile?)
 l9495   sta $8226
         iny
         dex
@@ -794,6 +790,7 @@ l94ad   sta $8229
         sta $1637
         lda #$03                ; file ID: 4+3 (TW)
         bne l94bb
+
 l94b9   lda #$02                ; file ID: 4+2 (DN)
 l94bb   jmp l9262
 
@@ -951,7 +948,7 @@ l9632   jsr print
 l963d   jmp l8fe7
 l9640   ldx statsTransport
         lda l9a05,x
-        jsr $85c9
+        jsr rangedRandom
 l9649   adc #$1e
         jmp l8f0f
 
@@ -960,9 +957,9 @@ l964e   ldx zpLongitude
         ldy zpLatitude
         stx statsLongitude
         sty statsLatitude
-        jsr $870c
+        jsr storeTextWinLayout
 _quitL1
-l965b   jsr savePlayer
+        jsr savePlayer
 l965e   jsr $8175
         bcs _quitL1
         jsr print
@@ -1073,23 +1070,24 @@ l9768   pla
         sbc #$04
         lsr
         tax
-        cpx #$0e
+        cpx #$0e                ; evil trent?
         beq l977a
-l9772   cpx #$10
+        cpx #$10                ; orc?
         beq l977a
-l9776   cpx #$13
+        cpx #$13                ; evil ranger?
         bne l977f
 l977a   lda #$6e                ; 'n'
-        jsr printChar
+        jsr printChar           ; add 'n' to article: "an"
 l977f   inc zpCursorCol
         cpx #$14
         bne l9788
 l9785   jsr $83f3
-l9788   jsr printFromTable
-        .byt $7f,$7a
+l9788   jsr printFromTable      ; print monster name
+        .word strTableMonsters
 l978d   lda #$21                ; '!'
         jsr printChar
 l9792   jmp l9752
+
 l9795   ldx $2c
         ldy $2d
         stx zpLongitude
@@ -1335,7 +1333,7 @@ l996f   and #$07
 l9973   asl
         sta $22
 l9976   lda #$0f
-        jsr $85c9
+        jsr rangedRandom
 l997b   tax
         lda $7a57,x
         cmp $22
@@ -1397,7 +1395,7 @@ l99e4   lda statsXp+1
         cmp #$05
         bcc l99fe
 l99f5   pha
-        jsr $85c9
+        jsr rangedRandom
 l99f9   pla
         sec
         adc $43
@@ -1624,15 +1622,12 @@ l9bb2   ldx $44
         adc #$fe
         sta $8267
         tax
-        jsr printFromTableCap
-        .byt $7f,$7a
-l9bc7   jsr print
-l9bca   jsr $7461
-        .asc ""
-        .byt $74,$61,$63,$6b,$73,$21
-l9bd3   jsr $a900
-        .byt $04
-l9bd7   jsr $1685
+        jsr printFromTableCap      ; print monster name
+        .word strTableMonsters
+        jsr print
+        .aasc " attacks! ",$00
+        lda #$04
+        jsr $1685
 l9bda   lda #$5e
         sta $1639
         jsr $166a
@@ -1672,7 +1667,7 @@ l9c2f   jsr $83f3
 l9c32   ldx $8267
         lda $7a51,x
         asl
-        jsr $85c9
+        jsr rangedRandom
 l9c3c   clc
         adc #$01
         sta $81c1
@@ -1953,37 +1948,36 @@ l9e5b
         .aasc "Mountains are impassable",$a1
         .aasc "Aircars can't pass woods",$a1
         .aasc "s like water",$a1
-        .aasc $7e,$7e,$7e,$7f
-        .aasc $07,"The sign reads:",$7e,$7e,$7f
-        .aasc $04,$22,"GO EAST TO GO EAST!",$a2
-        .aasc $7e,$7e,$7e,$7f
-        .aasc $05,"The grave is marked:",$7e,$7e,$7f
-        .aasc $09,$22,"VAE VICTIS",$a2
-        .aasc $7e,$7e,$7e,$7f
-        .aasc $07,"The sign reads:",$7e,$7e,$7f
-        .aasc $06,$22,"OMNIA MUTANTUR!",$a2
-        .aasc $7e,$7e,$7f
-        .aasc $07,"The sign reads:",$7e,$7e,$7f
-        .aasc $07,$22,"ULTIMA THULE!",$22,$7e,$7e,$7f
-        .aasc $02,"The sky grows dark, and a",$7e,$7f
-        .aasc $02,"strong magic engulfs you",$a1
-        .aasc $7e,$7e,$7e,$7f
-        .aasc $08,"A sign reads:",$7e,$7e,$7f
-        .aasc $02,$22,"FORTES FORTUNA ADIUVAT!",$a2
-        .aasc $7f
-        .aasc $08,"On a pedestal,",$7e,$7f
-        .aasc $05,"these words appear:",$7e,$7e,$7f
-        .aasc $03,$22,"MY NAME IS OZYMANDIAS,",$7e,$7f
-        .aasc $08,"KING OF KINGS:",$7e,$7f
-        .aasc $06,"LOOK ON MY WORKS,",$7e,$7f
-        .aasc $03,"YE MIGHTY, AND DESPAIR!",$22,$7e,$7e,$7f
-        .aasc $03,"Nothing beside remains.",$7e,$7f
-        .aasc $02,"You feel a strange force",$a1
-        .aasc $7e,$7e,$7e,$7e,$7f
-        .aasc $03,"You feel a strong magic",$7e,$7f
-        .aasc $07,"surrounding you",$a1
-        .aasc $7e,$7e,$7e,$7f
-        .aasc $04,"You hear someone say,",$7e,$7e
+        .aasc $7e,$7e,$7e
+        .aasc $7f,$07,"The sign reads:",$7e,$7e
+        .aasc $7f,$04,$22,"GO EAST TO GO EAST!",$a2
+        .aasc $7e,$7e,$7e
+        .aasc $7f,$05,"The grave is marked:",$7e,$7e
+        .aasc $7f,$09,$22,"VAE VICTIS",$a2
+        .aasc $7e,$7e,$7e
+        .aasc $7f,$07,"The sign reads:",$7e,$7e
+        .aasc $7f,$06,$22,"OMNIA MUTANTUR!",$a2
+        .aasc $7e,$7e
+        .aasc $7f,$07,"The sign reads:",$7e,$7e
+        .aasc $7f,$07,$22,"ULTIMA THULE!",$22,$7e,$7e
+        .aasc $7f,$02,"The sky grows dark, and a",$7e
+        .aasc $7f,$02,"strong magic engulfs you",$a1
+        .aasc $7e,$7e,$7e
+        .aasc $7f,$08,"A sign reads:",$7e,$7e
+        .aasc $7f,$02,$22,"FORTES FORTUNA ADIUVAT!",$a2
+        .aasc $7f,$08,"On a pedestal,",$7e
+        .aasc $7f,$05,"these words appear:",$7e,$7e
+        .aasc $7f,$03,$22,"MY NAME IS OZYMANDIAS,",$7e
+        .aasc $7f,$08,"KING OF KINGS:",$7e
+        .aasc $7f,$06,"LOOK ON MY WORKS,",$7e
+        .aasc $7f,$03,"YE MIGHTY, AND DESPAIR!",$22,$7e,$7e
+        .aasc $7f,$03,"Nothing beside remains.",$7e
+        .aasc $7f,$02,"You feel a strange force",$a1
+        .aasc $7e,$7e,$7e,$7e
+        .aasc $7f,$03,"You feel a strong magic",$7e
+        .aasc $7f,$07,"surrounding you",$a1
+        .aasc $7e,$7e,$7e
+        .aasc $7f,$04,"You hear someone say,",$7e,$7e
         .aasc " ",$22,"TURRIS-SCIENTIA-MAGNOPERE",$a2
 
 la119

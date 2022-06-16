@@ -29,13 +29,13 @@ l8000   sei
         sta NMINV+1
         lda #$40                ; opcode: RTI (exits NMI without acknowledging it)
         sta $ce00               ; store at new NMI location
-l803d   lda #$00
-        sta VicBorderColor
+l803d   lda #COL_BLACK
+        sta VicBorderColor      ; set background and border color black
         sta VicBackgroundColor0
-        jsr _clearScreen
+        jsr _clearScreen        ; clear the screen
         ldx #$00
-l804a   lda #$01
-        sta ColorRAM,x
+l804a   lda #COL_WHITE
+        sta ColorRAM,x          ; set color ram white
         sta ColorRAM+$0100,x
         sta ColorRAM+$0200,x
         sta ColorRAM+$0300,x
@@ -46,9 +46,9 @@ l804a   lda #$01
         lda #>_textSplashScreen
         sta _textPtr+1
         lda #$18
-        sta $fe
+        sta zpScreenPtr1
         lda #$05
-        sta $ff
+        sta zpScreenPtr1+1
         jsr _printText
         lda #$17
         sta VicMemCtrlReg
@@ -158,9 +158,9 @@ _selDriveTypeL1
         bne _selDriveTypeL1
         jsr _clearScreen
         lda #<screenRAM0+80
-        sta $fe
+        sta zpScreenPtr1
         lda #>screenRAM0+80
-        sta $ff
+        sta zpScreenPtr1+1
         lda #<_textDriveSelect
         sta _textPtr
         lda #>_textDriveSelect
@@ -215,20 +215,20 @@ _textPtr = * + 1
         bne _printTextJ3
 _printTextNewline
         ldy #$00
-        lda $fe
+        lda zpScreenPtr1
         clc
         adc #CHAR_COLUMNS       ; move dest to next line
-        sta $fe
-        lda $ff
+        sta zpScreenPtr1
+        lda zpScreenPtr1+1
         adc #$00
-        sta $ff
+        sta zpScreenPtr1+1
         bne _printTextJ3
 _printTextJ1
         cmp #$60                ; < $60?
         bcc _printTextJ2        ; ->
         and #$1f
 _printTextJ2
-        sta ($fe),y
+        sta (zpScreenPtr1),y
         iny
 _printTextJ3
         inc _textPtr            ; inc source pointer
@@ -335,7 +335,7 @@ lc068   sta lc46e,x
 lc06e   lda (FNADR),y
         sta lc46e,y
         iny
-        cpy $b7
+        cpy FNLEN
         bcc lc06e
 lc078   lda VicScreenCtrlReg1
         and #$07
@@ -359,7 +359,7 @@ lc098   rol
         lda #$02
         sta $ff
         lda #$2c
-        sta lc168
+        sta lc168               ; source pointer (read data)
         lda #$c2
         sta lc169
         lda #$46
@@ -446,11 +446,12 @@ lc148   clc
         adc #$00
         sta $af
         rts
+
 lc155   jsr lc195
 lc158   ldy #$00
 lc15a   lda _textMW,y
         jsr CIOUT
-lc160   iny
+        iny
         cpy #$06
         bne lc15a
 lc165   ldy #$00
@@ -475,9 +476,9 @@ lc17f   clc
         bcc lc18d
 lc18a   inc lc1a3
 lc18d   jsr UNLSN
-lc190   dec $ff
+        dec $ff
         bne lc155
-lc194   rts
+        rts
 
 lc195   lda FA                  ; current device number
         jsr LISTEN
@@ -503,6 +504,7 @@ lc1ac   lda lc1ba,y
 lc1b9   rts
 lc1ba   .byt $07,$07,$27,$27,$07,$07,$27,$27,$17,$17,$37,$37,$17,$17,$37,$37
 lc1ca   .byt $07,$27,$07,$27,$17,$37,$17,$37,$07,$27,$07,$27,$17,$37,$17,$37
+
 lc1da   ldy #$00
 lc1dc   lc1dd = * + 1
         lc1de = * + 2
@@ -544,6 +546,8 @@ lc1fe   lda $fe
         iny
         bne lc1ea
 lc22b   rts
+
+                                ; floppy side code
 lc22c   ldx #$00
 lc22e   dex
         bne lc22e

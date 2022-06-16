@@ -19,6 +19,13 @@
         TILE_TOWN = $06
         TILE_DUNGEON = $07
         TILE_PLAYER = $08
+        TILE_HORSE = $09
+        TILE_CART = $0a
+        TILE_RAFT = $0b
+        TILE_FRIGATE = $0c
+        TILE_HOVERCAR = $0d
+        TILE_SHUTTLE = $0e
+        TILE_TIME_CAPSULE = $0f
 
         TW_TILE_COUNTER_LEFT = $1c
         TW_TILE_COUNTER_RIGHT = $1d
@@ -28,9 +35,16 @@
         TW_TILE_COUNTER_VERT = $21
         TW_TILE_A = $41
         TW_TILE_EMPTY = $60
-        TW_TILE_HIDDEN_ARMOUR = $65
-        TW_TILE_HIDDEN_FOOD = $67
-        TW_TILE_HIDDEN_WEAPON = $69
+        TW_TILE_AT_WATER = $61
+        TW_TILE_AT_ARMOUR = $64
+        TW_TILE_STEAL_ARMOUR = $65
+        TW_TILE_AT_FOOD = $66
+        TW_TILE_STEAL_FOOD = $67
+        TW_TILE_AT_WEAPON = $68
+        TW_TILE_STEAL_WEAPON = $69
+        TW_TILE_AT_MAGIC = $6a
+        TW_TILE_AT_PUB = $6b
+        TW_TILE_AT_TRANSPORT = $6c
 
         RACE_HUMAN = 1
         RACE_ELF = 2

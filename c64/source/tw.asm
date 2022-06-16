@@ -23,7 +23,7 @@ _enterTownJ1
         lda #$00                ; karma: good
         sta _karma              ; when entering town, karma is good
         sta $81c8
-        sta lad38
+        sta _playerIntoxication ; player is not intoxicated
         lda statsLocation
 _enterTownL2
         cmp #21                 ; place = statsLocation % 21
@@ -43,25 +43,24 @@ _enterTownJ2
         asl                     ; as 16 bit pointer
         tax
         lda $4004,x             ; get town map data pointer
-        sta l8cf6
+        sta _townSrcDataPtr
         lda $4005,x
-        sta l8cf7
+        sta _townSrcDataPtr+1
         ldy #$03
         ldx #$00
 _enterTownL3
-        l8cf6 = * + 1
-        l8cf7 = * + 2
-        lda $ffff,x
-        l8cfa = * + 2
-        sta townMap,x
+_townSrcDataPtr = * + 1
+        lda $ffff,x             ; get town map byte
+_townDstDataPtr = * + 1
+        sta townMap,x           ; store in town map
         dex
         bne _enterTownL3
-        inc l8cf7
-        inc l8cfa
+        inc _townSrcDataPtr+1
+        inc _townDstDataPtr+1
         dey
         bne _enterTownL3
-l8d07   jsr la51a
-l8d0a   jmp _mainLoopTown
+        jsr _drawTownMap
+        jmp _mainLoopTown
 
 l8d0d   jsr $1649
 l8d10   lda #$0e
@@ -401,26 +400,28 @@ cmdTwDrop
 l8fe2   jsr print
         .aasc " Pence,Weapon,Armour: ",$00
         jsr $8d45
-        ldx #$06
+        ldx #6
         stx zpCursorCol
-        ldx #$03
-l9005   cmp _dropCmdChoices-1,x
-        beq l900d
-l900a   dex
-        bne l9005
-l900d   txa
-        asl
+        ldx #$03                ; iterate over three choices
+_dropL1
+        cmp _dropCmdChoices-1,x ; "PWA"
+        beq _dropJ1             ; choice found! ->
+        dex
+        bne _dropL1
+_dropJ1
+        txa                     ; choice (0 = nothing, 1-3 = P,W,A)
+        asl                     ; as 16 bit index
         tay
-        lda _dropCmdTable+1,y     ; drop command table
-        pha
+        lda _dropCmdTable+1,y   ; drop command table
+        pha                     ; push command on stack
         lda _dropCmdTable,y
         pha
-        jsr printFromTable
+        jsr printFromTable      ; print choice
         .word _strTableDropItem
         jsr $164f
         inc zpCursorCol
 _cmdTwDropNothing
-l9022   rts
+        rts                     ; execute command from stack
 
 _dropCmdChoices
 l9023
@@ -461,7 +462,7 @@ _townDropPenceJ2
         ldx zpLongitude         ; get town tile at player location
         ldy zpLatitude
         jsr _getTownTile
-        cmp #$61                ; nearby some water?
+        cmp #TW_TILE_AT_WATER   ; nearby some water?
         beq _townDropPenceJ3    ; yes ->
         jsr print
         .aasc $7e,"Ok!",$00
@@ -521,7 +522,7 @@ l9110   jsr print
         jmp playSoundEffect
 
 _cmdTwDropWeapon
-l9123   jsr l91a1
+l9123   jsr _cmdTwDropChoices
         .byt $0f
         .word invWeapons
         .word strTableLongWeapons
@@ -531,12 +532,12 @@ l9123   jsr l91a1
         sta invWeapons,x        ; drop weapon, i.e. drop all of that kind
         cpx statsWeapon         ; weapon currently wielded?
         bne _cmdTwDropItemEnd   ; no ->
-        sta statsWeapon         ; wield nothing (hands)
+        sta statsWeapon         ; wield no weapon (hands)
 _cmdTwDropItemEnd
         jmp _drawTownMap
 
 _cmdTwDropArmour
-l913e   jsr l91a1
+l913e   jsr _cmdTwDropChoices
         .byt $05
         .word invArmour
         .word strTableArmour
@@ -546,7 +547,7 @@ l913e   jsr l91a1
         sta invArmour,x         ; drop armour, i.e. drop all of that kind
         cpx statsArmour
         bne _cmdTwDropItemEnd
-l9153   sta statsArmour
+        sta statsArmour         ; wear no armour (skin)
         jmp _drawTownMap
 
 _limitFood
@@ -580,84 +581,93 @@ _strTableDropItem
         .aasc "weapon",$ba
         .aasc "armour",$ba
 
-l91a1   pla
-        sta $83b5
+                                ; drop weapon or armour
+_cmdTwDropChoices
+l91a1   pla                     ; get pointer to arguments
+        sta argDataPtr
         pla
-        sta $83b6
-        jsr $83ac               ; fetch parameter byte
-l91ac   sta l9267
-        jsr $83ac               ; fetch parameter byte
+        sta argDataPtr+1
+        jsr fetchArgDataByte    ; fetch parameter byte
+        sta l9267
+        jsr fetchArgDataByte    ; fetch parameter byte (inventory ptr)
         sta $41
-        jsr $83ac               ; fetch parameter byte
+        jsr fetchArgDataByte    ; fetch parameter byte
         sta $42
-        jsr $83ac               ; fetch parameter byte
-l91bc   sta l9263               ; (string table lb)
-        jsr $83ac               ; fetch parameter byte
-l91c2   sta l9264               ; (string table hb)
-        lda $83b6
+        jsr fetchArgDataByte    ; fetch parameter byte (str table ptr)
+        sta _dropChoicesStrTab  ; (string table lb)
+        jsr fetchArgDataByte    ; fetch parameter byte
+        sta _dropChoicesStrTab+1; (string table hb)
+        lda argDataPtr+1        ; push return address on stack
         pha
-        lda $83b5
+        lda argDataPtr
         pha
-        ldy l9267
-        ldx #$00
-l91d2   lda ($41),y
-        beq l91d7
-l91d6   inx
-l91d7   dey
-        bne l91d2
-l91da   stx $43
+
+        ldy l9267               ; max number of choices
+        ldx #$00                ; number of choices available to drop
+_dropChoicesL1
+l91d2   lda ($41),y             ; item in inventory?
+        beq _dropChoicesJ1      ; no ->
+        inx                     ; inc number of drop item choices
+_dropChoicesJ1
+        dey
+        bne _dropChoicesL1
+
+        stx $43
         cpx #$00
-        bne l91e5
-l91e0   pla
+        bne _dropChoicesJ2
+        pla
         pla
         jmp l9250
-l91e5   jsr $870c
-l91e8   jsr $165e
-l91eb   ldx #$0f
-        ldy #$00
+_dropChoicesJ2
+        jsr storeTextWinLayout
+        jsr setTextTransactWindow
+        ldx #15                 ; print in transaction window:
+        ldy #0
         jsr printAtPos
         .aasc $0e," Drop ",$18,$00
-l91fb   jsr $1652
-l91fe   sec
-        lda #20
-        sbc $43
+        jsr $1652
+        sec
+        lda #20                 ; first item row = (20 - # of choices) / 2
+        sbc $43                 ; (center item list vertically)
         lsr
         sta zpCursorRow
-        lda #$61
+        lda #$61                ; 'a' (choices letter)
         sta l9218
         ldy #$00
-        beq l9223
-l920f   tya
+        beq _dropChoicesL3      ; for skin/hands ->
+_dropChoicesL2
+        tya
         pha
         lda #$0d
         sta zpCursorCol
-        jsr print
-l9218   l9219 = * + 1
-; Instruction opcode accessed.
-; Instruction parameter jumped to.
-        adc ($29,x)
-l921a   jsr $6800
-l921d   jsr l925e
-l9220   tay
+        jsr print               ; print choice letter: "a) "
+l9218
+        .aasc "a) ",$00
+        pla
+        jsr _printDropChoiceItem; print item description
+        tay
         inc zpCursorRow
-l9223   cpy l9267
-        bcs l9232
-l9228   inc l9218
+_dropChoicesL3
+        cpy l9267
+        bcs _dropChoicesJ3
+        inc l9218               ; inc choice letter
         iny
         lda ($41),y
-        bne l920f
-l9230   beq l9223
-l9232   jsr $8701
-l9235   jsr readKey
-l9238   pha
+        bne _dropChoicesL2      ; item in inventory -> print it
+        beq _dropChoicesL3      ; not in inventory -> ignore it
+_dropChoicesJ3
+        jsr restoreTextWinLayout
+
+        jsr readKey
+        pha
         jsr $8ad6
 l923c   sec
         pla
-        sbc #$41
-        beq l9250
-l9242   bmi l9250
-l9244   cmp l9267
-        bcc l924b
+        sbc #$41                ; make 0-based index
+        beq l9250               ; 0 selected ->
+        bmi l9250               ; less than 0 ->
+        cmp l9267               ; in allowed range for item?
+        bcc l924b               ; yes ->
 l9249   bne l9250
 l924b   tay
         lda ($41),y             ; # of this item in inventory
@@ -669,13 +679,16 @@ l9250   ldy #$ff
         tax
         rts
 l925d   tya
-l925e   tax
-        pha
-        jsr printFromTableCap
-l9263   l9264 = * + 1
+
+_printDropChoiceItem
+l925e   tax                     ; item id as index
+        pha                     ; store item id
+        jsr printFromTableCap   ; print drop choice item
+_dropChoicesStrTab
         .word $0000
-l9265   pla
+        pla                     ; return item id
         rts
+
 l9267   .byt $0a
 
 cmdTwGet
@@ -708,11 +721,11 @@ cmdTwSteal
 l92af   ldx zpLongitude
         ldy zpLatitude
         jsr _getTownTile
-        cmp #TW_TILE_HIDDEN_ARMOUR
+        cmp #TW_TILE_STEAL_ARMOUR
         beq _stealJ1
-        cmp #TW_TILE_HIDDEN_FOOD
+        cmp #TW_TILE_STEAL_FOOD
         beq _stealJ1
-        cmp #TW_TILE_HIDDEN_WEAPON
+        cmp #TW_TILE_STEAL_WEAPON
         beq _stealJ1
         jsr print
         .aasc $7e
@@ -740,7 +753,7 @@ _stealSuccess
         jsr print
         .aasc $7e,"Thou dost find",$7e,$00
         lda zpTwMapTile
-        cmp #TW_TILE_HIDDEN_ARMOUR
+        cmp #TW_TILE_STEAL_ARMOUR
         bne _stealFood
 _stealArmourL1
 l932c   jsr la718
@@ -762,7 +775,7 @@ _stealJ2
         rts
 
 _stealFood
-l934c   cmp #TW_TILE_HIDDEN_FOOD
+l934c   cmp #TW_TILE_STEAL_FOOD
         bne _stealWeapon
 _stealFoodL1
         jsr randomNumber
@@ -801,7 +814,7 @@ l9388   jsr la723
 _stealWeaponJ1
         pha
         lda #$61                ; 'a'
-        jsr printChar
+        jsr printChar           ; print the article "a"
         pla
         pha
         cmp #WEAPON_AXE         ; steal an axe?
@@ -834,14 +847,14 @@ _transactJ1
         ldx zpLongitude
         ldy zpLatitude
         jsr _getTownTile
-        cmp #$64                ; transact fields (start)
+        cmp #TW_TILE_AT_ARMOUR  ; transact fields (start)
         bcc _transactJ2
-        cmp #$6d                ; transact fields (end)
-        bcs _transactJ2
+        cmp #TW_TILE_AT_TRANSPORT+1
+        bcs _transactJ2         ; not a transact tile? ->
         sec
-        sbc #$64
+        sbc #TW_TILE_AT_ARMOUR
         tax
-        lda lada6,x
+        lda _tileToShopId,x
         sta zpMapPtr
         jmp _transactJ3
 _transactJ2
@@ -892,31 +905,31 @@ l9490   jmp _drawTownMap
 
 
 l9493   jsr $164f
-l9496   lda zpMapPtr            ; ?? shop id ??
+l9496   lda zpShopId            ; ?? shop id ??
         jsr $8788
 l949b   dec zpWndWdth
-        jsr l94ab
+        jsr _printShopName
         jsr $83f3               ; newline in window
         jsr $83f3               ; newline in window
-l94a6   lda zpMapPtr
+l94a6   lda zpShopId
         asl
         tax
         rts
 
-l94ab   lda zpMapPtr
+_printShopName
+l94ab   lda zpShopId
         asl
-        tax
-        lda ladc6,x
-        sta l94c0
-        lda ladc7,x
-        sta l94c1
+        tax                     ; shop type as index
+        lda _shopNamesByType,x
+        sta _strTableShopNames
+        lda _shopNamesByType+1,x
+        sta _strTableShopNames+1
 _townLayoutId = * + 1
-l94bc = * + 1
-; Instruction parameter accessed.
-        ldx #$00
+        ldx #$00                ; town layout as index
         jsr printFromTable
-l94c0   l94c1 = * + 1
-        .byt $ff,$ff,$60
+_strTableShopNames
+        .word $ffff             ; print shop name from string table
+        rts
 
 l94c3   lda #$01
         sta lad34               ; item index = 1
@@ -988,7 +1001,7 @@ l955e   bcc l957d
 l9560   ldx $4d
         inc invArmour,x
         jsr la16d
-l9568   jsr $165b
+l9568   jsr setTextCommandWindow
 l956b   lda #23
         sta zpCursorRow
         lda #15
@@ -999,7 +1012,7 @@ l956b   lda #23
 l9579   sei
         jmp la874
 l957d   jsr la1c5
-l9580   jsr $165b
+l9580   jsr setTextCommandWindow
 l9583   lda #15
 l9585   sta zpCursorCol
         lda #23
@@ -1007,7 +1020,7 @@ l9585   sta zpCursorCol
         jsr print
         .aasc "nothing",$00
         rts
-l9597   jsr $165b
+l9597   jsr setTextCommandWindow
 l959a   lda #$10
         bne l9585
 
@@ -1029,17 +1042,17 @@ l95ac   stx $ae62
         .aasc " Packs of 10 food cost "
 _strFoodPrice
         .aasc "X pence",$7e
-        .aasc "  each.  How many dost thou",$7e,$7f
-        .aasc $06,"wish to purchase?",$00
+        .aasc "  each.  How many dost thou",$7e
+        .aasc $7f,$06,"wish to purchase?",$00
 
-l9609   jsr $870c
-l960c   jsr $165b
+l9609   jsr storeTextWinLayout
+l960c   jsr setTextCommandWindow
 l960f   lda #23
         sta zpCursorRow
         lda #15
         sta zpCursorCol
         jsr _enterNumber
-l961a   jsr $8701
+l961a   jsr restoreTextWinLayout
 l961d   lda _numEntry+1
         cmp #$1a
         bcc l9627
@@ -1101,7 +1114,7 @@ l9685   lda statsCoin
         adc _numEntry+1
         sta statsFood+1
         jsr la1a7
-l96ac   jsr $165b
+l96ac   jsr setTextCommandWindow
 l96af   lda #$17
         sta zpCursorRow
         sta zpCursorCol
@@ -1161,17 +1174,15 @@ l971a   lda #$06
         jsr l97ac
 l9724   bne l9729
 l9726   jmp l9761
-l9729   lda #$61
+l9729   lda #$61                ; 'a' (selection letter)
         clc
         adc lad34
         jsr printChar
 l9732   jsr print
-        .asc ""
-        .byt $29,$20,$00
-l9738   ldx lad34
+        .aasc ") ",$00
+        ldx lad34
         jsr printFromTable
-        .asc ""
-        .byt $7c,$77
+        .word strTableLongWeapons
 l9740   lda #$17
         sta zpCursorCol
         jsr print
@@ -1207,15 +1218,14 @@ l978c   jmp l957d
 l978f   ldx $4d
         inc invWeapons,x
         jsr la16d
-l9797   jsr $165b
+l9797   jsr setTextCommandWindow
 l979a   lda #23
         sta zpCursorRow
         lda #15
         sta zpCursorCol
         ldx $4d
         jsr printFromTable
-        .asc ""
-        .byt $7c,$77
+        .word strTableLongWeapons
 l97a9   jmp la874
 l97ac   l97ad = * + 1
         l97ae = * + 2
@@ -1244,7 +1254,7 @@ l97da   lda #$42
         clc
         adc lad34
         sta l986a
-        lda #$61
+        lda #$61                ; 'a' (selection letter)
         clc
         adc lad34
         jsr printChar
@@ -1282,18 +1292,8 @@ l9830   inc lad34
 l983a   lda l986a
         bne l9862
 l983f   jsr print
-        .asc ""
-        .byt $7e,$7f,$04,$54,$68,$6f,$75
-l9849   jsr $6168
-        .asc ""
-        .byt $73,$74
-l984e   jsr $6f6e
-l9851   jsr $6577
-        .asc ""
-        .byt $61
-l9855   bvs l98c6
-l9857   ror $7972
-        and ($00,x)
+        .aasc $7e
+        .aasc $7f,$04,"Thou hast no weaponry!",$00
         jsr $85e1
 l985f   jmp l9597
 l9862   jsr la190
@@ -1304,14 +1304,10 @@ l9869   l986a = * + 1
         cmp #$51
         bcs l9876
 l986d   sec
-        sbc #$41
+        sbc #$41                ; convert to 0-based weapon index
         tax
-        l9872 = * + 1
-; Instruction parameter jumped to.
-        l9873 = * + 2
-; Instruction parameter jumped to.
-        lda invWeapons,x
-l9874   bne l9879
+        lda invWeapons,x        ; weapon owned?
+        bne l9879               ; yes ->
 l9876   jmp l9597
 l9879   stx $4d
         lda statsCharisma       ; price unit = Charisma + 40
@@ -1329,27 +1325,26 @@ l988a   lda lad31               ; sell price = price / 256 + 1
         sta lad31
         lda statsCoin
         clc
-        adc lad30
+        adc lad30               ; add sales price to player's money
         sta statsCoin
         lda statsCoin+1
         adc lad31
         sta statsCoin+1
         jsr l9170
 l98ae   ldx $4d
-        dec invWeapons,x
-        bne l98ba
-l98b5   lda #$00
-        sta statsWeapon
+        dec invWeapons,x        ; subtract sold weapon from inventory
+        bne l98ba               ; last one of this weapon sold? No ->
+        lda #WEAPON_HANDS       ; set active weapon to hands
+        sta statsWeapon         ; BUG: does not check which weapon had been readied
 l98ba   jsr la1b6
-l98bd   jsr $165b
+l98bd   jsr setTextCommandWindow
 l98c0   lda #$17
         sta zpCursorRow
         lda #$10
 l98c6   sta zpCursorCol
         ldx $4d
         jsr printFromTable
-        .asc ""
-        .byt $7c,$77
+        .word strTableLongWeapons
 l98cf   jmp la874
 
 l98d2   lda #$01
@@ -1375,7 +1370,7 @@ l98fb   txa
         cmp $4d
         bne l9905
 l9902   jmp l993d
-l9905   lda #$61
+l9905   lda #$61                ; 'a' (selection letter)
         clc
         adc lad34
         jsr printChar
@@ -1447,7 +1442,7 @@ l9998   lda statsXp
 l99a3   dec statsXp+1
 l99a6   inc invSpells,x
         jsr la16d
-l99ac   jsr $165b
+l99ac   jsr setTextCommandWindow
 l99af   lda #23
         sta zpCursorRow
         lda #15
@@ -1458,207 +1453,160 @@ l99bc   dey
         sei
         jmp la874
 
-l99c1   lda statsCoin
+_buyDrink
+l99c1   lda statsCoin           ; does player have any money?
         ora statsCoin+1
-        bne l9a17
-l99c9   jsr print
-        .aasc $7f
-        .aasc $07,"Thou art broke!",$7e,$7e,$7f
-        .aasc $03,"Come back when thou hast",$7e,$7f
-        .aasc $05,"some money to spend.",$00
+        bne _buyDrinkJ1         ; no ->
+        jsr print
+        .aasc $7f,$07,"Thou art broke!",$7e
+        .aasc $7e
+        .aasc $7f,$03,"Come back when thou hast",$7e
+        .aasc $7f,$05,"some money to spend.",$00
         jsr $85e1
         jmp l9597
-
-l9a17   dec statsCoin
+_buyDrinkJ1
+        dec statsCoin           ; subtract one coin from player's money
         lda statsCoin
         cmp #$ff
-        bne l9a24
-l9a21   dec statsCoin+1
-l9a24   jsr print
-        .asc ""
-        .byt $7e,$7f,$02,$54,$68,$65
-l9a2d   jsr $6174
-        .asc ""
-        .byt $76
-l9a31   adc $72
-        ror $6b20
-        adc $65
-        bvs l9a9f
-        .asc ""
-        .byt $72
-l9a3b   jsr $6173
-        .asc ""
-        .byt $79,$65,$74,$68,$3a,$7e
-l9a44   ror $037f,x
-        pha
-        adc $72
-        adc $2c
-        jsr $6168
-l9a4f   ror $65,x
-        jsr $2061
-        .asc ""
-        .byt $63,$6f
-l9a56   jmp ($2064)
-        .asc ""
-        .byt $6f,$6e,$65
-l9a5c   and ($00,x)
-        jsr $870c
-l9a61   jsr $165b
-l9a64   ldy #23
-        ldx #15
+        bne _buyDrinkJ2
+        dec statsCoin+1
+_buyDrinkJ2
+        jsr print
+        .aasc $7e
+        .aasc $7f,$02,"The tavern keeper sayeth:"
+        .aasc $7e,$7e
+        .aasc $7f,$03,"Here, have a cold one!",$00
+        jsr storeTextWinLayout
+        jsr setTextCommandWindow
+        ldy #23
+        ldx #15                 ; position cursor after "Transact-Buy: "
         jsr printAtPos
         .aasc "ale",$00
-        jsr $8701
-l9a72   jsr $85e1
-l9a75   jsr la85a
-l9a78   lda #$08
+        jsr restoreTextWinLayout
+        jsr $85e1
+        jsr la85a
+        lda #$08
         sta zpCursorRow
-        inc lad38
-        lda statsStamina
+        inc _playerIntoxication ; increase intoxication
+        lda statsStamina        ; intoxication == Stamina / 4?
         lsr
         lsr
-        cmp lad38
+        cmp _playerIntoxication ; yes ->
         beq l9a8b
 l9a89   bcs l9af1
+
 l9a8b   ldx #$01
         jsr la76e
 l9a90   cmp #$02
         bcs l9af1
 l9a94   jsr print
-        .byt $7f,$03,$54,$68,$6f
-l9a9c   adc zpLongitude,x
-        pla
-l9a9f   adc ($73,x)
-        .asc ""
-        .byt $74
-l9aa2   jsr $6562
-l9aa5   adc $6e
-        jsr $6573
-        .asc ""
-        .byt $64,$75,$63,$65,$64,$21
-l9ab0   ror $7f7e,x
-        ora $41
-        ror $74
-        adc $72
-        jsr $2061
-l9abc   jmp ($6e6f)
-        .asc ""
-        .byt $67
-l9ac0   jsr $696e
-        .asc ""
-        .byt $67,$68,$74,$2c,$7e,$7f,$07,$74,$68,$6f,$75
-l9ace   jsr $7261
-        .asc ""
-        .byt $74
-l9ad2   jsr $6162
-        .asc ""
-        .byt $63,$6b,$2e,$00
-l9ad9   lsr statsCoin+1
+        .aasc $7f,$03,"Thou hast been seduced!",$7e
+        .aasc $7e
+        .aasc $7f,$05,"After a long night,",$7e
+        .aasc $7f,$07,"thou art back.",$00
+l9ad9   lsr statsCoin+1         ; take away half the player's coin
         ror statsCoin
-        dec statsWisdom
+        dec statsWisdom         ; dec wisdom (minimum wisdom: 5)
         lda statsWisdom
         cmp #$05
         bcs l9aee
-l9ae9   lda #$05
+        lda #$05
         sta statsWisdom
 l9aee   jmp $85e1
+
+                                ; give a hint:
 l9af1   jsr randomNumber
-l9af4   cmp #$4b
+        cmp #$4b                ; probability for giving a hint: 180/255
         bcs l9af9
-l9af8   rts
+        rts
 l9af9   jsr print
-        .byt $7f,$06,$54,$68,$6f
-l9b01   adc zpLongitude,x
-        pla
-        adc ($64,x)
-        jsr $6562
-        .asc ""
-        .byt $73,$74
-l9b0b   jsr $6e6b
-        .asc ""
-        .byt $6f,$77
-l9b10   ror $2000,x
-        bvs l9b2b
-l9b15   lsr
+        .aasc $7f,$06,"Thou had best know",$7e,$00
+        jsr randomNumber
+l9b15   lsr                     ; hint id = upper 3 bits of random number
         lsr
         lsr
         lsr
         lsr
-        asl
+        asl                     ; as 16 bit index
         tax
-        lda ladea,x
+        lda _jmpTableHint,x     ; get jump table entry for hint
         sta l9b29
-        lda ladeb,x
+        lda _jmpTableHint+1,x
         sta l9b2a
         l9b29 = * + 1
         l9b2a = * + 2
         jsr $ffff
 l9b2b   jmp $85e1
-l9b2e   jsr print
-        .aasc $7f
-        .aasc $05,"about space travel!",$7e,$7f
-        .aasc $05,"Thou must destroy at",$7e,$7f
-        .aasc $04,"least 20 enemy vessels",$7e,$7f
-        .aasc $06,"to become an ace!",$00
+
+_printHint0
+        jsr print
+        .aasc $7f,$05,"about space travel!",$7e
+        .aasc $7f,$05,"Thou must destroy at",$7e
+        .aasc $7f,$04,"least 20 enemy vessels",$7e
+        .aasc $7f,$06,"to become an ace!",$00
         rts
 
-l9b8c   jsr print
-        .aasc $7f
-        .aasc $05,"to watch the ",$00
+_printHint1
+        jsr print
+        .aasc $7f,$05,"to watch the ",$00
         ldx #$05                ; Wench / Lecher
         jsr printFromTable
         .word _strTableNpc
         lda #$2e                ; '.'
         jmp printChar
 
-l9bab   jsr print
+_printHint2
+        jsr print
         .aasc " that the princess will give",$7e
         .aasc " great reward to the one who",$7e
-        .aasc "rescues her, and an extra gift",$7e,$7f
-        .aasc $05,"to an 8th level ace!",$00
+        .aasc "rescues her, and an extra gift",$7e
+        .aasc $7f,$05,"to an 8th level ace!",$00
         rts
 
-l9c1f   jsr print
+_printHint3
+        jsr print
         .aasc "  thou must go back in time.",$00
         rts
 
-l9c40
+_printHint4
         jsr print
-        .aasc $7f
-        .aasc $05,"thou should destroy",$7e,$7f
-        .aasc $08,"the evil gem!",$00
+        .aasc $7f,$05,"thou should destroy",$7e
+        .aasc $7f,$08,"the evil gem!",$00
         rts
 
-l9c6a   jsr print
+_printHint5
+        jsr print
         .aasc "  that many lakes and ponds",$7e
         .aasc " have strong magical powers!",$00
         rts
 
-l9ca7   jsr print
-        .aasc $7f
-        .aasc $05,"this is a great game!",$00
+_printHint6
+        jsr print
+        .aasc $7f,$05,"this is a great game!",$00
         rts
 
-l9cc3   jsr print
+_printHint7
+        jsr print
         .aasc "  that over 1000 years ago,",$7e
         .aasc "Mondain the Wizard created an",$7e
         .aasc " evil gem.  With this gem, he",$7e
-        .aasc "  is immortal and cannot be",$7e,$7f
-        .aasc $0a,"defeated.",$00
+        .aasc "  is immortal and cannot be",$7e
+        .aasc $7f,$0a,"defeated.",$00
         jsr $85e1
         jsr la85a
-        lda #$08
+        lda #8
         sta zpCursorRow
         jsr print
         .aasc "The quest of --Ultima-- is to",$7e
-        .aasc " traverse the lands in search",$7e,$7f
-        .aasc $03,"of a time machine.  Upon",$7e
+        .aasc " traverse the lands in search",$7e
+        .aasc $7f,$03,"of a time machine.  Upon",$7e
         .aasc " finding such a device, thou",$7e
         .aasc "should go back in time to the",$7e
         .aasc " days before Mondain created",$7e
         .aasc "the evil gem and destroy him.",$00
         jmp $85e1
 
+_buyTransport
 l9e23
         lda #$00
         sta lad35
@@ -1767,14 +1715,14 @@ l9f64   lda #<1000              ; initial shield value
         sta $825f
         sta $8261
 
-l9f74   lda ladaf,x
+l9f74   lda _transportBckgndTile,x      ; possible background tile for transport x
         ldy #$03
 l9f79   cmp $8226,y
         beq l9f91
 l9f7e   cpx #$03
         bcs l9f8d
 l9f82   sta zpMapPtr
-        lda $8226,y
+        lda $8226,y             ; something in stats??
         cmp #$02
         beq l9f91
 l9f8b   lda zpMapPtr
@@ -1783,17 +1731,17 @@ l9f8d   dey
 l9f90   iny
 l9f91   txa
         clc
-        adc #$08
-        sta $8226,y
+        adc #TILE_PLAYER
+        sta $8226,y             ; place transport object in empty outdoors map tile
         jsr la16d
-l9f9b   jsr $165b
+l9f9b   jsr setTextCommandWindow
 l9f9e   lda #23
         sta zpCursorRow
         lda #15
         sta zpCursorCol
         ldx $4d
         jsr printFromTable
-l9fab   bmi la026
+        .word strTableTransport
 l9fad   jmp la874
 
 l9fb0   inc $ae62,x
@@ -1815,7 +1763,7 @@ l9fd1   lda #$05
         lda invArmour,x
         beq la01f
 l9fdd   inc $ae62
-        lda #$61
+        lda #$61                ; 'a' (selection letter)
         clc
         adc lad34
         jsr printChar
@@ -1842,43 +1790,24 @@ la00e   lda #$00
 la01c   jsr $83f3               ; newline in window
 la01f   inc lad34
         lda lad34
-        la026 = * + 1
-; Instruction parameter jumped to.
         cmp #$06
-la027   la028 = * + 1
-; Instruction parameter jumped to.
         bcc l9fd1
         lda $ae62
         bne la056
-la02e   jsr print
-        .asc ""
-        .byt $7e
-la032   jsr $6854
-        .asc ""
-        .byt $6f,$75
-la037   jsr $6168
-        .asc ""
-        .byt $73,$74
-la03c   jsr $6f6e
-la03f   jsr $7261
-        .asc ""
-        .byt $6d,$6f
-la044   adc $72,x
-        jsr $6f74
-la049   jsr $6573
-la04c   jmp ($216c)
-        .byt $00
+        jsr print
+        .aasc $7e
+        .aasc " Thou hast no armour to sell!",$00
 la050   jsr $85e1
 la053   jmp l9597
-la056   jsr $870c
-la059   jsr $165b
+la056   jsr storeTextWinLayout
+la059   jsr setTextCommandWindow
 la05c   lda #$17
         sta zpCursorRow
         lda #$10
         sta zpCursorCol
         jsr readKey
 la067   pha
-        jsr $8701
+        jsr restoreTextWinLayout
 la06b   pla
         cmp #$42
         bcc la074
@@ -1911,7 +1840,7 @@ la09a   lda statsCoin
         sta statsCoin+1
         jsr l9170
 la0b0   jsr la1b6
-la0b3   jsr $165b
+la0b3   jsr setTextCommandWindow
 la0b6   lda #$17
         sta zpCursorRow
         lda #$10
@@ -1923,28 +1852,28 @@ la0c4   sei
         jmp la874
 
 la0c8   jsr print
-        .aasc $7e,$7f
-        .aasc $04,"Used food?  No thanks!",$00
+        .aasc $7e
+        .aasc $7f,$04,"Used food?  No thanks!",$00
         jsr $85e1
         jmp l9597
 
 la0eb   jsr print
-        .aasc $7e,$7f
-        .aasc $03,"Sorry, we don't deal in",$7e,$7f
-        .aasc $09,"used stuff.",$00
+        .aasc $7e
+        .aasc $7f,$03,"Sorry, we don't deal in",$7e
+        .aasc $7f,$09,"used stuff.",$00
         jsr $85e1
         jmp l9597
 
 la11d   jsr print
-        .aasc $7e,$7f
-        .aasc $05,"We don't buy spells!",$00
+        .aasc $7e
+        .aasc $7f,$05,"We don't buy spells!",$00
         jsr $85e1
         jmp l9597
 
 la13e   jsr print
-        .aasc $7e,$7f
-        .aasc $03,"We have plenty of booze",$7e,$7f
-        .aasc $0a,"already!",$00,"
+        .aasc $7e
+        .aasc $7f,$03,"We have plenty of booze",$7e
+        .aasc $7f,$0a,"already!",$00,"
         jsr $85e1
         jmp l9597
 
@@ -1961,30 +1890,28 @@ la183   lda statsCoin
         lda statsCoin+1
         sbc lad31
         rts
-la190   jsr $870c
-la193   jsr $165b
+la190   jsr storeTextWinLayout
+la193   jsr setTextCommandWindow
 la196   lda #23
 la198   sta zpCursorRow
         lda #15
         sta zpCursorCol
         jsr readKey
 la1a1   pha
-        jsr $8701
+        jsr restoreTextWinLayout
 la1a5   pla
         rts
 
 la1a7   jsr la85a
         jsr print
-        .aasc $7f
-        .aasc $0b,"Sold!",$00
+        .aasc $7f,$0b,"Sold!",$00
         rts
 
 la1b6   jsr la85a
 la1b9   la1ba = * + 1
 ; Instruction parameter jumped to.
         jsr print
-        .aasc $7f
-        .aasc $0b,"Done!",$00
+        .aasc $7f,$0b,"Done!",$00
         rts
 
 la1c5   jsr la85a
@@ -2155,7 +2082,7 @@ la342   jmp la280
 la345   rts
 la346   .byt $00
 
-la347   jsr $165b
+la347   jsr setTextCommandWindow
         lda #$17
         sta zpCursorRow
         jsr print
@@ -2329,7 +2256,7 @@ la4fc   ldx #0
 _drawTownMap
 la51a   lda #1                  ; skip upper frame border
         sta zpCursorRow
-        jsr $165e
+        jsr setTextTransactWindow
         jsr la553               ; switch to town map charset
         lda #<townMap
         sta _townMapSrcPtr      ; set town map source pointer
@@ -2387,7 +2314,7 @@ la58c   lda charColors,x
         bpl la58c
 la59c   rts
 
-la59d   jsr $165e
+la59d   jsr setTextTransactWindow
 la5a0   lda zpLongitude
         sta zpCursorCol
         lda zpLatitude
@@ -2410,12 +2337,12 @@ la5c2   sty zpMapPtr
 la5cb   ldy zpMapPtr
 la5cd   dey
         bpl la5b1
-la5d0   jmp $165b
+la5d0   jmp setTextCommandWindow
 
 la5d3   stx zpMapPtr
         sty $4d
         pha
-        jsr $165e
+        jsr setTextTransactWindow
 la5db   pla
         ldx zpMapPtr
         ldy $4d
@@ -2423,7 +2350,7 @@ la5db   pla
         iny
         sty zpCursorRow
         jsr printChar
-la5e8   jmp $165b
+la5e8   jmp setTextCommandWindow
 
 la5eb   jsr _getTownTile
 la5ee   bcs la5f1
@@ -2622,9 +2549,10 @@ la757   lsr lad2f
         bne la73f
 la761   lda lad31
         rts
-la765   jsr $165b
+la765   jsr setTextCommandWindow
 la768   jsr $1649
 la76b   jmp $8b64
+
 la76e   stx lad24
         lda npcLon,x
         cmp #$ff
@@ -2736,18 +2664,20 @@ la850   lda #$ff
         jsr $16a0
 la855   lda #$ff
         jmp $16a0
-la85a   lda #$06
+
+la85a   lda #6
         sta zpCursorRow
         jsr $83f6
 la861   jsr print
         .byt $7e,$00
-la866   jsr $164f
-la869   lda zpCursorRow
-        cmp #$0e
+        jsr $164f
+        lda zpCursorRow
+        cmp #14
         bne la861
-la86f   lda #$0a
+        lda #10                 ; set transact window line to 10
         sta zpCursorRow
         rts
+
 la874   jsr $8777
 la877   ldy #$18
 la879   jsr $85db
@@ -2768,58 +2698,63 @@ la887
         .byt $10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10
         .byt $10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10,$10
 
-la907
+_strTableShopTransport
         .aasc " Super Duper Transport, Inc",$ae
         .aasc " Horse and Carriage Transpor",$f4
-        .aasc " The Reliable Transportation",$7e,$7f
-        .aasc $0c,"Shopp",$e5,$7f
-        .aasc $06,"Quality Transpor",$f4,$7f
-        .aasc $04,"Comfort Ride Tranport",$f3
-        .aasc "O.K. New & Used Transportatio",$ee,$7f
-        .aasc $0a,"Sly Sam'",$f3
-        .aasc "  Transportation Specialist",$f3,$7f
-        .aasc $09,"Pub de Var",$e7,$7f
-        .aasc $07,"Ye Old Local Pu",$e2,$7f
-        .aasc $08,"Dr. Cat's Lai",$f2,$7f
-        .aasc $06,"Dav's House-O-Sud",$f3,$7f
-        .aasc $03,"The Slaughtered Lamb In",$ee,$7f
-        .aasc $05,"The Blue Boar Taver",$ee,$7f
-        .aasc $09,"The Open Ke",$e7,$7f
-        .aasc $07,"The Running Ta",$f0
-        .aasc " Chad the Mad's Magic Shopp",$e5,$7f
-        .aasc $07,"Mystic Melinda'",$f3,$7f
-        .aasc $08,"Words of Powe",$f2
-        .aasc "Psychic Sam's Magical Emporiu",$ed,$7f
-        .aasc $03,"The Alchemist's Worksho",$f0,$7f
-        .aasc $07,"The Crystal Bal",$ec,$7f
-        .aasc $06,"Herbs and Potion",$f3,$7f
-        .aasc $05,"The Unleashed Spel",$ec
-        .aasc "  The Armour Shoppe of Lord",$7e,$7f
-        .aasc $05,"Eldric D'Charbonneu",$f8,$7f
-        .aasc $08,"Max's Armour",$f9,$7f
-        .aasc $08,"The Iron Fis",$f4,$7f
-        .aasc $05,"The Hammer -n- Anvi",$ec
-        .aasc "Defense Specialties, Unlimite",$e4,$7f
-        .aasc $08,"The Armour Bi",$ee,$7f
-        .aasc $05,"Protective Product",$f3,$7f
-        .aasc $05,"Custom Armour Work",$f3,$7f
-        .aasc $03,"Naughty Nomaan's Weapon",$f3,$7f
-        .aasc $06,"The Tempered Stee",$ec,$7f
-        .aasc $07,"The Razor's Edg",$e5,$7f
-        .aasc $06,"The Polished Hil",$f4,$7f
-        .aasc $07,"The Bloody Blad",$e5,$7f
-        .aasc $08,"The Duelo Sho",$f0,$7f
-        .aasc $07,"Weaponry Suppl",$f9,$7f
-        .aasc $05,"Cold Steel Creation",$f3,$7f
-        .aasc $03,"Little Karelia's Finnish",$7e,$7f
-        .aasc $0b,"Grocer",$f9,$7f
-        .aasc $04,"Adventurer Supply Pos",$f4,$7f
-        .aasc $08,"The Brown Ba",$e7,$7f
-        .aasc $0a,"The Marke",$f4,$7f
-        .aasc $04,"Fresh Food Marketplac",$e5,$7f
-        .aasc $06,"Rations Unlimite",$e4,$7f
-        .aasc $04,"Fast Fresh Foodmarke",$f4,$7f
-        .aasc $03,"Exploration Provisioner",$f3
+        .aasc " The Reliable Transportation",$7e
+        .aasc $7f,$0c,"Shopp",$e5
+        .aasc $7f,$06,"Quality Transpor",$f4
+        .aasc $7f,$04,"Comfort Ride Tranport",$f3
+        .aasc "O.K. New & Used Transportatio",$ee
+        .aasc $7f,$0a,"Sly Sam'",$f3
+        .aasc "  Transportation Specialist",$f3
+_strTableShopPub
+        .aasc $7f,$09,"Pub de Var",$e7
+        .aasc $7f,$07,"Ye Old Local Pu",$e2
+        .aasc $7f,$08,"Dr. Cat's Lai",$f2
+        .aasc $7f,$06,"Dav's House-O-Sud",$f3
+        .aasc $7f,$03,"The Slaughtered Lamb In",$ee
+        .aasc $7f,$05,"The Blue Boar Taver",$ee
+        .aasc $7f,$09,"The Open Ke",$e7
+        .aasc $7f,$07,"The Running Ta",$f0
+_strTableShopMagic
+        .aasc " Chad the Mad's Magic Shopp",$e5
+        .aasc $7f,$07,"Mystic Melinda'",$f3
+        .aasc $7f,$08,"Words of Powe",$f2
+        .aasc "Psychic Sam's Magical Emporiu",$ed
+        .aasc $7f,$03,"The Alchemist's Worksho",$f0
+        .aasc $7f,$07,"The Crystal Bal",$ec
+        .aasc $7f,$06,"Herbs and Potion",$f3
+        .aasc $7f,$05,"The Unleashed Spel",$ec
+_strTableShopArmour
+        .aasc "  The Armour Shoppe of Lord",$7e
+        .aasc $7f,$05,"Eldric D'Charbonneu",$f8
+        .aasc $7f,$08,"Max's Armour",$f9
+        .aasc $7f,$08,"The Iron Fis",$f4
+        .aasc $7f,$05,"The Hammer -n- Anvi",$ec
+        .aasc "Defense Specialties, Unlimite",$e4
+        .aasc $7f,$08,"The Armour Bi",$ee
+        .aasc $7f,$05,"Protective Product",$f3
+        .aasc $7f,$05,"Custom Armour Work",$f3
+_strTableShopWeapons
+        .aasc $7f,$03,"Naughty Nomaan's Weapon",$f3
+        .aasc $7f,$06,"The Tempered Stee",$ec
+        .aasc $7f,$07,"The Razor's Edg",$e5
+        .aasc $7f,$06,"The Polished Hil",$f4
+        .aasc $7f,$07,"The Bloody Blad",$e5
+        .aasc $7f,$08,"The Duelo Sho",$f0
+        .aasc $7f,$07,"Weaponry Suppl",$f9
+        .aasc $7f,$05,"Cold Steel Creation",$f3
+_strTableShopFood
+        .aasc $7f,$03,"Little Karelia's Finnish",$7e
+        .aasc $7f,$0b,"Grocer",$f9
+        .aasc $7f,$04,"Adventurer Supply Pos",$f4
+        .aasc $7f,$08,"The Brown Ba",$e7
+        .aasc $7f,$0a,"The Marke",$f4
+        .aasc $7f,$04,"Fresh Food Marketplac",$e5
+        .aasc $7f,$06,"Rations Unlimite",$e4
+        .aasc $7f,$04,"Fast Fresh Foodmarke",$f4
+        .aasc $7f,$03,"Exploration Provisioner",$f3
 
 lad24
         .byt $00
@@ -2853,8 +2788,11 @@ lad2e
         lad35 = * + 7
         lad36 = * + 8
         lad37 = * + 9
-        lad38 = * + 10
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+
+_playerIntoxication
+lad38
+        .byt $00
 
 _strTableNpc
 lad39
@@ -2886,11 +2824,20 @@ lad88
         .byt $01,$01,$01,$01,$01,$01,$01,$03,$01,$01,$01,$01,$03
         lad98 = * + 3
         .byt $01,$03,$03,$1e,$5f,$5f,$2f,$5c,$5f,$02,$07,$08,$07,$03,$0c,$04
-        lada6 = * + 1
-        ladaf = * + 10
-        .byt $0b,$00,$00,$01,$01,$02,$02,$03,$04,$05,$01,$01,$01,$00,$00,$01
-ladb5
-        .byt $01
+        .byt $0b
+
+lada6
+_tileToShopId
+        .byt $00,$00            ; store: armoury
+        .byt $01,$01            ; store: food
+        .byt $02,$02            ; store: weapon
+        .byt $03                ; store: spells
+        .byt $04                ; store: tavern
+        .byt $05                ; store: transport
+
+_transportBckgndTile
+ladaf
+        .byt $01,$01,$01,$00,$00,$01,$01
 
 _priceList
 ladb6
@@ -2898,47 +2845,45 @@ ladb6
 
         .byt $a9,$c4,$e1
 
+_shopNamesByType
 ladc6
-
-
-   ladc7 = * + 1
-        .byt $17
-        .asc "+"
-        .byt $71
-        .asc ",U+"
-        .byt $67
-        .asc "*U)"
-
-        .word la907
+        .word _strTableShopArmour
+        .word _strTableShopFood
+        .word _strTableShopWeapons
+        .word _strTableShopMagic
+        .word _strTableShopPub
+        .word _strTableShopTransport
 
                                 ; transact: buy
 ladd2
         ladd3 = * + 1
-        .word l94c3
+        .word l94c3             ; buy armour
         .word l959e             ; buy food
-        .word l96ca
+        .word l96ca             ; buy weapons
         .word l98d2             ; buy spells
-        .word l99c1
-        .word l9e23             ; buy transport
+        .word _buyDrink         ; buy drink
+        .word _buyTransport     ; buy transport
 
                                 ; transact: sell
 ladde   laddf = * + 1
-        ladea = * + 12
-        ladeb = * + 13
-        .word l9fc7
+        .word l9fc7             ; sell armour
         .word la0c8             ; "Used food?  No thanks!"
-        .word l97b7
+        .word l97b7             ; sell weapons
         .word la11d             ; "We don't buy spells!"
         .word la13e             ; "We have plenty of booze"
         .word la0eb             ; "Sorry, we don't deal in used stuff..."
-        .word l9b2e             ; "about space travel..."
-        .word l9b8c             ; "to watch the..."
-        .word l9bab             ; "that the princess will give..."
-        .word l9c1f             ; "thou must go back in time..."
-        .word $9c40             ; "thou should destroy..."
-        .word l9c6a             ; "that many lakes..."
-        .word l9ca7             ; "this is a great game..."
-        .word l9cc3             ; "that over 1000 years ago,..."
+
+ladea
+_jmpTableHint
+        ladeb = * + 1
+        .word _printHint0       ; "about space travel..."
+        .word _printHint1       ; "to watch the..."
+        .word _printHint2       ; "that the princess will give..."
+        .word _printHint3       ; "thou must go back in time..."
+        .word _printHint4       ; "thou should destroy..."
+        .word _printHint5       ; "that many lakes..."
+        .word _printHint6       ; "this is a great game..."
+        .word _printHint7       ; "that over 1000 years ago,..."
         lae00 = * + 6
         .byt $00,$01,$00,$01,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
         .byt $00,$00,$01,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00

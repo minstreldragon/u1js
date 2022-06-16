@@ -145,7 +145,7 @@ _strTableClass
         .aasc "cleri",$e3
         .aasc "wizar",$e4
         .aasc "thie",$e6
-_strTableTransport
+strTableTransport
 l7930
         .aasc "foo",$f4
         .aasc "hors",$e5
@@ -194,15 +194,23 @@ l7a30
         .aasc "White Ge",$ed
 
 l7a51
-        .byt $0a,$05,$04,$03,$02,$01,$04,$06,$08,$0a,$01,$02,$04,$06,$08
+        .byt $0a,$05,$04,$03,$02,$01
+l7a57
+        .byt $04,$06,$08,$0a,$01,$02,$04,$06,$08
         l7a69 = * + 9
         l7a6a = * + 10
         l7a6f = * + 15
         .byt $02,$04,$06,$08,$09,$0a,$02,$02,$03,$03,$03,$04,$04,$04,$05,$05
         .byt $05,$06,$06,$06,$07,$07,$07,$08,$08,$08,$09,$09,$09,$0a,$0a
-        .asc " "
-        .asc "     "
-l7a85
+
+strTableMonsters
+l7a7f
+        .aasc $a0
+        .aasc $a0
+        .aasc $a0
+        .aasc $a0
+        .aasc $a0
+        .aasc $a0
         .aasc "Ness creatur",$e5
         .aasc "giant squi",$e4
         .aasc "dragon turtl",$e5
@@ -536,11 +544,13 @@ l825a
         .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
         .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
         .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-l83ac   inc l83b5
-        bne l83b4
-l83b1   inc l83b6
-l83b4   l83b5 = * + 1
-        l83b6 = * + 2
+
+fetchArgDataByte
+l83ac   inc argDataPtr
+        bne _fetchArgDataByteJ1
+        inc argDataPtr+1
+_fetchArgDataByteJ1
+argDataPtr = * + 1
         lda $0200
         rts
 
@@ -635,16 +645,16 @@ l842b
 
 printFromTable
 l842d   pla
-        sta l83b5               ; set data pointer to data after RTS call
+        sta argDataPtr          ; set data pointer to data after RTS call
         pla
-        sta l83b6
-        jsr l83ac               ; read data byte
+        sta argDataPtr+1
+        jsr fetchArgDataByte    ; read data byte
         sta l83b9
-        jsr l83ac               ; read data byte
+        jsr fetchArgDataByte    ; read data byte
         sta l83ba
-        lda l83b6               ; update return address
+        lda argDataPtr+1        ; update return address
         pha
-        lda l83b5
+        lda argDataPtr
         pha
 
         txa
@@ -688,23 +698,23 @@ l848a   stx zpCursorCol
 
 print
 l848e   pla
-        sta l83b5
+        sta argDataPtr
         pla
-        sta l83b6
-l8496   jsr l83ac
+        sta argDataPtr+1
+l8496   jsr fetchArgDataByte
 l8499   beq l84b0
 l849b   cmp #$7f
         beq l84a5
 l849f   jsr l83dd
 l84a2   jmp l8496
-l84a5   jsr l83ac
+l84a5   jsr fetchArgDataByte
 l84a8   clc
         adc zpCursorCol
         sta zpCursorCol
         jmp l8496
-l84b0   lda l83b6
+l84b0   lda argDataPtr+1
         pha
-        lda l83b5
+        lda argDataPtr
         pha
         rts
 
@@ -851,15 +861,20 @@ l85c2   iny
         bcs l85c2
 l85c7   tya
         rts
-l85c9   sta $43
+
+rangedRandom
+l85c9   sta zpRange             ; get a random number [0 ... A-1]
         jsr randomNumber
-l85ce   cmp $43
-        bcc l85d6
-l85d2   sbc $43
-        bcs l85ce
-l85d6   cmp #$00
-        sta $43
+_rangedRandomL1
+        cmp zpRange             ; number < range?
+        bcc _rangedRandomJ1     ; yes -> done
+        sbc zpRange             ; calculate modulo
+        bcs _rangedRandomL1
+_rangedRandomJ1
+        cmp #$00                ; set zero flag if random value is zero
+        sta zpRange
         rts
+
 l85db   jsr $1673
 l85de   lda $56
         rts
@@ -1185,25 +1200,25 @@ l882e
 _readySelectItem
 l8849   sta $46
         pla
-        sta l83b5
+        sta argDataPtr
         pla
-        sta l83b6
-        jsr l83ac               ; fetch parameter byte
+        sta argDataPtr+1
+        jsr fetchArgDataByte    ; fetch parameter byte
 l8856   sta l890b               ; number of selections
-        jsr l83ac               ; fetch parameter byte
+        jsr fetchArgDataByte    ; fetch parameter byte
 l885c   sta $41                 ; inventory pointer
-        jsr l83ac               ; fetch parameter byte
+        jsr fetchArgDataByte    ; fetch parameter byte
 l8861   sta $42
-        jsr l83ac               ; fetch parameter byte
+        jsr fetchArgDataByte    ; fetch parameter byte
 l8866   sta l8907               ; string table pointer
-        jsr l83ac               ; fetch parameter byte
+        jsr fetchArgDataByte    ; fetch parameter byte
 l886c   sta l8908
-        lda l83b6
+        lda argDataPtr+1
         pha
-        lda l83b5
+        lda argDataPtr
         pha
         jsr storeTextWinLayout
-l887a   jsr $165e
+l887a   jsr setTextTransactWindow
 l887d   ldx #$0e
         ldy #$00
         lda $5d
@@ -1280,7 +1295,7 @@ l890b   .byt $0a
 ztats
 l890c   jsr clearGameScreen
         jsr storeTextWinLayout
-        jsr $165e
+        jsr setTextTransactWindow
         jsr l8416
         ldx #$0c
         ldy #$00
@@ -1416,7 +1431,7 @@ l8a72   stx $46
         lda invTransport,x
         beq l8a7e
         jsr l8b22
-        .word _strTableTransport
+        .word strTableTransport
 l8a7e   ldx $46
         inx
         cpx #$0b
