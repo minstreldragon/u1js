@@ -66,14 +66,14 @@ l8d0d   jsr $1649
 l8d10   lda #$0e
         jsr printChar
 l8d15   jsr $86c6
-l8d18   jsr l8d45
+l8d18   jsr _waitKeyWithTimeout
 l8d1b   bne l8d3f
 l8d1d   lda #$00
         sta lad29
         jsr $83f6
 l8d25   lda #$20
         jsr printChar
-        jsr la273
+        jsr _finishMove
         jsr l8e15
         lda lad29
         bne l8d0d
@@ -85,13 +85,16 @@ l8d3f   jsr checkCommandKey
 l8d42   bcs l8d0d
 l8d44   rts
 
+_waitKeyWithTimeout
 l8d45   ldx #$80
-l8d47   jsr getKey
-l8d4a   bne l8d4f
-l8d4c   dex
-        bne l8d47
-l8d4f   tax
-        rts
+_waitKeyWithTimeoutL1
+        jsr getKey
+        bne _waitKeyWithTimeoutJ1
+        dex
+        bne _waitKeyWithTimeoutL1
+_waitKeyWithTimeoutJ1
+        tax
+        rts                     ; return with A = X = key, or 0 if timeout
 
 _mainLoopTown
 l8d51   lda statsHp
@@ -111,7 +114,7 @@ _mainLoopTownJ1
         sta _cmdJmpPtr+1
 _cmdJmpPtr = * + 1
         jsr $ffff
-        jsr la273
+        jsr _finishMove
         jmp _mainLoopTown
 
 _commandTable
@@ -143,54 +146,58 @@ l8d7f
         .word cmdTwZtats        ; ztats
 
 cmdTwNorth
-l8db1   ldx #$00
-        ldy #$ff
-        bne l8dc7
+l8db1   ldx #$00                ; delta lon = 0
+        ldy #$ff                ; delta lat = -1
+        bne _cmdTwMoveDir
 cmdTwSouth
-l8db7   ldx #$00
-        ldy #$01
-        bne l8dc7
+l8db7   ldx #$00                ; delta lon = 0
+        ldy #$01                ; delta lat = 1
+        bne _cmdTwMoveDir
 cmdTwEast
-l8dbd   ldx #$01
-        ldy #$00
-        beq l8dc7
+l8dbd   ldx #$01                ; delta lon = 1
+        ldy #$00                ; delta lat = 0
+        beq _cmdTwMoveDir
 cmdTwWest
-l8dc3   ldx #$ff
-        ldy #$00
-l8dc7   txa
+l8dc3   ldx #$ff                ; delta lon = -1
+        ldy #$00                ; delta lat = 0
+_cmdTwMoveDir
+        txa
         clc
         adc zpLongitude
-        sta $2c
-        tax
+        sta zpTargetTileLon
+        tax                     ; x = target tile longitude
         tya
         clc
         adc zpLatitude
-        sta $2d
-        tay
-        jsr la5eb               ; ?? get tile ??
-        bcs l8dff               ; is tile empty? -> yes
-        lda $2c                 ; target location x
-        cmp #38                 ; >= 38?
-        bcs l8de6               ; yes, outside town ->
-        lda $2d                 ; target location y
-        cmp #18                 ; >= 18?
-        bcc l8de9               ; no ->
+        sta zpTargetTileLat
+        tay                     ; y = target tile latitude
+        jsr _getTownTileCheckPlr; get town map tile, check NPCs
+        bcs _cmdTwMoveDirJ3     ; is tile empty? -> yes
+        lda zpTargetTileLon     ; target location x
+        cmp #38                 ; 0 <= x < 38?
+        bcs _cmdTwMoveDirJ1     ; no, outside town ->
+        lda zpTargetTileLat     ; target location y
+        cmp #18                 ; 0 <= y < 18?
+        bcc _cmdTwMoveDirJ2     ; yes ->
+_cmdTwMoveDirJ1
 l8de6   jmp $8c5e               ; ?? leave town ??
+_cmdTwMoveDirJ2
 l8de9   lda #$0e
         jsr playSoundEffect
         jsr $83f6
         jsr print
         .aasc "Blocked",$00
         jmp l8e15
-l8dff   ldx zpLongitude
+_cmdTwMoveDirJ3
+        ldx zpLongitude         ; clear old location
         ldy zpLatitude
-        lda #$20                ; char: empty field
-        jsr la5d3
-l8e08   ldx $2c
+        lda #CHAR_BLANK         ; char: empty field
+        jsr la5d3       
+        ldx zpTargetTileLon     ; update location
         stx zpLongitude
-        ldy $2d
+        ldy zpTargetTileLat     ; print player at new location
         sty zpLatitude
-        lda #$7b                ; char: player (?)
+        lda #CHAR_PLAYER        ; char: player
         jsr la5d3
 
 cmdTwPass
@@ -205,7 +212,7 @@ cmdTwAttack
 l8e22   jsr print
         .aasc "with ",$00
         ldx statsWeapon
-        jsr printFromTable
+        jsr printFromTable      ; print current weapon
         .word strTableWeapons
         ldx statsWeapon
         cpx #WEAPON_ROPE        ; weapon == Rope? -> invalid
@@ -248,39 +255,39 @@ _townAttackNothing
 _townAttackJ5
         dex
 _townAttackJ6
-        stx $24
-        sty $25
-        jsr checkCommandKey     ; check command (again), print direction
+        stx zpTargetTileLonDelta
+        sty zpTargetTileLatDelta
+        jsr checkCommandKey     ; (check command,) print direction
         jsr $83ed
-l8e84   ldx statsWeapon
+        ldx statsWeapon
         lda lad88,x
         sta lad2d
         lda zpLongitude
-        sta $2c
+        sta zpTargetTileLon
         lda zpLatitude
-        sta $2d
-l8e95   lda $2c
+        sta zpTargetTileLat
+l8e95   lda zpTargetTileLon     ; calculate target tile lon
         clc
-        adc $24
-        sta $2c
+        adc zpTargetTileLonDelta
+        sta zpTargetTileLon
         tax
-        lda $2d
+        lda zpTargetTileLat     ; calculate target tile lat
         clc
-        adc $25
-        sta $2d
+        adc zpTargetTileLatDelta
+        sta zpTargetTileLat
         tay
-        jsr la5eb
-l8ea8   php
+        jsr _getTownTileCheckPlr; get town tile or NPC
+        php
         cmp #$16
         bcc l8ebd
 l8ead   plp
         php
         bcs l8ebd
 l8eb1   plp
-        cmp #$30
-        bcc l8ec3
-l8eb6   cmp #$36
-        bcs l8ec3
+        cmp #$30                ; is an NPC (lower bound)?
+        bcc l8ec3               ; no ->
+        cmp #$36                ; is an NPC (upper bound=?
+        bcs l8ec3               ; no ->
 l8eba   jmp l8ed4
 l8ebd   plp
         dec lad2d
@@ -290,25 +297,26 @@ l8ec3   lda #$06
         jsr print
         .aasc "Missed!",$00
         rts
+
 l8ed4   sec
-        sbc #$30
-        sta zpMapPtr
-        ldx zpMapPtr
-        lda #$80
+        sbc #$30                ; convert to NPC type
+        sta zpNpcType
+        ldx zpNpcType
+        lda #$80                ; hit probability = $80 + Agility
         clc
         adc statsAgility
-        sta $4d
+        sta zpAgilityCheck
         jsr randomNumber
-        cmp $4d
-        bcs l8ec3
+        cmp zpAgilityCheck      ; do agility check
+        bcs l8ec3               ; agility check failed -> missed
         lda #$01                ; karma: bad
         sta _karma              ; set karma to bad!
         lda #$06
         jsr playSoundEffect
         jsr print
         .aasc "Hit ",$00
-        ldx zpTwMapTile
-        jsr printFromTable
+        ldx zpNpcType
+        jsr printFromTable      ; print NPC type
         .word _strTableNpc
         jsr print
         .aasc "! ",$00
@@ -345,30 +353,30 @@ l8f50   adc $6761
         adc $00
         rts
 l8f56   lda #$ff
-        sta npcTile,x
+        sta npcType,x
         sta npcLon,x
         sta npcLat,x
         sta npcHpHb,x
         jsr print
         .aasc "Killed!",$00
-        lda zpMapPtr
-        cmp #$04
+        lda zpNpcType
+        cmp #NPC_JESTER
         bne l8f7c
-l8f75   lda #$01                ; 1 XP
+        lda #$01                ; 1 XP
         ldx #$00
         jmp l8f96
-l8f7c   cmp #$05                ; 5 XP
+l8f7c   cmp #NPC_CITIZEN        ; 5 XP
         bne l8f87
         lda #$02
         ldx #$00
         jmp l8f96
-l8f87   cmp #$01
+l8f87   cmp #NPC_MERCHANT
         bne l8f92
         lda #$01                ; 1 XP
         ldx #$00
         jmp l8f96
 
-l8f92   lda #$0f
+l8f92   lda #$0f                ; 15 XP
         ldx #$00
 l8f96   clc
         adc statsXp
@@ -385,9 +393,9 @@ l8fb0   lda #<9999
         sta statsXp
         lda #>9999
         sta statsXp+1
-l8fba   ldx $2c
-        ldy $2d
-        lda #$20
+l8fba   ldx zpTargetTileLon
+        ldy zpTargetTileLat
+        lda #CHAR_BLANK         ; clear previous guard location
         jmp la5d3
 
 cmdTwCast
@@ -705,7 +713,7 @@ l9274   lda #18
         jmp $8772
 
 cmdTwReady
-l9299   jsr l8d45
+l9299   jsr _waitKeyWithTimeout
         cmp #$53                ; 'S'
         beq _cmdTwReadyJ1
         cmp #$57                ; 'W'
@@ -865,7 +873,7 @@ _transactJ2
 _transactJ3
         jsr print
         .aasc "-Buy, Sell: ",$00
-        jsr l8d45
+        jsr _waitKeyWithTimeout
         ldx #$09
         stx zpCursorCol
         cmp #$42                ; 'B'
@@ -957,8 +965,8 @@ l94e5   ldx lad34               ; item index
         jsr la200
 l94fd   lda #$00
         sta $85be
-        ldx lad30
-        lda lad31
+        ldx _price
+        lda _price+1
         jsr $857c               ; print number ??
 l950b   jsr $83f3               ; newline in window
 l950e   inc lad34               ; inc item index
@@ -993,33 +1001,33 @@ l954b   cpx #$05
 l954f   jmp l9580
 l9552   sec
         sbc #$41
-        sta $4d
+        sta zpItemId
         tax
         jsr la200
 l955b   jsr la183
 l955e   bcc l957d
-l9560   ldx $4d
+l9560   ldx zpItemId
         inc invArmour,x
         jsr la16d
-l9568   jsr setTextCommandWindow
-l956b   lda #23
+        jsr setTextCommandWindow
+        lda #23
         sta zpCursorRow
         lda #15
         sta zpCursorCol
-        ldx $4d
+        ldx zpItemId
         jsr printFromTable
-        .asc "T"
-l9579   sei
+        .word strTableArmour
         jmp la874
 l957d   jsr la1c5
 l9580   jsr setTextCommandWindow
-l9583   lda #15
+        lda #15
 l9585   sta zpCursorCol
         lda #23
         sta zpCursorRow
         jsr print
         .aasc "nothing",$00
         rts
+
 l9597   jsr setTextCommandWindow
 l959a   lda #$10
         bne l9585
@@ -1191,8 +1199,8 @@ l9747   and !zpLongitude
         jsr la20d
 l9750   lda #$00
         sta $85be
-        ldx lad30
-        lda lad31
+        ldx _price
+        lda _price+1
         jsr $857c               ; print number ??
 l975e   jsr $83f3               ; newline in window
 l9761   inc lad34
@@ -1275,14 +1283,14 @@ l9801   and !zpLongitude
         lda _priceList,x
         tax
         jsr la23f
-l9816   lda lad31
+l9816   lda _price+1
         clc
         adc #$01
-        sta lad30
+        sta _price
         lda #$00
-        sta lad31
+        sta _price+1
         sta $85be
-        ldx lad30
+        ldx _price
         jsr $857c               ; print number ??
 l982d   jsr $83f3               ; newline in window
 l9830   inc lad34
@@ -1317,18 +1325,18 @@ l9879   stx $4d
         lda _priceList,x
         tax
         jsr la23f
-l988a   lda lad31               ; sell price = price / 256 + 1
+l988a   lda _price+1            ; sell price = price / 256 + 1
         clc
         adc #$01
-        sta lad30
+        sta _price
         lda #$00
-        sta lad31
+        sta _price+1
         lda statsCoin
         clc
-        adc lad30               ; add sales price to player's money
+        adc _price              ; add sales price to player's money
         sta statsCoin
         lda statsCoin+1
-        adc lad31
+        adc _price+1
         sta statsCoin+1
         jsr l9170
 l98ae   ldx $4d
@@ -1389,8 +1397,8 @@ l9923   and !zpLongitude
         jsr la1f0
 l992c   lda #$00
         sta $85be
-        ldx lad30
-        lda lad31
+        ldx _price
+        lda _price+1
         jsr $857c               ; print number ??
 l993a   jsr $83f3               ; newline in window
 l993d   inc lad34
@@ -1748,8 +1756,8 @@ l9fb0   inc $ae62,x
         jsr la22b
 l9fb6   lda #$00
         sta $85be
-        ldx lad30
-        lda lad31
+        ldx _price
+        lda _price+1
         jsr $857c               ; print number ??
         jmp $83f3               ; newline in window
 
@@ -1784,8 +1792,8 @@ l9fef   ldx lad34
         jsr la23f
 la00e   lda #$00
         sta $85be
-        ldx lad30
-        lda lad31
+        ldx _price
+        lda _price+1
         jsr $857c               ; print number ??
 la01c   jsr $83f3               ; newline in window
 la01f   inc lad34
@@ -1816,39 +1824,38 @@ la070   cmp #$47
 la074   jmp l9597
 la077   sec
         sbc #$41
-        sta $4d
+        sta zpItemId
         tax
         lda invArmour,x
         beq la074
-la082   ldx $4d
+la082   ldx zpItemId
         lda statsCharisma
         lsr
         lsr
         sta zpMapPtr
         jsr la23f
-la08e   ldx $4d
+la08e   ldx zpItemId
         dec invArmour,x
         bne la09a
 la095   lda #$00
         sta statsArmour
 la09a   lda statsCoin
         clc
-        adc lad30
+        adc _price
         sta statsCoin
         lda statsCoin+1
-        adc lad31
+        adc _price+1
         sta statsCoin+1
         jsr l9170
 la0b0   jsr la1b6
 la0b3   jsr setTextCommandWindow
-la0b6   lda #$17
+        lda #23
         sta zpCursorRow
         lda #$10
         sta zpCursorCol
-        ldx $4d
-        jsr printFromTable
-        .asc "T"
-la0c4   sei
+        ldx zpItemId
+        jsr printFromTable      ; print armour name
+        .word strTableArmour
         jmp la874
 
 la0c8   jsr print
@@ -1879,16 +1886,16 @@ la13e   jsr print
 
 la16d   lda statsCoin
         sec
-        sbc lad30
+        sbc _price
         sta statsCoin
         lda statsCoin+1
-        sbc lad31
+        sbc _price+1
         sta statsCoin+1
         jmp la1a7
 la183   lda statsCoin
-        cmp lad30
+        cmp _price
         lda statsCoin+1
-        sbc lad31
+        sbc _price+1
         rts
 la190   jsr storeTextWinLayout
 la193   jsr setTextCommandWindow
@@ -1944,12 +1951,12 @@ la20d   lda #$ff
         lda _priceList,x
         tax
         jsr la23f
-la21c   lda lad31
+la21c   lda _price+1
         clc
         adc #$05
-        sta lad30
+        sta _price
         lda #$00
-        sta lad31
+        sta _price+1
         rts
 
 la22b   lda #200
@@ -1964,18 +1971,18 @@ la239   sty zpMapPtr            ; price unit
         lda _priceList,x        ; price of item in price units
         tax
 la23f   lda #$00
-        sta lad30               ; price = 0
-        sta lad31
+        sta _price              ; price = 0
+        sta _price+1
 la247   dex
         cpx #$ff
         beq la260
-la24c   lda lad30
+la24c   lda _price
         clc
         adc zpMapPtr            ; price += price unit
-        sta lad30
-        lda lad31
+        sta _price
+        lda _price+1
         adc #$00
-        sta lad31
+        sta _price+1
         jmp la247
 la260   rts
 
@@ -1989,33 +1996,39 @@ cmdTwZtats
 la26d   jsr $890c
         jmp _drawTownMap
 
-la273   lda _karma
-        bne la27b
-la278   jmp la3ea
-la27b   ldx #$0f
-        stx lad2b
-la280   ldx lad2b
-        lda npcTile,x
-        cmp #$03
-        beq la28d
-la28a   jmp la33d
-la28d   jsr la76e
+_finishMove
+la273   lda _karma              ; karma = good?
+        bne _finishMoveJ1       ; no ->
+        jmp _moveNpcs
+_finishMoveJ1
+        ldx #$0f
+        stx _npcIndex           ; npc index
+_moveGuardsL1
+la280   ldx _npcIndex           ; npc index
+        lda npcType,x
+        cmp #NPC_GUARD          ; guard?
+        beq _moveGuardsJ1
+        jmp la33d
+_moveGuardsJ1
+        jsr la76e
 la290   cmp #$02
         bcs la297
 la294   jmp la347
 la297   cmp #$09
         bcc la29e
 la29b   jmp la33d
+
 la29e   ldy #$00
-        ldx lad2b
+        ldx _npcIndex
         lda zpLongitude
         cmp npcLon,x
         beq la2b0
-la2aa   bmi la2af
-la2ac   iny
+        bmi la2af
+        iny
         bne la2b0
 la2af   dey
-la2b0   sty $24
+la2b0   sty zpTargetTileLonDelta
+
         ldy #$00
         lda zpLatitude
         cmp npcLat,x
@@ -2024,61 +2037,63 @@ la2bb   bmi la2c0
 la2bd   iny
         bne la2c1
 la2c0   dey
-la2c1   sty $25
+la2c1   sty zpTargetTileLatDelta
+
         lda npcLat,x
         clc
-        adc $25
-        sta $2d
+        adc zpTargetTileLatDelta
+        sta zpTargetTileLat
         lda npcLon,x
         clc
-        adc $24
-        sta $2c
+        adc zpTargetTileLonDelta
+        sta zpTargetTileLon
         jsr randomNumber
-la2d6   ora #$01
+
+        ora #$01
         sta la346
 la2db   lda la346
         bmi la2f9
-la2e0   ldx lad2b
+la2e0   ldx _npcIndex
         lda npcLon,x
         tax
-        ldy $2d
-        jsr la5eb
+        ldy zpTargetTileLat
+        jsr _getTownTileCheckPlr
 la2ec   bcc la331
-la2ee   ldx lad2b
+la2ee   ldx _npcIndex
         lda npcLon,x
-        sta $2c
+        sta zpTargetTileLon
         jmp la30e
-la2f9   ldx lad2b
+la2f9   ldx _npcIndex
         ldy npcLat,x
-        ldx $2c
-        jsr la5eb
+        ldx zpTargetTileLon
+        jsr _getTownTileCheckPlr
 la304   bcc la331
-la306   ldx lad2b
+la306   ldx _npcIndex
         ldy npcLat,x
         sty $2d
-la30e   ldx lad2b
+la30e   ldx _npcIndex
         ldy npcLat,x
         lda npcLon,x
         tax
-        lda #$20
+        lda #CHAR_BLANK         ; clear previous guard location
         jsr la5d3
-la31d   ldx lad2b
-        lda $2d
+        ldx _npcIndex
+        lda zpTargetTileLat     ; update NPC location
         sta npcLat,x
         tay
-        lda $2c
+        lda zpTargetTileLon
         sta npcLon,x
         tax
-        lda #$2f
+        lda #CHAR_GUARD         ; print guard at new location
         jsr la5d3
 la331   lda la346
         eor #$ff
         sta la346
         and #$01
         beq la2db
-la33d   dec lad2b
+la33d   dec _npcIndex
         bmi la345
-la342   jmp la280
+la342   jmp _moveGuardsL1
 la345   rts
 la346   .byt $00
 
@@ -2142,31 +2157,38 @@ la3c7   adc $6761
 la3e4   jmp _townPlayerDead
 la3e7   jmp la33d
 
-la3ea   ldy #$0f
-        sty lad2b
-la3ef   lda npcTile,y
-        cmp #$04
-        bne la3fc
-la3f6   jsr la40c
-la3f9   jmp la403
-la3fc   cmp #$05
-        bne la403
-la400   jsr la4c7
-la403   dec lad2b
-        ldy lad2b
-        bpl la3ef
-la40b   rts
-la40c   jsr la662
-la40f   ldx $2c
-        ldy $2d
-        jsr la5eb
-la416   bcc la41b
-la418   jmp la4a4
-la41b   cmp #$2f
-        beq la457
-la41f   jsr randomNumber
-la422   cmp #$28
-        bcs la456
+_moveNpcs
+        ldy #$0f
+        sty _npcIndex
+_moveNpcsL1
+        lda npcType,y
+        cmp #NPC_JESTER         ; Jester?
+        bne _moveNpcsJ1
+        jsr _moveJester
+        jmp _moveNpcsJ2
+_moveNpcsJ1
+        cmp #NPC_CITIZEN        ; citizen?
+        bne _moveNpcsJ2
+        jsr _moveCitizen
+_moveNpcsJ2
+        dec _npcIndex
+        ldy _npcIndex
+        bpl _moveNpcsL1
+        rts
+
+_moveJester
+la40c   jsr _randomNpcTargetPos
+        ldx zpTargetTileLon
+        ldy zpTargetTileLat
+        jsr _getTownTileCheckPlr
+        bcc _moveJesterJ1       ; target position is blocked? ->
+        jmp _updateJesterOnScreen
+_moveJesterJ1
+        cmp #$2f                ; player at this location?
+        beq _ioloStealWeapon    ; yes ->
+        jsr randomNumber
+        cmp #40                 ; random number < 40?
+        bcs _moveJesterEnd      ; no ->
         lda #23
         sta zpCursorRow
         inc lad29
@@ -2174,72 +2196,89 @@ la422   cmp #$28
         .aasc $7e
         .aasc "Iolo the Bard sings:",$7e
         .aasc "Ho eyoh he hum!",$00
-la456   rts
+_moveJesterEnd
+        rts
+
+_ioloStealWeapon
 la457   lda #$00
-        sta zpMapPtr
-        ldx #$0f
-la45d   lda invWeapons,x
-        beq la46c
-la462   cpx statsWeapon
-        beq la46c
-la467   dec invWeapons,x
-        inc zpMapPtr
-la46c   dex
-        bne la45d
-la46f   lda #$80
+        sta zpNumItemsStolen
+        ldx #$0f                ; iterate over weapon IDs
+_ioloStealWpnL1
+        lda invWeapons,x        ; weapon owned?
+        beq _ioloStealWpnJ1     ; no -> skip
+        cpx statsWeapon         ; weapon wielded?
+        beq _ioloStealWpnJ1     ; yes -> skip
+        dec invWeapons,x        ; steal one weapon of this kind
+        inc zpNumItemsStolen    ; mark that a weapon has been stolen
+_ioloStealWpnJ1
+        dex
+        bne _ioloStealWpnL1
+
+        lda #$80                ; wisdom check = Wisom + $80
         clc
         adc statsWisdom
-        sta $4d
-        jsr randomNumber
-la47a   cmp zpMapPtr
-        bcs la4a3
-la47e   lda zpMapPtr
-        beq la4a3
+        sta zpWisdomCheck
+        jsr randomNumber        ; check against random number
+#ifdef BUGFIX
+        cmp zpWisdomCheck
+#else
+        cmp zpNumItemsStolen    ; BUG: should be compared to zpWisdomCheck
+#endif
+        bcs _ioloStealWpnEnd
+        lda zpNumItemsStolen
+        beq _ioloStealWpnEnd
         lda #23
         sta zpCursorRow
         inc lad29
         jsr print
         .aasc $7e
         .aasc "Iolo stole something!",$00
-la4a3   rts
-la4a4   ldy lad2b
+_ioloStealWpnEnd
+        rts
+
+_updateJesterOnScreen
+la4a4   ldy _npcIndex
         ldx npcLon,y
         lda npcLat,y
         tay
-        lda #$20
+        lda #CHAR_BLANK         ; clear previous NPC location
         jsr la5d3
-la4b3   ldy lad2b
-        lda $2c
+        ldy _npcIndex
+        lda zpTargetTileLon     ; update NPC location
         sta npcLon,y
         tax
-        lda $2d
+        lda zpTargetTileLat
         sta npcLat,y
         tay
-        lda #$5c
+        lda #CHAR_JESTER        ; print NPC at new location
         jmp la5d3
-la4c7   jsr la662
-la4ca   ldx $2c
-        ldy $2d
-        jsr la5eb
-la4d1   bcs la4d4
-la4d3   rts
-la4d4   cmp #$6d
-        bne la4d9
-la4d8   rts
-la4d9   ldy lad2b
+
+_moveCitizen
+la4c7   jsr _randomNpcTargetPos
+        ldx zpTargetTileLon
+        ldy zpTargetTileLat
+        jsr _getTownTileCheckPlr
+        bcs _moveCitizenJ1
+        rts
+_moveCitizenJ1
+        cmp #TW_TILE_RANDOM_WALK_BARRIER
+        bne _moveCitizenJ2
+        rts
+_moveCitizenJ2
+        ldy _npcIndex
         ldx npcLon,y
         lda npcLat,y
         tay
-        lda #$20
+        lda #CHAR_BLANK         ; clear previous NPC location
         jsr la5d3
-la4e8   ldy lad2b
-        lda $2c
+        ldy _npcIndex
+        lda zpTargetTileLon     ; update NPC location
         sta npcLon,y
         tax
-        lda $2d
+        lda zpTargetTileLat
         sta npcLat,y
         tay
-        lda #$5f
+        lda #CHAR_CITIZEN       ; print NPC at new location
         jmp la5d3
 
 cmdTwInform
@@ -2328,11 +2367,11 @@ la5b1   lda npcLon,y
         lda npcLat,y
         sta zpCursorRow
         inc zpCursorRow
-        lda npcTile,y
+        lda npcType,y
         bmi la5cd
 la5c2   sty zpMapPtr
         tax
-        lda lad98,x
+        lda npcTypeToChar,x
         jsr printChar
 la5cb   ldy zpMapPtr
 la5cd   dey
@@ -2343,7 +2382,7 @@ la5d3   stx zpMapPtr
         sty $4d
         pha
         jsr setTextTransactWindow
-la5db   pla
+        pla
         ldx zpMapPtr
         ldy $4d
         stx zpCursorCol
@@ -2352,10 +2391,11 @@ la5db   pla
         jsr printChar
 la5e8   jmp setTextCommandWindow
 
+_getTownTileCheckPlr
 la5eb   jsr _getTownTile
-la5ee   bcs la5f1
-la5f0   rts
-la5f1   lda zpLongitude
+        bcs la5f1               ; can enter filed? ->
+        rts
+la5f1   lda zpLongitude         ; compare with player position
         cmp zpMapPtr
         bne la601
 la5f7   lda zpLatitude
@@ -2400,7 +2440,7 @@ la637   lda npcLat,x
         cmp $4d                 ; compare with target y
         bne la648
 la63e   stx lad2e
-        lda npcTile,x             ; read npc tile
+        lda npcType,x           ; read npc type
         clc                     ; NPC found
         adc #$30
         rts
@@ -2410,25 +2450,30 @@ la64b   tya                     ; background tile
         sec                     ; no NPC here
         rts
 
-la64e   jsr randomNumber
-la651   cmp #$55
-        bcs la658
-la655   lda #$ff
+_randomIncDecNone               ; return random number [-1, 0, 1]
+        jsr randomNumber        ; random number 0..255
+        cmp #85                 ; < 1/3 of range?
+        bcs _randIncDecNoneJ1   ; no ->
+        lda #$ff                ; return -1
         rts
-la658   cmp #$aa
-        bcs la65f
-la65c   lda #$00
+_randIncDecNoneJ1
+        cmp #170                ; >= 2/3 of range?
+        bcs _randIncDecNoneJ2   ; yes ->
+        lda #$00                ; return 0
         rts
-la65f   lda #$01
+_randIncDecNoneJ2
+        lda #$01                ; return 1
         rts
-la662   jsr la64e
-la665   clc
-        adc npcLon,y
-        sta $2c
-        jsr la64e
-la66e   clc
+
+_randomNpcTargetPos
+la662   jsr _randomIncDecNone   ; random number [-1, 0, 1]
+        clc
+        adc npcLon,y            ; add to current npc longitude
+        sta zpTargetTileLon     ; npc target longitude
+        jsr _randomIncDecNone   ; random number [-1, 0, 1]
+        clc
         adc npcLat,y
-        sta $2d
+        sta zpTargetTileLat     ; npc target latitude
         rts
 
 _enterNumber
@@ -2529,25 +2574,25 @@ la72a   sta zpMapPtr
         jmp la733
 la733   lda #$00
         sta $4d
-        sta lad30
-        sta lad31
+        sta _price
+        sta _price+1
         ldx #$07
 la73f   lda lad2f
         and #$01
         bne la757
-la746   lda lad30
+la746   lda _price
         clc
         adc zpMapPtr
-        sta lad30
-        lda lad31
+        sta _price
+        lda _price+1
         adc $4d
-        sta lad31
+        sta _price+1
 la757   lsr lad2f
         asl zpMapPtr
         rol $4d
         dex
         bne la73f
-la761   lda lad31
+la761   lda _price+1
         rts
 la765   jsr setTextCommandWindow
 la768   jsr $1649
@@ -2564,7 +2609,7 @@ la77e   sec
         sbc npcLon,x
         bcs la78d
 la784   sta lad33
-        sec
+        sec                     ; invert
         lda #$00
         sbc lad33
 la78d   ldy #$00
@@ -2582,6 +2627,7 @@ la79b   tya
         bcc la798
 la7a5   inc lad26
         bcs la798
+
 la7aa   ldx lad24
         lda zpLatitude
         sec
@@ -2589,7 +2635,7 @@ la7aa   ldx lad24
         bcs la7be
 la7b5   sta lad33
         sec
-        lda #$00
+        lda #$00                ; invert
         sbc lad33
 la7be   ldy #$00
         sty lad27
@@ -2771,6 +2817,8 @@ lad29
 
 _karma
         .byt $00
+
+_npcIndex
 lad2b
         .byt $00
 
@@ -2781,14 +2829,19 @@ lad2d
         .byt $00
 lad2e
         lad2f = * + 1
-        lad30 = * + 2
-        lad31 = * + 3
         lad33 = * + 5
         lad34 = * + 6
         lad35 = * + 7
         lad36 = * + 8
         lad37 = * + 9
-        .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+        .byt $00
+        .byt $00
+
+_price
+lad30
+        .word $0000
+
+        .byt $00,$00,$00,$00,$00,$00
 
 _playerIntoxication
 lad38
@@ -2822,8 +2875,19 @@ lad76
 
 lad88
         .byt $01,$01,$01,$01,$01,$01,$01,$03,$01,$01,$01,$01,$03
-        lad98 = * + 3
-        .byt $01,$03,$03,$1e,$5f,$5f,$2f,$5c,$5f,$02,$07,$08,$07,$03,$0c,$04
+        .byt $01,$03,$03
+
+lad98
+npcTypeToChar
+        .byt CHAR_KING          ; king
+        .byt CHAR_CITIZEN       ; merchant
+        .byt CHAR_CITIZEN       ; princess
+        .byt CHAR_GUARD         ; guard
+        .byt CHAR_JESTER        ; jester
+        .byt CHAR_CITIZEN       ; citizen
+
+lad9e
+        .byt $02,$07,$08,$07,$03,$0c,$04
         .byt $0b
 
 lada6

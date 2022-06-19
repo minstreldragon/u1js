@@ -1,3 +1,10 @@
+        NPC_KING = 0
+        NPC_MERCHANT = 1
+        NPC_PRINCESS = 2
+        NPC_GUARD = 3
+        NPC_JESTER = 4
+        NPC_CITIZEN = 5
+
         TRANSPORT_FOOT = 0
         TRANSPORT_HORSE = 1
         TRANSPORT_CART = 2
@@ -26,6 +33,21 @@
         TILE_HOVERCAR = $0d
         TILE_SHUTTLE = $0e
         TILE_TIME_CAPSULE = $0f
+        TILE_NESS_CREATURE = $10
+        TILE_GIANT_SQUID = $12
+        TILE_DRAGON_TURTLE = $14
+        TILE_PIRATE_SHIP = $16
+        TILE_HOOD = $18
+        TILE_BEAR = $1a
+        TILE_HIDDEN_ARCHER = $1c
+        TILE_DARK_KNIGHT = $1e
+        TILE_EVIL_TRENT = $20
+        TILE_THIEF = $22
+        TILE_ORC = $24
+        TILE_KNIGHT = $26
+        TILE_NECROMANDER = $28
+        TILE_EVIL_RANGER = $2a
+        TILE_WARLOCK = $2c
 
         TW_TILE_COUNTER_LEFT = $1c
         TW_TILE_COUNTER_RIGHT = $1d
@@ -45,6 +67,14 @@
         TW_TILE_AT_MAGIC = $6a
         TW_TILE_AT_PUB = $6b
         TW_TILE_AT_TRANSPORT = $6c
+        TW_TILE_RANDOM_WALK_BARRIER = $6d
+
+        CHAR_KING = $1e
+        CHAR_BLANK = $20
+        CHAR_GUARD = $2f
+        CHAR_JESTER = $5c
+        CHAR_CITIZEN = $5f
+        CHAR_PLAYER = $7b
 
         RACE_HUMAN = 1
         RACE_ELF = 2

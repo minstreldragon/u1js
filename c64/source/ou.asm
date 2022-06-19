@@ -40,7 +40,7 @@ l8cc2   lda #$36
         jsr $1646
 l8ce3   ldx #$00
         stx $81c8
-        lda $bd00
+        lda objHp
         bne l8cf0
 l8ced   jsr l9a10
 l8cf0   jsr l9840
@@ -218,22 +218,22 @@ l8e5b   dec la145
 l8e60   sec
 l8e61   rts
 
-l8e62   ldx $826b
+l8e62   ldx objLen
         beq l8e97
 l8e67   dex
-        lda $826c,x
+        lda objLon,x
         cmp $22
         bne l8e94
-l8e6f   lda $82bc,x
+l8e6f   lda objLat,x
         and #$3f
         cmp $23
         bne l8e94
-l8e78   lda $830c,x
-        cmp #$20
+l8e78   lda objTile,x
+        cmp #TILE_NESS_CREATURE << 1
         bcc l8e94
-l8e7f   cmp #$5a
+l8e7f   cmp #(TILE_WARLOCK + 1) << 1
         bcs l8e94
-l8e83   lsr
+l8e83   lsr                     ; convert to monster id + 8
         lsr
         adc #$fe
         sta $8267
@@ -273,7 +273,7 @@ l8ec9   lda #$06
         sta (zpMapPtr),y
         jsr $166a
 l8eda   jsr l9c77
-l8edd   lda $830c,x
+l8edd   lda objTile,x
         sta (zpMapPtr),y
         lda statsAgility
         clc
@@ -299,12 +299,12 @@ l8f0f   sta $81c1
         lda #$00
         sta $85be
         ldx $44
-        lda $bd00,x
+        lda objHp,x
         sec
         sbc $81c1
         beq l8f51               ; hp = 0? -> kill
         bcc l8f51               ; hp < 0? -> kill
-        sta $bd00,x
+        sta objHp,x
         jsr print
         .aasc $7e,"Hit",$00
 l8f2f   jsr l8fe7
@@ -389,15 +389,13 @@ l8ff8   jsr print
         rts
 
 l8fff   ldx $8268
-        cpx $826b
+        cpx objLen
         bcs l9022
-l9007   lda $830c,x
-        l900b = * + 1
-; Instruction parameter jumped to.
-        cmp #$20
-l900c   bcc l9022
-l900e   cmp #$5a
-        bcs l9022
+l9007   lda objTile,x           ; check whether object is a monster
+        cmp #TILE_NESS_CREATURE << 1
+        bcc l9022               ; not a monster ->
+        cmp #(TILE_WARLOCK + 1) << 1
+        bcs l9022               ; not a monster ->
 l9012   jsr l9cfc
 l9015   ldx #$00
         stx $8267
@@ -647,7 +645,7 @@ l9354   lda #$5c
         sta ($4c),y
         jsr $166a
 l935b   jsr l9c77
-l935e   lda $830c,x
+l935e   lda objTile,x
         sta ($4c),y
         lda statsSpell
         cmp #$03
@@ -938,7 +936,7 @@ l961c   lda #$5e
         sta ($4c),y
         jsr $166a
 l9623   jsr l9c77
-l9626   lda $830c,x
+l9626   lda objTile,x
         sta ($4c),y
         jsr randomNumber
 l962e   cmp #$33
@@ -1197,7 +1195,7 @@ l9840   lda statsContinent
         ldy #$00
 _unpackMapL1
         lda ($36),y             ; read source byte (RLE packed)
-        beq l9882               ; byte is zero ->
+        beq _addMapObjects      ; byte is zero ->
         lsr
         lsr                     ; get upper five bits
         lsr
@@ -1218,44 +1216,48 @@ _unpackMapJ1
         inc $37
         bne _unpackMapL1
 
+_addMapObjects
 l9882   lda statsContinent
         lsr
         ror
         ror
         sta statsContinentMsb
-        ldx $826b
+        ldx objLen              ; number of objects
         beq l98ab
+_addMapObjL1
 l9890   dex
-        lda $82bc,x
+        lda objLat,x
         and #$c0                ; mask continent bits
-        cmp statsContinentMsb   ; current continent?
-        bne l98a8               ; no ->
+        cmp statsContinentMsb   ; on current continent?
+        bne _addMapObjJ1        ; no ->
         jsr _getObjectMapPtr
         lda (zpMapPtr),y        ; read map tile at object location
-        sta $835c,x             ; store in object background slot
-        lda $830c,x             ; read object tile
+        sta objBckgndTile,x     ; store in object background slot
+        lda objTile,x           ; read object tile
         sta (zpMapPtr),y        ; store in map
-l98a8   txa
-        bne l9890
+_addMapObjJ1
+        txa
+        bne _addMapObjL1
+
 l98ab   stx $3f
         ldx zpLongitude
         ldy zpLatitude
-        dey
+        dey                     ; location north of player
         lda $8226
         jsr l9c90
 l98b8   ldx zpLongitude
         ldy zpLatitude
-        dex
+        dex                     ; location west of player
         lda $8227
         jsr l9c90
 l98c3   ldx zpLongitude
         ldy zpLatitude
-        inx
+        inx                     ; location east of player
         lda $8228
         jsr l9c90
 l98ce   ldx zpLongitude
         ldy zpLatitude
-        iny
+        iny                     ; location south of player
         lda $8229
         jsr l9c90
 l98d9   ldx #$03
@@ -1297,10 +1299,10 @@ l9920   sta la143
         beq l992e
 l9928   inc invTransport,x
         inc la143
-l992e   ldy $826b
+l992e   ldy objLen
         beq l9950
 l9933   dey
-        lda $830c,y
+        lda objTile,y
         cmp #$20
         bcs l994d
 l993b   cmp #$12
@@ -1315,7 +1317,7 @@ l9949   tax
 l994d   tya
         bne l9933
 l9950   rts
-l9951   lda $826b
+l9951   lda objLen
         cmp #$41
         bcs l9987
 l9958   jsr randomNumber
@@ -1400,7 +1402,7 @@ l99f9   pla
         sec
         adc $43
         ror
-l99fe   ldx $826b
+l99fe   ldx objLen
         sta $bcff,x
 l9a04   rts
 l9a05   .byt $00,$0a,$14,$1e,$28,$32,$3c,$46
@@ -1408,10 +1410,10 @@ l9a0d   bvc l9a69
         .asc ""
         .byt $64
 
-l9a10   ldx $826b
+l9a10   ldx objLen
         beq l9a27
 l9a15   dex
-        lda $830c,x
+        lda objTile,x
         cmp #$20
         bcc l9a24
 l9a1d   cmp #$5a
@@ -1421,22 +1423,24 @@ l9a24   txa
         bne l9a15
 l9a27   stx $8267
         dex
-        stx $bd00
+        stx objHp
         rts
+
 l9a2f   jsr l9951
-l9a32   ldx $826b
+l9a32   ldx objLen
         beq l9a4c
 l9a37   dex
         stx $44
-        lda $830c,x
-        cmp #$20
+        lda objTile,x
+        cmp #TILE_NESS_CREATURE << 1
         bcc l9a48
-l9a41   cmp #$5a
+l9a41   cmp #(TILE_WARLOCK + 1) << 1
         bcs l9a48
 l9a45   jsr l9b3e
 l9a48   ldx $44
         bne l9a37
 l9a4c   rts
+
 l9a4d   .byt $00,$80
         .asc "*"
         .byt $00,$80
@@ -1448,22 +1452,22 @@ l9a5b   ldx statsTransport
         cmp l9a4d,x
         bcc l9a4c
 l9a63   ldx $44
-        lda $830c,x
+        lda objTile,x
         l9a69 = * + 1
         ldy #$00
-        cmp #$30
+        cmp #TILE_HOOD << 1
         bcc l9a7a
 l9a6e   ldy #$01
-        cmp #$38
+        cmp #TILE_HIDDEN_ARCHER << 1
         beq l9a78
-l9a74   cmp #$40
+l9a74   cmp #TILE_EVIL_TRENT << 1
         bne l9a7a
 l9a78   ldy #$02
 l9a7a   sty la144
         lda #$00
         sta $24
         sta $25
-        lda $826c,x
+        lda objLon,x
         sta $22
         lda zpLongitude
         bmi l9a96
@@ -1473,7 +1477,7 @@ l9a90   beq l9a98
 l9a92   inc $24
         bcs l9a98
 l9a96   dec $24
-l9a98   lda $82bc,x
+l9a98   lda objLat,x
         and #$3f
         sta $23
         lda zpLatitude
@@ -1498,17 +1502,17 @@ l9ac4   bcc l9acb
 l9ac6   jsr l9aee
 l9ac9   bcs l9aed
 l9acb   jsr l9c77
-l9ace   lda $835c,x
+l9ace   lda objBckgndTile,x
         sta ($4c),y
         lda $2c
-        sta $826c,x
+        sta objLon,x
         lda $2d
         ora statsContinentMsb
-        sta $82bc,x
+        sta objLat,x
         jsr _getObjectMapPtr
 l9ae3   lda ($4c),y
-        sta $835c,x
-        lda $830c,x
+        sta objBckgndTile,x
+        lda objTile,x
         sta ($4c),y
 l9aed   rts
 l9aee   ldy $23
@@ -1555,15 +1559,16 @@ l9b33   ldy #$ff
         l9b3c = * + 1
         sbc #$00
 l9b3d   rts
+
 l9b3e   ldx $44
-        lda $826c,x
+        lda objLon,x
         sta $22
         sec
         sbc zpLongitude
         jsr l9b2b
 l9b4b   sty $48
         sta $24
-        lda $82bc,x
+        lda objLat,x
         and #$3f
         sta $23
         sec
@@ -1586,14 +1591,14 @@ l9b70   cpy #$02
         bcc l9baf
 l9b74   cpy #$04
         bcs l9b8b
-l9b78   lda $830c,x
-        cmp #$28
+l9b78   lda objTile,x
+        cmp #TILE_DRAGON_TURTLE << 1
         beq l9b8e
-l9b7f   cmp #$2c
+l9b7f   cmp #TILE_PIRATE_SHIP << 1
         beq l9b8e
-l9b83   cmp #$38
+l9b83   cmp #TILE_HIDDEN_ARCHER << 1
         beq l9b8e
-l9b87   cmp #$58
+l9b87   cmp #TILE_WARLOCK << 1
         beq l9b8e
 l9b8b   jmp l9a58
 l9b8e   lda #$02
@@ -1616,7 +1621,7 @@ l9baa   dec la145
 l9baf   jsr $83ed
 l9bb2   ldx $44
         stx $8268
-        lda $830c,x
+        lda objTile,x
         lsr
         lsr
         adc #$fe
@@ -1694,7 +1699,7 @@ l9c77   ldx $44
 _getObjectMapPtr
 l9c79   lda #$00
         sta zpMapPtr
-        lda $82bc,x
+        lda objLat,x
         and #$3f
         lsr
         ror zpMapPtr
@@ -1702,7 +1707,7 @@ l9c79   lda #$00
         ror zpMapPtr
         adc #>mapBuffer
         sta zpMapPtr+1
-        ldy $826c,x
+        ldy objLon,x
         rts
 
 l9c90   cmp #$08
@@ -1724,23 +1729,23 @@ l9ca6   cpx #$40
 l9caa   cpy #$40
         bcs l9cd7
 l9cae   stx $46
-        ldx $826b
+        ldx objLen
         cpx #$50
         bcs l9cd7
 l9cb7   asl                     ; object * 2
-        sta $830c,x
+        sta objTile,x
         pha
         tya                     ; latitude
         ora statsContinentMsb   ; location?
-        sta $82bc,x
+        sta objLat,x
         lda $46                 ; longitude
-        sta $826c,x
+        sta objLon,x
         jsr _getObjectMapPtr    ; tile pointer?
 l9ccb   lda (zpMapPtr),y        ; get map tile (background)
-        sta $835c,x             ; store in object table
+        sta objBckgndTile,x     ; store in object table
         pla                     ; object to drop
         sta (zpMapPtr),y        ; update tile in map
-        inc $826b
+        inc objLen
         clc
 l9cd7   rts
 
@@ -1753,39 +1758,40 @@ l9ce0   cpy #$40
 l9ce4   stx $46
         tya
         ora statsContinentMsb
-        ldx $826b
+        ldx objLen
 l9ced   dex
         bmi l9cd7
-l9cf0   cmp $82bc,x
+l9cf0   cmp objLat,x
         bne l9ced
-l9cf5   ldy $826c,x
+l9cf5   ldy objLon,x
         cpy $46
         bne l9ced
-l9cfc   lda $82bc,x
+
+l9cfc   lda objLat,x
         and #$c0
         cmp statsContinentMsb
         bne l9d0e
 l9d06   jsr _getObjectMapPtr
-l9d09   lda $835c,x
+l9d09   lda objBckgndTile,x
         sta (zpMapPtr),y
-l9d0e   lda $830c,x
+l9d0e   lda objTile,x
         sta $3a
         stx $46
-        dec $826b
+        dec objLen
         bne l9d3a
 l9d1a   rts
 l9d1b   lda $826d,x
-        sta $826c,x
+        sta objLon,x
         lda $82bd,x
-        sta $82bc,x
+        sta objLat,x
         lda $830d,x
-        sta $830c,x
+        sta objTile,x
         lda $835d,x
-        sta $835c,x
+        sta objBckgndTile,x
         lda $bd01,x
-        sta $bd00,x
+        sta objHp,x
         inx
-l9d3a   cpx $826b
+l9d3a   cpx objLen
         bcc l9d1b
 l9d3f   ldx $46
         lda $3a
@@ -1839,10 +1845,10 @@ l9d8c   cmp #$08
         bcc l9daf
 l9d90   lda zpLatitude
         ora statsContinentMsb
-        ldx $826b
+        ldx objLen
 l9d98   cmp $82bb,x             ; object coordinates (?)
         bne l9daa
-l9d9d   ldy $826b,x             ; object coordinates (?)
+l9d9d   ldy objLen,x             ; object coordinates (?)
         cpy zpLongitude
         bne l9daa
 l9da4   lda $835b,x             ; location id (?)

@@ -45,6 +45,8 @@ zpY0 = $27
 zpX1 = $28
 zpY1 = $29
 
+zpTargetTileLon = $2c
+zpTargetTileLat = $2d
 zpWndLeft = $2e
 zpWndWdth = $2f
 zpWndTop = $30
@@ -59,6 +61,11 @@ zpRange = $43
 zpMapPtr = $4c
 zpShopId = $4c
 zpTwMapTile = $4c
+zpNumItemsStolen = $4c
+zpNpcType = $4c
+zpWisdomCheck = $4d
+zpAgilityCheck = $4d
+zpItemId = $4d
 zpBmpEorActive = $5c
 zpBmpPtr = $60
 zpScreenPtr = $60
@@ -92,7 +99,7 @@ charsetBackup = $c700
 townMap = $cb00
 
 npcs = $cdac
-npcTile = npcs + $00
+npcType = npcs + $00
 npcLon = npcs + $10
 npcLat = npcs + $20
 npcHpLb = npcs + $30
@@ -185,6 +192,7 @@ statsXp = stats + $7a
 statsLocation = stats + $80
 #endif
 
+objLen = $826b
 objLon= $826c
 objLat = $82bc
 objTile = $830c
